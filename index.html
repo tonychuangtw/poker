@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#12141a">
+<title>撲克工具箱 — 記帳 / EV / ICM</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="app-header">
+  <h1>♠ 撲克工具箱</h1>
+</header>
+
+<nav class="tabs" id="tabNav">
+  <button class="tab-btn active" data-tab="tracker">記帳</button>
+  <button class="tab-btn" data-tab="equity">現金局 EV</button>
+  <button class="tab-btn" data-tab="icm">錦標賽 ICM</button>
+</nav>
+
+<main>
+<!-- ============ Tab 1: 記帳 ============ -->
+<section id="tab-tracker" class="tab-panel active">
+  <div class="card">
+    <h2>新增紀錄</h2>
+    <form id="sessionForm">
+      <div class="grid-2">
+        <label>日期
+          <input type="date" id="fDate" required>
+        </label>
+        <label>類型
+          <select id="fType">
+            <option value="cash">現金局</option>
+            <option value="mtt">MTT</option>
+            <option value="sng">SNG</option>
+          </select>
+        </label>
+      </div>
+      <label>場地
+        <input type="text" id="fVenue" placeholder="例：CTP、線上…">
+      </label>
+      <div class="grid-2">
+        <label>買入（含 rebuy/addon）
+          <input type="number" id="fBuyin" inputmode="decimal" step="any" min="0" required placeholder="0">
+        </label>
+        <label>兌現 / 獎金
+          <input type="number" id="fCashout" inputmode="decimal" step="any" min="0" required placeholder="0">
+        </label>
+      </div>
+      <label>備註
+        <input type="text" id="fNote" placeholder="選填">
+      </label>
+      <button type="submit" class="btn primary full">新增</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>統計</h2>
+    <div class="stats-table-wrap">
+      <table class="stats-table" id="statsTable"></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>累積盈虧</h2>
+    <canvas id="plChart" height="220"></canvas>
+  </div>
+
+  <div class="card">
+    <div class="row-between">
+      <h2>紀錄</h2>
+      <select id="filterType" class="inline-select">
+        <option value="all">全部</option>
+        <option value="cash">現金局</option>
+        <option value="mtt">MTT</option>
+        <option value="sng">SNG</option>
+      </select>
+    </div>
+    <ul id="sessionList" class="session-list"></ul>
+    <div class="btn-row">
+      <button class="btn" id="btnExportCsv">匯出 CSV</button>
+      <button class="btn" id="btnExportJson">匯出 JSON</button>
+      <button class="btn" id="btnImportJson">匯入 JSON</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Tab 2: 現金局 EV ============ -->
+<section id="tab-equity" class="tab-panel">
+  <div class="card">
+    <h2>選牌</h2>
+    <p class="hint">點選下方牌位，再從牌桌挑牌。公牌可留空（翻前）、或選 3 / 4 / 5 張。</p>
+    <div class="hand-row">
+      <span class="hand-label hero">Hero</span>
+      <div class="slots" data-group="hero">
+        <button class="card-slot" data-slot="hero0">?</button>
+        <button class="card-slot" data-slot="hero1">?</button>
+      </div>
+    </div>
+    <div class="hand-row">
+      <span class="hand-label villain">Villain</span>
+      <div class="slots" data-group="villain">
+        <button class="card-slot" data-slot="villain0">?</button>
+        <button class="card-slot" data-slot="villain1">?</button>
+      </div>
+    </div>
+    <div class="hand-row">
+      <span class="hand-label">公牌</span>
+      <div class="slots" data-group="board">
+        <button class="card-slot" data-slot="board0">?</button>
+        <button class="card-slot" data-slot="board1">?</button>
+        <button class="card-slot" data-slot="board2">?</button>
+        <button class="card-slot" data-slot="board3">?</button>
+        <button class="card-slot" data-slot="board4">?</button>
+      </div>
+    </div>
+    <div class="deck-grid-wrap">
+      <div id="deckGrid" class="deck-grid"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="btnClearCards">全部清除</button>
+      <button class="btn primary" id="btnCalcEquity">計算勝率</button>
+    </div>
+  </div>
+
+  <div class="card" id="equityResult" hidden>
+    <h2>勝率</h2>
+    <div class="equity-bar" id="equityBar">
+      <div class="eq-hero" id="eqHeroBar"></div>
+      <div class="eq-tie" id="eqTieBar"></div>
+      <div class="eq-villain" id="eqVillainBar"></div>
+    </div>
+    <div class="equity-nums">
+      <span class="pos" id="eqHeroTxt">—</span>
+      <span class="muted" id="eqTieTxt">—</span>
+      <span class="neg" id="eqVillainTxt">—</span>
+    </div>
+    <p class="hint" id="eqMethodTxt"></p>
+  </div>
+
+  <div class="card">
+    <h2>跟注 EV</h2>
+    <div class="grid-2">
+      <label>底池
+        <input type="number" id="fPot" inputmode="decimal" step="any" min="0" placeholder="0">
+      </label>
+      <label>需跟注
+        <input type="number" id="fCall" inputmode="decimal" step="any" min="0" placeholder="0">
+      </label>
+    </div>
+    <div class="ev-result" id="evResult">先計算勝率，再輸入底池與跟注金額。</div>
+  </div>
+</section>
+
+<!-- ============ Tab 3: 錦標賽 ICM ============ -->
+<section id="tab-icm" class="tab-panel">
+  <div class="card">
+    <h2>獎金結構</h2>
+    <p class="hint">最多計算前 6 名獎金。</p>
+    <div id="payoutRows"></div>
+    <button class="btn full" id="btnAddPayout">＋ 新增名次</button>
+  </div>
+  <div class="card">
+    <h2>玩家籌碼</h2>
+    <p class="hint">最多 12 位玩家。</p>
+    <div id="playerRows"></div>
+    <button class="btn full" id="btnAddPlayer">＋ 新增玩家</button>
+  </div>
+  <button class="btn primary full big" id="btnCalcIcm">計算 ICM</button>
+  <div class="card" id="icmResultCard" hidden>
+    <h2>ICM 結果</h2>
+    <div class="stats-table-wrap">
+      <table class="stats-table" id="icmTable"></table>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="app-footer">純前端計算，資料只存在此裝置的瀏覽器。</footer>
+
+<script src="js/evaluator.js"></script>
+<script src="js/equity.js"></script>
+<script src="js/icm.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
