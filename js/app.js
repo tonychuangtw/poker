@@ -452,7 +452,7 @@
   function makeRow(container, opts) {
     var row = document.createElement('div');
     row.className = 'dyn-row';
-    if (opts.label) {
+    if (opts.label !== undefined) {
       var lab = document.createElement('span');
       lab.className = 'row-label';
       lab.textContent = opts.label;
