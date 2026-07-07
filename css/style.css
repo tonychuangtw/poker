@@ -66,6 +66,7 @@ input, select {
 }
 input:focus, select:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 .inline-select { width: auto; display: inline-block; margin: 0; padding: 8px 10px; }
 
 /* buttons */

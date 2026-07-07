@@ -515,10 +515,12 @@
   addPayoutRow(50); addPayoutRow(30); addPayoutRow(20);
   addPlayerRow('', 5000); addPlayerRow('', 3000); addPlayerRow('', 2000);
 
-  $('#btnCalcIcm').addEventListener('click', function () {
-    var payouts = $$('#payoutRows .payout-input')
+  function readPayouts() {
+    return $$('#payoutRows .payout-input')
       .map(function (el) { return parseFloat(el.value); })
       .filter(function (v) { return v > 0; });
+  }
+  function readIcmPlayers() {
     var players = [];
     $$('#playerRows .dyn-row').forEach(function (row, i) {
       var stack = parseFloat(row.querySelector('.stack-input').value);
@@ -529,6 +531,12 @@
         });
       }
     });
+    return players;
+  }
+
+  $('#btnCalcIcm').addEventListener('click', function () {
+    var payouts = readPayouts();
+    var players = readIcmPlayers();
     if (!payouts.length) { alert('請至少輸入一個獎金'); return; }
     if (players.length < 2) { alert('請至少輸入 2 位玩家籌碼'); return; }
     var evs;
@@ -562,4 +570,85 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
     });
   }
+
+  /* ================= Tab 3b: Push/Fold 決策 ================= */
+  function refreshPfSelects() {
+    var players = readIcmPlayers();
+    [['#pfHero', 0], ['#pfCaller', 1]].forEach(function (pair) {
+      var sel = $(pair[0]);
+      var prev = sel.value;
+      sel.innerHTML = '';
+      players.forEach(function (p, i) {
+        var opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = p.name + '（' + p.stack.toLocaleString() + '）';
+        sel.appendChild(opt);
+      });
+      // 盡量保留原選擇，否則預設 hero=第1位、caller=第2位
+      if (prev !== '' && +prev < players.length) sel.value = prev;
+      else if (players.length > pair[1]) sel.value = String(pair[1]);
+    });
+  }
+  $('#pfHero').addEventListener('focus', refreshPfSelects);
+  $('#pfCaller').addEventListener('focus', refreshPfSelects);
+  refreshPfSelects();
+
+  $('#btnCalcPf').addEventListener('click', function () {
+    var payouts = readPayouts();
+    var players = readIcmPlayers();
+    if (!payouts.length) { alert('請先在上方輸入獎金結構'); return; }
+    if (players.length < 2 || players.length > 9) {
+      alert('Push/Fold 需要 2–9 位玩家（請確認上方玩家籌碼）');
+      return;
+    }
+    var heroIdx = parseInt($('#pfHero').value, 10);
+    var callerIdx = parseInt($('#pfCaller').value, 10);
+    if (isNaN(heroIdx) || isNaN(callerIdx) ||
+        heroIdx >= players.length || callerIdx >= players.length) {
+      refreshPfSelects();
+      alert('玩家清單已變動，請重新選擇 Hero 與跟注者');
+      return;
+    }
+    if (heroIdx === callerIdx) { alert('Hero 與跟注者不能是同一人'); return; }
+    var callPct = parseFloat($('#pfRange').value);
+    if (!(callPct > 0 && callPct <= 100)) { alert('跟注 range 請輸入 0–100 的百分比'); return; }
+
+    var res;
+    try {
+      res = PushFold.computeShoveEV({
+        stacks: players.map(function (p) { return p.stack; }),
+        payouts: payouts,
+        heroIdx: heroIdx,
+        callerIdx: callerIdx,
+        hand: $('#pfHand').value,
+        callPct: callPct,
+        sb: parseFloat($('#pfSb').value) || 0,
+        bb: parseFloat($('#pfBb').value) || 0,
+        ante: parseFloat($('#pfAnte').value) || 0,
+        heroPos: $('#pfHeroPos').value,
+        callerPos: $('#pfCallerPos').value
+      });
+    } catch (err) {
+      alert(err.message);
+      return;
+    }
+
+    var d = Math.round(res.diff * 100) / 100;
+    var verdictHtml = res.verdict === 'SHOVE'
+      ? '<span class="pos">✔ 推薦 SHOVE（多 ' + fmtPL(d) + '）</span>'
+      : '<span class="neg">✘ 推薦 FOLD（全下少 ' + fmtPL(d) + '）</span>';
+    var box = $('#pfResult');
+    box.hidden = false;
+    box.innerHTML =
+      '手牌 <b>' + escapeHtml(res.hand) + '</b> ｜ 跟注 range 前 ' + callPct + '%（' +
+      res.rangeClasses.length + ' 類 / ' + res.rangeCombos + ' combo）<br>' +
+      'P(被跟注) = ' + (res.pCall * 100).toFixed(1) + '%，被跟注時勝率 = ' +
+      (res.equity * 100).toFixed(1) + '%<br>' +
+      '蓋牌 $EV = <b>' + res.foldEV.toFixed(2) + '</b><br>' +
+      '全下 $EV = <b class="' + (res.diff >= 0 ? 'pos' : 'neg') + '">' + res.shoveEV.toFixed(2) +
+      '</b>（全蓋 ' + res.evAllFold.toFixed(2) +
+      ' ／ 被跟注且贏 ' + res.evWin.toFixed(2) +
+      ' ／ 被跟注且輸 ' + res.evLose.toFixed(2) + '）<br>' +
+      '差異 ' + fmtPL(d) + ' → ' + verdictHtml;
+  });
 })();
