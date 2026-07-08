@@ -98,7 +98,95 @@
     return equity * (pot + call) - call;
   }
 
-  var EquityLib = { computeEquity: computeEquity, callEV: callEV, buildDeck: buildDeck };
+  /* N 人 showdown：贏家平分該局 equity（每人 1/贏家數） */
+  function showdownMulti(hands, board, shares) {
+    var best = null, winners = [];
+    for (var i = 0; i < hands.length; i++) {
+      var sc = Evaluator.evaluate7(hands[i].concat(board));
+      if (best === null) { best = sc; winners = [i]; continue; }
+      var cmp = Evaluator.compareScore(sc, best);
+      if (cmp > 0) { best = sc; winners = [i]; }
+      else if (cmp === 0) { winners.push(i); }
+    }
+    var share = 1 / winners.length;
+    for (var w = 0; w < winners.length; w++) {
+      shares[winners[w]].equity += share;
+      if (winners.length === 1) shares[winners[w]].win += 1;
+      else shares[winners[w]].tie += 1;
+    }
+  }
+
+  /**
+   * 多人 all-in equity（2–6 家）。
+   * @param {number[][]} hands 每家 2 張手牌
+   * @param {number[]} board  0/3/4/5 張公牌
+   * @param {number} [mcIters]
+   * @returns {{players:{equity:number,win:number,tie:number}[], trials:number, method:string}}
+   */
+  function computeEquityMulti(hands, board, mcIters) {
+    board = board || [];
+    mcIters = mcIters || 50000;
+    if (!Array.isArray(hands) || hands.length < 2 || hands.length > 6) {
+      throw new Error('need 2-6 hands');
+    }
+    var all = board.slice();
+    hands.forEach(function (h) {
+      if (!Array.isArray(h) || h.length !== 2) throw new Error('each hand needs 2 cards');
+      all = all.concat(h);
+    });
+    var seen = {};
+    all.forEach(function (c) {
+      if (seen[c]) throw new Error('duplicate card: ' + Evaluator.cardToString(c));
+      seen[c] = true;
+    });
+    var need = 5 - board.length;
+    if (need < 0) throw new Error('board too long');
+
+    var deck = buildDeck(all);
+    var shares = hands.map(function () { return { equity: 0, win: 0, tie: 0 }; });
+    var trials = 0, method, i, j;
+
+    if (need === 0) {
+      method = 'exact';
+      showdownMulti(hands, board, shares);
+      trials = 1;
+    } else if (need === 1) {
+      method = 'exact';
+      for (i = 0; i < deck.length; i++) {
+        showdownMulti(hands, board.concat([deck[i]]), shares);
+        trials++;
+      }
+    } else if (need === 2) {
+      method = 'exact';
+      for (i = 0; i < deck.length; i++) {
+        for (j = i + 1; j < deck.length; j++) {
+          showdownMulti(hands, board.concat([deck[i], deck[j]]), shares);
+          trials++;
+        }
+      }
+    } else {
+      method = 'montecarlo';
+      var n = deck.length;
+      for (var t = 0; t < mcIters; t++) {
+        for (i = 0; i < need; i++) {
+          var k = i + Math.floor(Math.random() * (n - i));
+          var tmp = deck[i]; deck[i] = deck[k]; deck[k] = tmp;
+        }
+        showdownMulti(hands, board.concat(deck.slice(0, need)), shares);
+        trials++;
+      }
+    }
+
+    return {
+      players: shares.map(function (s) {
+        return { equity: s.equity / trials, win: s.win / trials, tie: s.tie / trials };
+      }),
+      trials: trials,
+      method: method
+    };
+  }
+
+  var EquityLib = { computeEquity: computeEquity, computeEquityMulti: computeEquityMulti, callEV: callEV, buildDeck: buildDeck };
   if (typeof module !== 'undefined' && module.exports) module.exports = EquityLib;
   else global.EquityLib = EquityLib;
 })(typeof window !== 'undefined' ? window : this);

@@ -98,12 +98,10 @@
         <button class="card-slot" data-slot="hero1">?</button>
       </div>
     </div>
-    <div class="hand-row">
-      <span class="hand-label villain">Villain</span>
-      <div class="slots" data-group="villain">
-        <button class="card-slot" data-slot="villain0">?</button>
-        <button class="card-slot" data-slot="villain1">?</button>
-      </div>
+    <div id="villainRows"></div>
+    <div class="btn-row">
+      <button class="btn" id="btnAddVillain">＋ 加對手</button>
+      <button class="btn" id="btnDelVillain" hidden>− 減對手</button>
     </div>
     <div class="hand-row">
       <span class="hand-label">公牌</span>
@@ -126,16 +124,7 @@
 
   <div class="card" id="equityResult" hidden>
     <h2>勝率</h2>
-    <div class="equity-bar" id="equityBar">
-      <div class="eq-hero" id="eqHeroBar"></div>
-      <div class="eq-tie" id="eqTieBar"></div>
-      <div class="eq-villain" id="eqVillainBar"></div>
-    </div>
-    <div class="equity-nums">
-      <span class="pos" id="eqHeroTxt">—</span>
-      <span class="muted" id="eqTieTxt">—</span>
-      <span class="neg" id="eqVillainTxt">—</span>
-    </div>
+    <div id="eqRows"></div>
     <p class="hint" id="eqMethodTxt"></p>
   </div>
 

@@ -83,6 +83,57 @@ assert(r5.method === 'exact' && r5.trials === (45 * 44) / 2,
 var evVal = EquityLib.callEV(0.5, 100, 50);
 assert(Math.abs(evVal - 25) < 1e-9, 'callEV(0.5, 100, 50) = 25');
 
+// ---------- 2b. Multiway equity ----------
+console.log('--- Multiway equity ---');
+
+// 3-way AA vs KK vs QQ preflop (MC): ordering + sum to 1
+var m1 = EquityLib.computeEquityMulti(
+  [cards('As Ah'), cards('Ks Kh'), cards('Qs Qh')], [], 50000);
+var m1sum = m1.players.reduce(function (s, p) { return s + p.equity; }, 0);
+console.log('  AA/KK/QQ = ' + m1.players.map(function (p) { return (p.equity * 100).toFixed(1) + '%'; }).join(' / '));
+assert(Math.abs(m1sum - 1) < 1e-9, 'multiway equities sum to 1');
+assert(m1.players[0].equity > m1.players[1].equity &&
+       m1.players[1].equity > m1.players[2].equity,
+  'AA > KK > QQ 3-way ordering');
+assert(m1.players[0].equity > 0.60 && m1.players[0].equity < 0.71,
+  'AA 3-way vs KK,QQ equity ~65% (60-71 band)');
+
+// multiway matches heads-up path for 2 hands (river exact)
+var m2 = EquityLib.computeEquityMulti(
+  [cards('Ah Kh'), cards('2c 2d')], cards('Qh Jh Th 3s 4d'));
+assert(m2.method === 'exact' && m2.players[0].equity === 1 && m2.players[1].equity === 0,
+  'multiway with 2 hands: royal = 100/0');
+
+// 3-way chop on board straight -> each 1/3
+var m3 = EquityLib.computeEquityMulti(
+  [cards('Ac 2h'), cards('Ad 3c'), cards('As 4d')],
+  cards('Ah Kd Qs Jc Th'));
+assert(m3.method === 'exact' &&
+  m3.players.every(function (p) { return Math.abs(p.equity - 1 / 3) < 1e-9 && p.tie === 1; }),
+  '3-way board-plays chop: each exactly 1/3');
+
+// exact enumeration with 3 hands on flop: C(43,2)=903 boards
+var m4 = EquityLib.computeEquityMulti(
+  [cards('As Ah'), cards('Ks Kh'), cards('Qs Qh')], cards('2c 7d Jh'));
+assert(m4.method === 'exact' && m4.trials === (43 * 42) / 2,
+  '3-way flop -> exact C(43,2)=903');
+
+// duplicate card across hands must throw
+var threw = false;
+try {
+  EquityLib.computeEquityMulti([cards('As Ah'), cards('As Kh')], []);
+} catch (e) { threw = true; }
+assert(threw, 'duplicate card across multiway hands throws');
+
+// 6 players allowed, 7 rejected
+threw = false;
+try {
+  EquityLib.computeEquityMulti(
+    [cards('As Ah'), cards('Ks Kh'), cards('Qs Qh'), cards('Js Jh'),
+     cards('Ts Th'), cards('9s 9h'), cards('8s 8h')], []);
+} catch (e) { threw = true; }
+assert(threw, '7 hands rejected (max 6)');
+
 // ---------- 3. ICM ----------
 console.log('--- ICM ---');
 

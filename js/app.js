@@ -287,11 +287,18 @@
   renderTracker();
 
   /* ================= Tab 2: 現金局 EV ================= */
-  var SLOT_ORDER = ['hero0', 'hero1', 'villain0', 'villain1',
-    'board0', 'board1', 'board2', 'board3', 'board4'];
+  var MAX_VILLAINS = 5;
+  var villainCount = 1;
   var slotCards = {}; // slotName -> card int
   var activeSlot = 'hero0';
   var lastEquity = null;
+
+  function slotOrder() {
+    var order = ['hero0', 'hero1'];
+    for (var i = 0; i < villainCount; i++) order.push('v' + i + 'a', 'v' + i + 'b');
+    for (var b = 0; b < 5; b++) order.push('board' + b);
+    return order;
+  }
 
   // 牌桌 grid：4 花色 × 13 rank
   (function buildDeckGrid() {
@@ -320,7 +327,7 @@
 
   function refreshCardUI() {
     var usedSet = {};
-    SLOT_ORDER.forEach(function (name) {
+    slotOrder().forEach(function (name) {
       if (slotCards[name] !== undefined) usedSet[Evaluator.cardToString(slotCards[name])] = true;
     });
     $$('.deck-card').forEach(function (b) {
@@ -340,9 +347,10 @@
   }
 
   function nextEmptySlot(from) {
-    var start = SLOT_ORDER.indexOf(from);
-    for (var i = 1; i <= SLOT_ORDER.length; i++) {
-      var name = SLOT_ORDER[(start + i) % SLOT_ORDER.length];
+    var order = slotOrder();
+    var start = order.indexOf(from);
+    for (var i = 1; i <= order.length; i++) {
+      var name = order[(start + i) % order.length];
       if (slotCards[name] === undefined) return name;
     }
     return from;
@@ -355,7 +363,7 @@
     refreshCardUI();
   }
 
-  $$('.card-slot').forEach(function (b) {
+  function bindSlot(b) {
     b.addEventListener('click', function () {
       var name = b.dataset.slot;
       if (activeSlot === name && slotCards[name] !== undefined) {
@@ -365,6 +373,49 @@
       }
       refreshCardUI();
     });
+  }
+  $$('.card-slot').forEach(bindSlot);
+
+  function renderVillainRows() {
+    var box = $('#villainRows');
+    box.innerHTML = '';
+    for (var i = 0; i < villainCount; i++) {
+      var row = document.createElement('div');
+      row.className = 'hand-row';
+      var label = document.createElement('span');
+      label.className = 'hand-label villain';
+      label.textContent = villainCount === 1 ? 'Villain' : '對手 ' + (i + 1);
+      row.appendChild(label);
+      var slots = document.createElement('div');
+      slots.className = 'slots';
+      ['a', 'b'].forEach(function (suffix) {
+        var s = document.createElement('button');
+        s.className = 'card-slot';
+        s.dataset.slot = 'v' + i + suffix;
+        s.textContent = '?';
+        bindSlot(s);
+        slots.appendChild(s);
+      });
+      row.appendChild(slots);
+      box.appendChild(row);
+    }
+    $('#btnAddVillain').hidden = villainCount >= MAX_VILLAINS;
+    $('#btnDelVillain').hidden = villainCount <= 1;
+    refreshCardUI();
+  }
+
+  $('#btnAddVillain').addEventListener('click', function () {
+    if (villainCount >= MAX_VILLAINS) return;
+    villainCount++;
+    renderVillainRows();
+  });
+  $('#btnDelVillain').addEventListener('click', function () {
+    if (villainCount <= 1) return;
+    villainCount--;
+    delete slotCards['v' + villainCount + 'a'];
+    delete slotCards['v' + villainCount + 'b'];
+    if (slotOrder().indexOf(activeSlot) === -1) activeSlot = 'hero0';
+    renderVillainRows();
   });
 
   $('#btnClearCards').addEventListener('click', function () {
@@ -378,10 +429,24 @@
 
   $('#btnCalcEquity').addEventListener('click', function () {
     var hero = [slotCards.hero0, slotCards.hero1];
-    var villain = [slotCards.villain0, slotCards.villain1];
-    if (hero.some(function (c) { return c === undefined; }) ||
-        villain.some(function (c) { return c === undefined; })) {
-      alert('請先選滿 Hero 與 Villain 各 2 張手牌');
+    if (hero.some(function (c) { return c === undefined; })) {
+      alert('請先選滿 Hero 2 張手牌');
+      return;
+    }
+    var hands = [hero];
+    var names = ['Hero'];
+    for (var vi = 0; vi < villainCount; vi++) {
+      var a = slotCards['v' + vi + 'a'], b2 = slotCards['v' + vi + 'b'];
+      if (a === undefined && b2 === undefined) continue; // 空白對手略過
+      if (a === undefined || b2 === undefined) {
+        alert('對手 ' + (vi + 1) + ' 只選了 1 張牌，請選滿 2 張或全部清空');
+        return;
+      }
+      hands.push([a, b2]);
+      names.push(villainCount === 1 ? 'Villain' : '對手 ' + (vi + 1));
+    }
+    if (hands.length < 2) {
+      alert('至少需要 1 位對手（2 張手牌）');
       return;
     }
     var board = [];
@@ -398,18 +463,28 @@
     btn.textContent = '計算中…';
     setTimeout(function () {
       try {
-        var res = EquityLib.computeEquity(hero, villain, board, 50000);
-        lastEquity = res;
+        var res = EquityLib.computeEquityMulti(hands, board, 50000);
+        lastEquity = { hero: res.players[0].equity };
         $('#equityResult').hidden = false;
-        $('#eqHeroBar').style.width = (res.hero * 100) + '%';
-        $('#eqTieBar').style.width = (res.tie * 100) + '%';
-        $('#eqVillainBar').style.width = (res.villain * 100) + '%';
-        $('#eqHeroTxt').textContent = 'Hero ' + (res.hero * 100).toFixed(1) + '%';
-        $('#eqTieTxt').textContent = '平手 ' + (res.tie * 100).toFixed(1) + '%';
-        $('#eqVillainTxt').textContent = 'Villain ' + (res.villain * 100).toFixed(1) + '%';
-        $('#eqMethodTxt').textContent = res.method === 'exact'
+        var rows = $('#eqRows');
+        rows.innerHTML = '';
+        res.players.forEach(function (p, pi) {
+          var div = document.createElement('div');
+          div.className = 'eqp-row';
+          var pct = (p.equity * 100).toFixed(1);
+          div.innerHTML =
+            '<div class="eqp-head"><span class="' + (pi === 0 ? 'pos' : 'neg') + '">' + names[pi] + '</span>' +
+            '<span><b>' + pct + '%</b>' +
+            (p.tie > 0.0005 ? ' <span class="muted">(平手 ' + (p.tie * 100).toFixed(1) + '%)</span>' : '') +
+            '</span></div>' +
+            '<div class="equity-bar eqp-bar"><div class="' + (pi === 0 ? 'eq-hero' : 'eq-villain') +
+            '" style="width:' + pct + '%"></div></div>';
+          rows.appendChild(div);
+        });
+        $('#eqMethodTxt').textContent = (res.method === 'exact'
           ? '窮舉 ' + res.trials.toLocaleString() + ' 種發牌'
-          : 'Monte Carlo 模擬 ' + res.trials.toLocaleString() + ' 次（誤差約 ±0.5%）';
+          : 'Monte Carlo 模擬 ' + res.trials.toLocaleString() + ' 次（誤差約 ±0.5%）') +
+          (hands.length > 2 ? ' · ' + hands.length + ' 人 all-in，平手依人數均分' : '');
         renderEV();
       } catch (err) {
         alert('計算失敗：' + err.message);
@@ -419,6 +494,8 @@
       }
     }, 30);
   });
+
+  renderVillainRows();
 
   function renderEV() {
     var box = $('#evResult');
