@@ -278,6 +278,35 @@ assert(bubble.verdict === 'FOLD' && bubble.evWin <= 50 + 1e-9,
     'scenario ' + (i + 1) + ' EVs within [0, prize pool]');
 });
 
+// ---------- 5b. Range vs range ----------
+console.log('--- Range vs range ---');
+
+// 對稱 range 勝率必為 50%
+var sym = PushFold.rangeVsRange(30, 30);
+assert(Math.abs(sym.equityA - 0.5) < 1e-9, 'symmetric ranges -> exactly 50%');
+
+// 緊 range 打鬆 range 佔優
+var tvl = PushFold.rangeVsRange(5, 50);
+assert(tvl.equityA > 0.55 && tvl.equityA < 0.75,
+  'top 5% vs top 50% equity in (55%,75%): ' + (tvl.equityA * 100).toFixed(1));
+
+// 單調性：對手 range 越鬆，緊 range 勝率越高
+var e20 = PushFold.rangeVsRange(5, 20).equityA;
+var e60 = PushFold.rangeVsRange(5, 60).equityA;
+var e100 = PushFold.rangeVsRange(5, 100).equityA;
+assert(e20 < e60 && e60 < e100, 'top5% equity rises as villain widens: ' +
+  (e20 * 100).toFixed(1) + ' < ' + (e60 * 100).toFixed(1) + ' < ' + (e100 * 100).toFixed(1));
+
+// 100% vs 100% = 50%，combo 數 = 1326
+var full = PushFold.rangeVsRange(100, 100);
+assert(Math.abs(full.equityA - 0.5) < 1e-9 && full.combosA === 1326 && full.combosB === 1326,
+  '100% vs 100% -> 50%, 1326 combos each');
+
+// 非法輸入
+var threw = false;
+try { PushFold.rangeVsRange(0, 50); } catch (e) { threw = true; }
+assert(threw, 'rangeVsRange rejects 0%');
+
 // ---------- 6. Nash HU push/fold ----------
 console.log('--- Nash HU push/fold ---');
 var Nash = require('../js/nash.js');

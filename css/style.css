@@ -58,13 +58,15 @@ main { max-width: 640px; margin: 0 auto; padding: 12px 12px 48px; }
 
 /* forms */
 label { display: block; margin: 8px 0; font-size: .85rem; color: var(--muted); }
-input, select {
+input, select, textarea {
   display: block; width: 100%; margin-top: 4px;
   padding: 12px; font-size: 1rem;
   background: var(--bg3); color: var(--text);
   border: 1px solid var(--border); border-radius: 8px;
 }
-input:focus, select:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+textarea { font-family: inherit; resize: vertical; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+.note-body { white-space: pre-wrap; word-break: break-word; margin-top: 2px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 .inline-select { width: auto; display: inline-block; margin: 0; padding: 8px 10px; }

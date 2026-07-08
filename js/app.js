@@ -53,11 +53,13 @@
       venue: $('#fVenue').value.trim(),
       buyin: parseFloat($('#fBuyin').value) || 0,
       cashout: parseFloat($('#fCashout').value) || 0,
+      hours: parseFloat($('#fHours').value) || 0,
       note: $('#fNote').value.trim()
     };
     sessions.push(rec);
     saveSessions(sessions);
-    $('#fVenue').value = ''; $('#fBuyin').value = ''; $('#fCashout').value = ''; $('#fNote').value = '';
+    $('#fVenue').value = ''; $('#fBuyin').value = ''; $('#fCashout').value = '';
+    $('#fHours').value = ''; $('#fNote').value = '';
     renderTracker();
   });
 
@@ -94,6 +96,7 @@
       var sub = document.createElement('div');
       sub.className = 'session-sub';
       sub.textContent = '買入 ' + fmtMoney(r.buyin) + ' → 兌現 ' + fmtMoney(r.cashout) +
+        (r.hours ? ' ｜ ' + r.hours + ' 小時' : '') +
         (r.note ? ' ｜ ' + r.note : '');
       main.appendChild(title);
       main.appendChild(sub);
@@ -147,6 +150,129 @@
     });
     $('#statsTable').innerHTML = html;
   }
+
+  /* --- 進階統計：時薪 / 變異數 / 回撤 / 資金建議 --- */
+  function advStats(list) {
+    var n = list.length;
+    var pls = list.map(function (r) { return r.cashout - r.buyin; });
+    var sum = pls.reduce(function (a, b) { return a + b; }, 0);
+    var mean = n ? sum / n : 0;
+    var variance = 0;
+    if (n >= 2) {
+      pls.forEach(function (p) { variance += (p - mean) * (p - mean); });
+      variance /= (n - 1);
+    }
+    var sd = Math.sqrt(variance);
+    // 最大回撤（依日期順序的累積盈虧）
+    var ordered = list.slice().sort(function (a, b) {
+      return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.id < b.id ? -1 : 1);
+    });
+    var cum = 0, peak = 0, maxDD = 0;
+    ordered.forEach(function (r) {
+      cum += r.cashout - r.buyin;
+      if (cum > peak) peak = cum;
+      if (peak - cum > maxDD) maxDD = peak - cum;
+    });
+    var hours = 0, plHr = 0;
+    list.forEach(function (r) { if (r.hours > 0) { hours += r.hours; plHr += r.cashout - r.buyin; } });
+    return { n: n, mean: mean, sd: sd, maxDD: maxDD, hours: hours,
+             hourly: hours > 0 ? plHr / hours : null };
+  }
+
+  function renderAdvStats() {
+    var s = advStats(sessions);
+    var tbl = $('#advStatsTable'), hint = $('#advStatsHint');
+    if (s.n < 2) {
+      tbl.innerHTML = '';
+      hint.textContent = '至少 2 筆紀錄後顯示。填時數可算時薪。';
+      return;
+    }
+    function row(k, v, cls) {
+      return '<tr><td>' + k + '</td><td class="' + (cls || '') + '">' + v + '</td></tr>';
+    }
+    var html = '<tr><th>指標</th><th>數值</th></tr>';
+    html += row('每場平均盈虧', fmtPL(Math.round(s.mean * 100) / 100),
+      s.mean > 0 ? 'pos' : s.mean < 0 ? 'neg' : 'muted');
+    html += row('每場標準差 σ', fmtMoney(Math.round(s.sd * 100) / 100));
+    html += row('最大回撤', s.maxDD > 0 ? '-' + fmtMoney(Math.round(s.maxDD * 100) / 100) : '0',
+      s.maxDD > 0 ? 'neg' : 'muted');
+    html += row('時薪（有填時數的場次）',
+      s.hourly === null ? '—（未填時數）' : fmtPL(Math.round(s.hourly * 100) / 100) + ' /hr',
+      s.hourly === null ? 'muted' : s.hourly > 0 ? 'pos' : 'neg');
+    if (s.mean > 0 && s.sd > 0) {
+      // 破產風險模型：RoR = exp(-2μB/σ²) → B = σ²·ln(1/risk)/(2μ)
+      var br5 = s.sd * s.sd * Math.log(20) / (2 * s.mean);
+      var br1 = s.sd * s.sd * Math.log(100) / (2 * s.mean);
+      html += row('建議資金（破產風險 ≤5%）', fmtMoney(Math.ceil(br5)));
+      html += row('建議資金（破產風險 ≤1%）', fmtMoney(Math.ceil(br1)));
+      hint.textContent = '資金建議用 Kelly 式破產風險模型 RoR = exp(−2μB/σ²)，' +
+        '假設每場盈虧近似常態且 winrate 不變，僅供參考。';
+    } else {
+      hint.textContent = s.n >= 2 && s.mean <= 0
+        ? '平均盈虧 ≤ 0，任何資金長期都會歸零 — 資金建議不適用，先改善 winrate。'
+        : '';
+    }
+    tbl.innerHTML = html;
+  }
+
+  /* --- 手牌筆記 --- */
+  var NOTES_KEY = 'poker.notes';
+  function loadNotes() {
+    try {
+      var arr = JSON.parse(localStorage.getItem(NOTES_KEY));
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
+  }
+  function saveNotes(list) { localStorage.setItem(NOTES_KEY, JSON.stringify(list)); }
+  var notes = loadNotes();
+
+  function renderNotes() {
+    var ul = $('#noteList');
+    ul.innerHTML = '';
+    if (!notes.length) {
+      ul.innerHTML = '<li class="empty-msg">尚無筆記</li>';
+      return;
+    }
+    notes.slice().reverse().forEach(function (nt) {
+      var li = document.createElement('li');
+      li.className = 'session-item';
+      var main = document.createElement('div');
+      main.className = 'session-main';
+      var title = document.createElement('div');
+      title.className = 'session-sub';
+      title.textContent = nt.date;
+      var body = document.createElement('div');
+      body.className = 'session-title note-body';
+      body.textContent = nt.text;
+      main.appendChild(title); main.appendChild(body);
+      var del = document.createElement('button');
+      del.className = 'del-btn';
+      del.textContent = '✕';
+      del.setAttribute('aria-label', '刪除筆記');
+      del.addEventListener('click', function () {
+        if (!confirm('刪除這則筆記？')) return;
+        notes = notes.filter(function (x) { return x.id !== nt.id; });
+        saveNotes(notes);
+        renderNotes();
+      });
+      li.appendChild(main); li.appendChild(del);
+      ul.appendChild(li);
+    });
+  }
+
+  $('#btnAddNote').addEventListener('click', function () {
+    var txt = $('#noteText').value.trim();
+    if (!txt) return;
+    notes.push({
+      id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+      date: new Date().toISOString().slice(0, 10),
+      text: txt
+    });
+    saveNotes(notes);
+    $('#noteText').value = '';
+    renderNotes();
+  });
+  renderNotes();
 
   /* --- 累積盈虧折線圖（手刻 canvas） --- */
   function drawChart() {
@@ -227,6 +353,7 @@
   function renderTracker() {
     renderList();
     renderStats();
+    renderAdvStats();
     drawChart();
   }
 
@@ -246,10 +373,10 @@
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
   $('#btnExportCsv').addEventListener('click', function () {
-    var rows = [['日期', '類型', '場地', '買入', '兌現', '盈虧', '備註']];
+    var rows = [['日期', '類型', '場地', '買入', '兌現', '盈虧', '時數', '備註']];
     sessions.forEach(function (r) {
       rows.push([r.date, TYPE_NAMES[r.type] || r.type, r.venue, r.buyin, r.cashout,
-        r.cashout - r.buyin, r.note]);
+        r.cashout - r.buyin, r.hours || '', r.note]);
     });
     var csv = '\uFEFF' + rows.map(function (row) { return row.map(csvEscape).join(','); }).join('\r\n');
     download('poker-sessions.csv', csv, 'text/csv;charset=utf-8');
@@ -845,4 +972,32 @@
     renderQuizScore();
   });
   renderQuizScore();
+
+  /* ================= Range vs Range ================= */
+  $('#btnCalcRvr').addEventListener('click', function () {
+    var pa = parseFloat($('#rvrA').value), pb = parseFloat($('#rvrB').value);
+    if (!(pa > 0) || !(pb > 0) || pa > 100 || pb > 100) {
+      alert('請輸入 0.1–100 的百分比');
+      return;
+    }
+    var r;
+    try { r = PushFold.rangeVsRange(pa, pb); }
+    catch (err) { alert(err.message); return; }
+    var eqA = r.equityA * 100, eqB = 100 - eqA;
+    $('#rvrResult').hidden = false;
+    $('#rvrATxt').textContent = 'A 前 ' + pa + '%：' + eqA.toFixed(1) + '%';
+    $('#rvrBTxt').textContent = 'B 前 ' + pb + '%：' + eqB.toFixed(1) + '%';
+    $('#rvrBarA').style.width = eqA + '%';
+    $('#rvrBarB').style.width = eqB + '%';
+    $('#rvrDetail').textContent = 'Range A：' + r.classesA + ' 類 / ' + r.combosA +
+      ' combo ｜ Range B：' + r.classesB + ' 類 / ' + r.combosB +
+      ' combo（平手依勝率折半計入）';
+  });
+
+  /* ================= PWA ================= */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+  }
 })();

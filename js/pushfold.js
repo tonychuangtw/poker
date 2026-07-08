@@ -248,8 +248,31 @@
     };
   }
 
+  /* ---------- Range vs range 翻前勝率（combo 加權、忽略 blocker） ---------- */
+  function rangeVsRange(pctA, pctB) {
+    var A = topPercentRange(pctA), B = topPercentRange(pctB);
+    if (!A.length || !B.length) throw new Error('range 百分比需大於 0');
+    var wSum = 0, eqSum = 0;
+    for (var i = 0; i < A.length; i++) {
+      var a = A[i], ca = comboCount(a);
+      for (var j = 0; j < B.length; j++) {
+        var b = B[j], w = ca * comboCount(b);
+        wSum += w;
+        eqSum += w * Table.EQ[a * 169 + b] / 1000;
+      }
+    }
+    var combosA = A.reduce(function (s, x) { return s + comboCount(x); }, 0);
+    var combosB = B.reduce(function (s, x) { return s + comboCount(x); }, 0);
+    return {
+      equityA: eqSum / wSum,
+      classesA: A.length, classesB: B.length,
+      combosA: combosA, combosB: combosB
+    };
+  }
+
   var PushFold = {
     classLabel: classLabel,
+    rangeVsRange: rangeVsRange,
     comboCount: comboCount,
     classIndexFromCards: classIndexFromCards,
     expandCombos: expandCombos,

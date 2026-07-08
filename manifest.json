@@ -1,0 +1,15 @@
+{
+  "name": "撲克工具箱",
+  "short_name": "撲克工具箱",
+  "description": "德州撲克記帳、勝率 EV、ICM、Push/Fold Nash 工具",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#12141a",
+  "theme_color": "#12141a",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
