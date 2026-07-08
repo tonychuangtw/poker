@@ -162,6 +162,27 @@ canvas { width: 100%; display: block; }
 .eqp-bar { height: 16px; }
 .ev-result { margin-top: 12px; padding: 12px; background: var(--bg3); border-radius: 8px; font-size: .95rem; line-height: 1.6; }
 
+/* ===== Push/Fold Nash tab ===== */
+.nash-grid-wrap { overflow-x: auto; padding-bottom: 4px; }
+.nash-grid {
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  gap: 2px;
+  min-width: 480px;
+}
+.nash-cell {
+  text-align: center; padding: 6px 0;
+  font-size: .68rem; font-weight: 600;
+  border-radius: 4px;
+  background: var(--bg3); color: var(--muted);
+}
+.nash-cell.in { background: var(--pos); color: #10321e; }
+.nash-cell.mix { background: var(--tie); color: #33280f; }
+.btn.active-role { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.quiz-q { text-align: center; margin: 12px 0; }
+.quiz-hand { font-size: 2.4rem; font-weight: 800; letter-spacing: .04em; }
+.quiz-info { color: var(--muted); font-size: .9rem; margin-top: 6px; }
+
 /* ===== ICM tab ===== */
 .dyn-row { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
 .dyn-row .row-label { width: 52px; flex-shrink: 0; color: var(--muted); font-size: .85rem; }

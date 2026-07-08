@@ -728,4 +728,121 @@
       ' ／ 被跟注且輸 ' + res.evLose.toFixed(2) + '）<br>' +
       '差異 ' + fmtPL(d) + ' → ' + verdictHtml;
   });
+
+  /* ================= Tab 4: Push/Fold Nash ================= */
+  var nashS = 10;
+  var nashRole = 'push'; // 'push' | 'call'
+  var nashSolved = null;
+
+  function nashSolve() {
+    nashSolved = NashHU.solveCached(nashS);
+  }
+
+  function renderNashGrid() {
+    if (!nashSolved) nashSolve();
+    var set = nashRole === 'push' ? nashSolved.pushSet : nashSolved.callSet;
+    var mix = nashRole === 'push' ? nashSolved.push : nashSolved.call;
+    var pct = nashRole === 'push' ? nashSolved.pushPct : nashSolved.callPct;
+    var html = '';
+    for (var i = 0; i < 169; i++) {
+      var cls = set[i] ? 'in' : 'out';
+      if (mix[i] > 0.25 && mix[i] < 0.75) cls = 'mix';
+      html += '<div class="nash-cell ' + cls + '">' + PushFold.classLabel(i) + '</div>';
+    }
+    $('#nashGrid').innerHTML = html;
+    $('#nashRangeTxt').textContent =
+      (nashRole === 'push' ? 'SB 全下 range：' : 'BB 跟注 range：') +
+      pct.toFixed(1) + '% 的手牌（' + nashS + ' bb）';
+  }
+
+  $('#nashStack').addEventListener('input', function () {
+    nashS = parseInt(this.value, 10);
+    $('#nashStackTxt').textContent = nashS;
+    nashSolved = null;
+    renderNashGrid();
+  });
+  $('#nashRolePush').addEventListener('click', function () {
+    nashRole = 'push';
+    $('#nashRolePush').classList.add('active-role');
+    $('#nashRoleCall').classList.remove('active-role');
+    renderNashGrid();
+  });
+  $('#nashRoleCall').addEventListener('click', function () {
+    nashRole = 'call';
+    $('#nashRoleCall').classList.add('active-role');
+    $('#nashRolePush').classList.remove('active-role');
+    renderNashGrid();
+  });
+  renderNashGrid();
+
+  /* ---------- 測驗 ---------- */
+  var QUIZ_KEY = 'poker.nash_quiz';
+  function quizScore() {
+    try {
+      var s = JSON.parse(localStorage.getItem(QUIZ_KEY));
+      return (s && typeof s.correct === 'number') ? s : { correct: 0, total: 0 };
+    } catch (e) { return { correct: 0, total: 0 }; }
+  }
+  function quizSave(s) { localStorage.setItem(QUIZ_KEY, JSON.stringify(s)); }
+  function renderQuizScore() {
+    var s = quizScore();
+    $('#quizScoreTxt').textContent = s.total
+      ? '累積成績：' + s.correct + ' / ' + s.total + '（' + Math.round(s.correct / s.total * 100) + '%）'
+      : '';
+  }
+
+  function randHandIdx() {
+    // combo 加權：pair 6、suited 4、offsuit 12
+    var r = Math.floor(Math.random() * 1326), acc = 0;
+    for (var i = 0; i < 169; i++) {
+      acc += NashHU.COMBOS[i];
+      if (r < acc) return i;
+    }
+    return 168;
+  }
+
+  var quizCur = null;
+  function quizNext() {
+    var S = 2 + Math.floor(Math.random() * 14); // 2–15 bb
+    quizCur = { S: S, idx: randHandIdx() };
+    $('#quizHand').textContent = PushFold.classLabel(quizCur.idx);
+    $('#quizInfo').textContent = '你在 SB（按鈕位），有效籌碼 ' + S + ' bb。推還是棄？';
+    $('#quizFeedback').hidden = true;
+    $('#btnQuizNext').hidden = true;
+    $('#btnQuizPush').disabled = false;
+    $('#btnQuizFold').disabled = false;
+  }
+  function quizAnswer(userPush) {
+    if (!quizCur) return;
+    var sol = NashHU.solveCached(quizCur.S);
+    var nashPush = sol.pushSet[quizCur.idx];
+    var ok = userPush === nashPush;
+    var s = quizScore();
+    s.total++; if (ok) s.correct++;
+    quizSave(s);
+    var mixPct = Math.round(sol.push[quizCur.idx] * 100);
+    var fb = $('#quizFeedback');
+    fb.hidden = false;
+    fb.innerHTML = (ok ? '<span class="pos">✔ 正確！</span>' : '<span class="neg">✘ 錯誤。</span>') +
+      ' Nash 均衡：' + PushFold.classLabel(quizCur.idx) + ' 在 ' + quizCur.S + ' bb ' +
+      (nashPush ? '應該<b>全下</b>' : '應該<b>蓋牌</b>') +
+      '（均衡全下頻率 ' + mixPct + '%）。<br>目前成績 ' + s.correct + ' / ' + s.total;
+    $('#btnQuizNext').hidden = false;
+    $('#btnQuizPush').disabled = true;
+    $('#btnQuizFold').disabled = true;
+  }
+  $('#btnQuizStart').addEventListener('click', function () {
+    $('#quizIdle').hidden = true;
+    $('#quizRun').hidden = false;
+    quizNext();
+  });
+  $('#btnQuizPush').addEventListener('click', function () { quizAnswer(true); });
+  $('#btnQuizFold').addEventListener('click', function () { quizAnswer(false); });
+  $('#btnQuizNext').addEventListener('click', quizNext);
+  $('#btnQuizQuit').addEventListener('click', function () {
+    $('#quizRun').hidden = true;
+    $('#quizIdle').hidden = false;
+    renderQuizScore();
+  });
+  renderQuizScore();
 })();

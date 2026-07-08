@@ -278,6 +278,50 @@ assert(bubble.verdict === 'FOLD' && bubble.evWin <= 50 + 1e-9,
     'scenario ' + (i + 1) + ' EVs within [0, prize pool]');
 });
 
+// ---------- 6. Nash HU push/fold ----------
+console.log('--- Nash HU push/fold ---');
+var Nash = require('../js/nash.js');
+
+var n5 = Nash.solveNashHU(5), n10 = Nash.solveNashHU(10), n20 = Nash.solveNashHU(20);
+
+// AA（idx 0）任何深度都推、都跟
+[n5, n10, n20].forEach(function (r, i) {
+  assert(r.pushSet[0] && r.callSet[0], 'AA in push & call set (scenario ' + (i + 1) + ')');
+});
+
+// range 隨籌碼變淺單調放寬
+assert(n5.pushPct > n10.pushPct && n10.pushPct > n20.pushPct,
+  'push range widens as stack shrinks: ' + n5.pushPct.toFixed(1) + ' > ' +
+  n10.pushPct.toFixed(1) + ' > ' + n20.pushPct.toFixed(1));
+assert(n5.callPct > n10.callPct && n10.callPct > n20.callPct,
+  'call range widens as stack shrinks');
+
+// 10bb 對照已知 Nash 值（push ~58%、call ~37%）
+assert(n10.pushPct > 53 && n10.pushPct < 63, '10bb push% in [53,63]: ' + n10.pushPct.toFixed(1));
+assert(n10.callPct > 32 && n10.callPct < 42, '10bb call% in [32,42]: ' + n10.callPct.toFixed(1));
+
+// SB 推的 range 一定比 BB 跟的寬（fold equity）
+assert(n10.pushPct > n10.callPct, 'push range wider than call range at 10bb');
+
+// 垃圾牌 32o 在 20bb 兩邊都蓋
+var idx32o = -1;
+for (var q = 0; q < 169; q++) if (PushFold.classLabel(q) === '32o') idx32o = q;
+assert(idx32o >= 0, 'found 32o class index');
+assert(!n20.pushSet[idx32o] && !n20.callSet[idx32o], '32o folded both ways at 20bb');
+
+// 確定性 + 快取
+var again = Nash.solveNashHU(10);
+assert(again.pushPct === n10.pushPct && again.callPct === n10.callPct, 'solver deterministic');
+assert(Nash.solveCached(10) === Nash.solveCached(10), 'solveCached returns same object');
+
+// 混合機率合法範圍
+var probOk = n10.push.concat(n10.call).every(function (v) { return v >= 0 && v <= 1; });
+assert(probOk, 'all mixed-strategy probabilities in [0,1]');
+
+console.log('  5bb push ' + n5.pushPct.toFixed(1) + '% / call ' + n5.callPct.toFixed(1) +
+  '%; 10bb ' + n10.pushPct.toFixed(1) + '/' + n10.callPct.toFixed(1) +
+  '; 20bb ' + n20.pushPct.toFixed(1) + '/' + n20.callPct.toFixed(1));
+
 // ---------- summary ----------
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 if (failed > 0) process.exit(1);
