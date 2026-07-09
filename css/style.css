@@ -219,6 +219,21 @@ canvas { width: 100%; display: block; }
 .quiz-hand { font-size: 2.4rem; font-weight: 800; letter-spacing: .04em; }
 .quiz-info { color: var(--muted); font-size: .9rem; margin-top: 6px; }
 
+/* ===== 世界賽事 tab ===== */
+.ev-region {
+  margin: 14px 0 6px; font-weight: 700; color: var(--accent2);
+  font-size: .92rem; letter-spacing: .04em;
+  border-bottom: 1px solid var(--border); padding-bottom: 4px;
+}
+.ev-item { padding: 10px 2px; border-bottom: 1px solid var(--border); }
+.ev-item:last-child { border-bottom: none; }
+.ev-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.ev-name { font-weight: 600; font-size: .95rem; color: var(--text); text-decoration: none; }
+a.ev-name { color: var(--accent2); }
+a.ev-name:hover { text-decoration: underline; }
+.ev-date { color: var(--tie); font-size: .8rem; white-space: nowrap; flex-shrink: 0; }
+.ev-sub { color: var(--muted); font-size: .8rem; margin-top: 3px; }
+
 /* ===== ICM tab ===== */
 .dyn-row { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
 .dyn-row .row-label { width: 52px; flex-shrink: 0; color: var(--muted); font-size: .85rem; }

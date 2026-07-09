@@ -19,6 +19,7 @@
   <button class="tab-btn" data-tab="equity">現金局 EV</button>
   <button class="tab-btn" data-tab="icm">錦標賽 ICM</button>
   <button class="tab-btn" data-tab="nash">圖表</button>
+  <button class="tab-btn" data-tab="events">賽事</button>
 </nav>
 
 <main>
@@ -324,6 +325,26 @@
         <button class="btn" id="btnQuizQuit">結束</button>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ============ Tab 5: 世界賽事 ============ -->
+<section id="tab-events" class="tab-panel">
+  <div class="card">
+    <div class="row-between">
+      <h2>世界大型賽事</h2>
+      <span class="hint" id="evUpdated"></span>
+    </div>
+    <div class="grid-2">
+      <label>地區
+        <select id="evRegion"><option value="all">全部</option></select>
+      </label>
+      <label>國家
+        <select id="evCountry"><option value="all">全部</option></select>
+      </label>
+    </div>
+    <div id="evList"></div>
+    <p class="hint">每日自動更新；點賽事名稱可到官網查完整日程。</p>
   </div>
 </section>
 </main>

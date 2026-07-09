@@ -1045,6 +1045,112 @@
       ' combo（平手依勝率折半計入）';
   });
 
+  /* ================= Tab 5: 世界賽事 ================= */
+  var evData = null;
+
+  function evFmtDate(s, e) {
+    if (!s) return '日期未定';
+    var txt = s.slice(5).replace('-', '/');
+    if (e) txt += ' – ' + e.slice(5).replace('-', '/');
+    return txt + '（' + s.slice(0, 4) + '）';
+  }
+
+  function renderEvents() {
+    if (!evData) return;
+    var region = $('#evRegion').value, country = $('#evCountry').value;
+    var list = evData.events.filter(function (ev) {
+      return (region === 'all' || ev.region === region) &&
+             (country === 'all' || ev.country === country);
+    });
+    // 依開始日排序，無日期排最後
+    list.sort(function (a, b) {
+      if (!a.start) return 1;
+      if (!b.start) return -1;
+      return a.start < b.start ? -1 : 1;
+    });
+    var box = $('#evList');
+    box.innerHTML = '';
+    if (!list.length) {
+      box.innerHTML = '<p class="empty-msg">此篩選條件下沒有賽事</p>';
+      return;
+    }
+    var byRegion = {};
+    list.forEach(function (ev) {
+      (byRegion[ev.region] = byRegion[ev.region] || []).push(ev);
+    });
+    Object.keys(byRegion).forEach(function (rg) {
+      var h = document.createElement('div');
+      h.className = 'ev-region';
+      h.textContent = rg;
+      box.appendChild(h);
+      byRegion[rg].forEach(function (ev) {
+        var item = document.createElement('div');
+        item.className = 'ev-item';
+        var top = document.createElement('div');
+        top.className = 'ev-top';
+        var name;
+        if (ev.url) {
+          name = document.createElement('a');
+          name.href = ev.url;
+          name.target = '_blank';
+          name.rel = 'noopener noreferrer';
+        } else {
+          name = document.createElement('span');
+        }
+        name.className = 'ev-name';
+        name.textContent = ev.series;
+        var date = document.createElement('span');
+        date.className = 'ev-date';
+        date.textContent = evFmtDate(ev.start, ev.end);
+        top.appendChild(name); top.appendChild(date);
+        var sub = document.createElement('div');
+        sub.className = 'ev-sub';
+        sub.textContent = ev.country + ' · ' + ev.city +
+          (ev.venue ? ' · ' + ev.venue : '') +
+          (ev.note ? ' ｜ ' + ev.note : '');
+        item.appendChild(top); item.appendChild(sub);
+        box.appendChild(item);
+      });
+    });
+  }
+
+  function evFillFilters() {
+    var regions = {}, countries = {};
+    evData.events.forEach(function (ev) {
+      regions[ev.region] = true;
+      countries[ev.country] = true;
+    });
+    function fill(sel, keys) {
+      var cur = sel.value;
+      sel.innerHTML = '<option value="all">全部</option>';
+      Object.keys(keys).sort().forEach(function (k) {
+        var o = document.createElement('option');
+        o.value = k; o.textContent = k;
+        sel.appendChild(o);
+      });
+      sel.value = cur && (cur === 'all' || keys[cur]) ? cur : 'all';
+    }
+    fill($('#evRegion'), regions);
+    fill($('#evCountry'), countries);
+  }
+
+  function loadEvents() {
+    fetch('data/tournaments.json?d=' + new Date().toISOString().slice(0, 10))
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        evData = data;
+        $('#evUpdated').textContent = '更新於 ' + (data.updated || '—');
+        evFillFilters();
+        renderEvents();
+      })
+      .catch(function () {
+        $('#evList').innerHTML = '<p class="empty-msg">賽事資料載入失敗</p>';
+      });
+  }
+  $('#evRegion').addEventListener('change', renderEvents);
+  $('#evCountry').addEventListener('change', renderEvents);
+  loadEvents();
+
   /* ================= PWA ================= */
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {

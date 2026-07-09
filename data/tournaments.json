@@ -1,0 +1,94 @@
+{
+  "updated": "2026-07-09",
+  "note": "每日自動更新（來源：各巡迴賽官網與撲克媒體公開行程）",
+  "events": [
+    {
+      "series": "WSOP 2026 主賽事決賽桌",
+      "region": "北美",
+      "country": "美國",
+      "city": "拉斯維加斯",
+      "venue": "Horseshoe / Paris Las Vegas",
+      "start": "2026-08-03",
+      "end": "2026-08-05",
+      "note": "主賽事 7/2–13 已開打，決賽桌 ESPN 黃金時段直播",
+      "url": "https://www.wsop.com/schedule/"
+    },
+    {
+      "series": "British Poker Series",
+      "region": "歐洲",
+      "country": "英國",
+      "city": "倫敦",
+      "venue": "Grosvenor",
+      "start": "2026-07-15",
+      "end": "",
+      "note": "",
+      "url": "https://maineventtravel.com/tours"
+    },
+    {
+      "series": "Grosvenor Goliath",
+      "region": "歐洲",
+      "country": "英國",
+      "city": "考文垂",
+      "venue": "Grosvenor Casino Coventry",
+      "start": "2026-07-23",
+      "end": "",
+      "note": "全球最大現場賽事之一（低買入巨型 field）",
+      "url": "https://maineventtravel.com/tours"
+    },
+    {
+      "series": "APT Incheon 2026",
+      "region": "亞洲",
+      "country": "韓國",
+      "city": "仁川",
+      "venue": "Paradise City",
+      "start": "2026-08-07",
+      "end": "2026-08-16",
+      "note": "Asian Poker Tour × Paradise Group",
+      "url": "https://www.theasianpokertour.com/"
+    },
+    {
+      "series": "EPT Barcelona 2026",
+      "region": "歐洲",
+      "country": "西班牙",
+      "city": "巴塞隆納",
+      "venue": "Casino Barcelona",
+      "start": "2026-08-16",
+      "end": "",
+      "note": "詳細日程待官方公布（歷年固定 8 月）",
+      "url": "https://www.pokerstarslive.com/ept/barcelona/"
+    },
+    {
+      "series": "Triton Super High Roller Series",
+      "region": "亞洲",
+      "country": "待公布",
+      "city": "待公布",
+      "venue": "",
+      "start": "2026-09-04",
+      "end": "",
+      "note": "官方僅公布日期，地點待確認",
+      "url": "https://triton-series.com/"
+    },
+    {
+      "series": "APT Jeju 2026",
+      "region": "亞洲",
+      "country": "韓國",
+      "city": "濟州",
+      "venue": "Jeju Shinhwa World（Landing Casino）",
+      "start": "2026-09-25",
+      "end": "2026-10-04",
+      "note": "Asian Poker Tour 20 週年",
+      "url": "https://www.theasianpokertour.com/"
+    },
+    {
+      "series": "APPT / PokerStars LIVE Manila",
+      "region": "亞洲",
+      "country": "菲律賓",
+      "city": "馬尼拉",
+      "venue": "Newport World Resorts",
+      "start": "",
+      "end": "",
+      "note": "常設 Megastack／APPT 系列，日期依官網公布",
+      "url": "https://www.pokerstarslive.com/appt/"
+    }
+  ]
+}

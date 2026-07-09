@@ -380,6 +380,22 @@ console.log('  5bb push ' + n5.pushPct.toFixed(1) + '% / call ' + n5.callPct.toF
   '%; 10bb ' + n10.pushPct.toFixed(1) + '/' + n10.callPct.toFixed(1) +
   '; 20bb ' + n20.pushPct.toFixed(1) + '/' + n20.callPct.toFixed(1));
 
+// ---------- 7. 賽事資料 ----------
+console.log('--- Tournaments data ---');
+var tourneys = JSON.parse(require('fs').readFileSync(__dirname + '/../data/tournaments.json', 'utf8'));
+assert(/^\d{4}-\d{2}-\d{2}$/.test(tourneys.updated), 'tournaments.json has ISO updated date');
+assert(Array.isArray(tourneys.events) && tourneys.events.length >= 3, 'at least 3 events');
+var evOk = tourneys.events.every(function (ev) {
+  return typeof ev.series === 'string' && ev.series &&
+    typeof ev.region === 'string' && ev.region &&
+    typeof ev.country === 'string' && ev.country &&
+    typeof ev.city === 'string' && ev.city &&
+    (ev.start === '' || /^\d{4}-\d{2}-\d{2}$/.test(ev.start)) &&
+    (ev.end === '' || /^\d{4}-\d{2}-\d{2}$/.test(ev.end)) &&
+    typeof ev.url === 'string';
+});
+assert(evOk, 'every event has series/region/country/city + ISO or empty dates + url');
+
 // ---------- summary ----------
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 if (failed > 0) process.exit(1);
