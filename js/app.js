@@ -902,6 +902,57 @@
   });
   renderNashGrid();
 
+  /* ---------- 6-max RFI 開牌 range ---------- */
+  var RFI_RANGES = {
+    utg: { name: 'UTG', notation: '66+ ATs+ KTs+ QTs+ JTs T9s 98s 87s 76s 65s AJo+ KQo' },
+    hj:  { name: 'HJ',  notation: '44+ A9s+ A5s A4s KTs+ QTs+ J9s+ T9s 98s 87s 76s 65s ATo+ KJo+ QJo' },
+    co:  { name: 'CO',  notation: '22+ A2s+ K9s+ Q9s+ J9s+ T8s+ 97s+ 86s+ 75s+ 65s 54s A9o+ KTo+ QTo+ JTo' },
+    btn: { name: 'BTN', notation: '22+ A2s+ K2s+ Q5s+ J7s+ T7s+ 96s+ 85s+ 74s+ 64s+ 53s+ 43s A2o+ K9o+ Q9o+ J9o+ T9o 98o' },
+    sb:  { name: 'SB',  notation: '22+ A2s+ K4s+ Q6s+ J7s+ T7s+ 97s+ 86s+ 75s+ 65s 54s A4o+ K9o+ Q9o+ J9o+ T9o' }
+  };
+
+  function renderRfi(pos) {
+    var def = RFI_RANGES[pos];
+    var classes = PushFold.rangeFromNotation(def.notation);
+    var inSet = {};
+    classes.forEach(function (i) { inSet[i] = true; });
+    var html = '';
+    for (var i = 0; i < 169; i++) {
+      html += '<div class="nash-cell ' + (inSet[i] ? 'in' : 'out') + '">' +
+        PushFold.classLabel(i) + '</div>';
+    }
+    $('#rfiGrid').innerHTML = html;
+    var combos = PushFold.rangeComboTotal(classes);
+    $('#rfiTxt').textContent = def.name + ' 開牌 range：' +
+      (combos / 1326 * 100).toFixed(1) + '% 的手牌（' + combos + ' combo）';
+  }
+  $('#rfiPosRow').addEventListener('click', function (e) {
+    var btn = e.target.closest('.pos-btn');
+    if (!btn) return;
+    $$('#rfiPosRow .pos-btn').forEach(function (b) {
+      b.classList.toggle('active-role', b === btn);
+    });
+    renderRfi(btn.dataset.pos);
+  });
+  renderRfi('utg');
+
+  /* ---------- Outs / 賠率速查表 ---------- */
+  (function () {
+    var DRAWS = {
+      2: '口袋對 → set', 4: '卡順（gutshot）', 6: '兩張高牌',
+      8: '兩頭順（OESD）', 9: '同花聽牌', 12: '同花＋卡順', 15: '同花＋兩頭順'
+    };
+    var html = '<tr><th>Outs</th><th>常見聽牌</th><th>轉牌</th><th>河牌</th><th>轉+河</th></tr>';
+    for (var o = 2; o <= 15; o++) {
+      var pTurn = o / 47, pRiver = o / 46;
+      var pBoth = 1 - (47 - o) / 47 * (46 - o) / 46;
+      html += '<tr><td>' + o + '</td><td>' + (DRAWS[o] || '') + '</td><td>' +
+        (pTurn * 100).toFixed(1) + '%</td><td>' + (pRiver * 100).toFixed(1) + '%</td><td>' +
+        (pBoth * 100).toFixed(1) + '%</td></tr>';
+    }
+    $('#oddsTable').innerHTML = html;
+  })();
+
   /* ---------- 測驗 ---------- */
   var QUIZ_KEY = 'poker.nash_quiz';
   function quizScore() {

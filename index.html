@@ -18,7 +18,7 @@
   <button class="tab-btn active" data-tab="tracker">記帳</button>
   <button class="tab-btn" data-tab="equity">現金局 EV</button>
   <button class="tab-btn" data-tab="icm">錦標賽 ICM</button>
-  <button class="tab-btn" data-tab="nash">Push/Fold</button>
+  <button class="tab-btn" data-tab="nash">圖表</button>
 </nav>
 
 <main>
@@ -278,6 +278,28 @@
     </div>
     <p class="hint" id="nashRangeTxt"></p>
     <div class="nash-grid-wrap"><div id="nashGrid" class="nash-grid"></div></div>
+  </div>
+
+  <div class="card">
+    <h2>6-max 開牌 range（RFI）</h2>
+    <p class="hint">100bb 現金局／深籌碼 MTT 的標準 raise-first-in 建議 range（無人入池時的開牌手牌）。</p>
+    <div class="btn-row" id="rfiPosRow">
+      <button class="btn pos-btn active-role" data-pos="utg">UTG</button>
+      <button class="btn pos-btn" data-pos="hj">HJ</button>
+      <button class="btn pos-btn" data-pos="co">CO</button>
+      <button class="btn pos-btn" data-pos="btn">BTN</button>
+      <button class="btn pos-btn" data-pos="sb">SB</button>
+    </div>
+    <p class="hint" id="rfiTxt"></p>
+    <div class="nash-grid-wrap"><div id="rfiGrid" class="nash-grid"></div></div>
+  </div>
+
+  <div class="card">
+    <h2>Outs / 賠率速查</h2>
+    <p class="hint">「4-2 法則」：翻牌後兩張約 outs×4%，只剩一張約 outs×2%。下表為精確值。</p>
+    <div class="stats-table-wrap">
+      <table class="stats-table" id="oddsTable"></table>
+    </div>
   </div>
 
   <div class="card">

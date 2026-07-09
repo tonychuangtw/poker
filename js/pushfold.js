@@ -270,9 +270,41 @@
     };
   }
 
+  /* ---------- Range 記號展開："77+"、"A9s+"、"KQo"、"T9s" → 類別 index 陣列 ---------- */
+  function rangeFromNotation(str) {
+    var out = {}, parts = String(str).trim().split(/[\s,]+/);
+    parts.forEach(function (tok) {
+      if (!tok) return;
+      var m = /^([2-9TJQKA])([2-9TJQKA])(s|o)?(\+)?$/i.exec(tok);
+      if (!m) throw new Error('range 記號錯誤：' + tok);
+      var r1 = RANK_CHARS.indexOf(m[1].toUpperCase());
+      var r2 = RANK_CHARS.indexOf(m[2].toUpperCase());
+      var suited = m[3] ? m[3].toLowerCase() === 's' : null;
+      var plus = !!m[4];
+      if (r1 === r2) { // 對子
+        var top = plus ? 0 : r1;
+        for (var p = top; p <= r1; p++) out[p * 13 + p] = true;
+        return;
+      }
+      if (suited === null) throw new Error('非對子需註明 s/o：' + tok);
+      if (r1 > r2) { var tmp = r1; r1 = r2; r2 = tmp; } // r1 = 高牌
+      var lo = plus ? r1 + 1 : r2; // "+" = kicker 從 r2 升到 r1 下一張
+      for (var k = lo; k <= r2; k++) {
+        out[suited ? r1 * 13 + k : k * 13 + r1] = true;
+      }
+    });
+    return Object.keys(out).map(Number).sort(function (a, b) { return a - b; });
+  }
+
+  function rangeComboTotal(classes) {
+    return classes.reduce(function (s, i) { return s + comboCount(i); }, 0);
+  }
+
   var PushFold = {
     classLabel: classLabel,
     rangeVsRange: rangeVsRange,
+    rangeFromNotation: rangeFromNotation,
+    rangeComboTotal: rangeComboTotal,
     comboCount: comboCount,
     classIndexFromCards: classIndexFromCards,
     expandCombos: expandCombos,

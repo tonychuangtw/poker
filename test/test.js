@@ -307,6 +307,35 @@ var threw = false;
 try { PushFold.rangeVsRange(0, 50); } catch (e) { threw = true; }
 assert(threw, 'rangeVsRange rejects 0%');
 
+// ---------- 5c. Range 記號展開 ----------
+console.log('--- Range notation ---');
+
+function labels(n) { return PushFold.rangeFromNotation(n).map(PushFold.classLabel).join(' '); }
+assert(labels('77+') === 'AA KK QQ JJ TT 99 88 77', '77+ expands to pairs 77-AA');
+assert(labels('A9s+') === 'AKs AQs AJs ATs A9s', 'A9s+ expands kicker up');
+assert(labels('KQo') === 'KQo', 'exact offsuit combo');
+assert(PushFold.rangeComboTotal(PushFold.rangeFromNotation('22+')) === 78, '13 pairs = 78 combos');
+assert(PushFold.rangeComboTotal(PushFold.rangeFromNotation('AKs AKo AA KK')) === 4 + 12 + 6 + 6,
+  'mixed notation combo total');
+
+// 位置 range 單調變寬（UTG < HJ < CO < BTN）
+var RFI = {
+  utg: '66+ ATs+ KTs+ QTs+ JTs T9s 98s 87s 76s 65s AJo+ KQo',
+  hj: '44+ A9s+ A5s A4s KTs+ QTs+ J9s+ T9s 98s 87s 76s 65s ATo+ KJo+ QJo',
+  co: '22+ A2s+ K9s+ Q9s+ J9s+ T8s+ 97s+ 86s+ 75s+ 65s 54s A9o+ KTo+ QTo+ JTo',
+  btn: '22+ A2s+ K2s+ Q5s+ J7s+ T7s+ 96s+ 85s+ 74s+ 64s+ 53s+ 43s A2o+ K9o+ Q9o+ J9o+ T9o 98o'
+};
+var wUtg = PushFold.rangeComboTotal(PushFold.rangeFromNotation(RFI.utg));
+var wHj = PushFold.rangeComboTotal(PushFold.rangeFromNotation(RFI.hj));
+var wCo = PushFold.rangeComboTotal(PushFold.rangeFromNotation(RFI.co));
+var wBtn = PushFold.rangeComboTotal(PushFold.rangeFromNotation(RFI.btn));
+assert(wUtg < wHj && wHj < wCo && wCo < wBtn,
+  'RFI widens by position: ' + [wUtg, wHj, wCo, wBtn].join(' < '));
+
+var badTok = false;
+try { PushFold.rangeFromNotation('AK'); } catch (e) { badTok = true; }
+assert(badTok, 'non-pair without s/o rejected');
+
 // ---------- 6. Nash HU push/fold ----------
 console.log('--- Nash HU push/fold ---');
 var Nash = require('../js/nash.js');
