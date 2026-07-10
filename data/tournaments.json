@@ -1,7 +1,29 @@
 {
-  "updated": "2026-07-09",
+  "updated": "2026-07-10",
   "note": "每日自動更新（來源：各巡迴賽官網與撲克媒體公開行程），區間為即日起約 4 個月",
   "events": [
+    {
+      "series": "WSOP 2026 主賽事",
+      "region": "北美",
+      "country": "美國",
+      "city": "拉斯維加斯",
+      "venue": "Horseshoe Las Vegas／Paris Las Vegas",
+      "start": "2026-07-02",
+      "end": "2026-08-05",
+      "note": "主賽事 7/2 起開打，決賽桌延至 8/3–8/5 於 Horseshoe 舉行並於 ESPN 黃金時段播出（20 天延播新賽制）",
+      "url": "https://www.pokernews.com/tours/wsop/2026-wsop/schedule.htm"
+    },
+    {
+      "series": "RDPT Plus Jeju Summer 2026",
+      "region": "亞洲",
+      "country": "韓國",
+      "city": "濟州",
+      "venue": "LES A Casino（Jeju Shinhwa World）",
+      "start": "2026-07-08",
+      "end": "2026-07-19",
+      "note": "Red Dragon Poker Tour 濟州夏季站，共 92 場賽事，主賽事保證獎金約 KRW 18 億",
+      "url": "https://somuchpoker.com/poker-guides/venue/les-a-casino"
+    },
     {
       "series": "Taiwan Millions Tournament (TMT) 20",
       "region": "亞洲",
@@ -10,7 +32,7 @@
       "venue": "CTP Asia Poker Arena",
       "start": "2026-07-08",
       "end": "2026-08-03",
-      "note": "CTP 主辦台灣撲克盛事，保證獎金約 410 萬美元，賽事已開打",
+      "note": "CTP 主辦台灣撲克盛事，保證獎金約 410 萬美元，雙 Main Event 賽制，賽事已開打",
       "url": "https://somuchpoker.com/events-calendar/tmt/2026/taiwan-millions-tournament-tmt-20"
     },
     {
@@ -47,6 +69,17 @@
       "url": "https://www.wsop.com/news/wsop-circuit-announces-2026-season-with-shift-to-calendar-year-format/"
     },
     {
+      "series": "K Poker Cup × King Poker Cup 2026",
+      "region": "亞洲",
+      "country": "韓國",
+      "city": "濟州",
+      "venue": "LES A Casino（Jeju Shinhwa World）",
+      "start": "2026-07-25",
+      "end": "2026-08-10",
+      "note": "濟州暑期系列，K Poker Cup（約 7/25–8/4）銜接高額買入 King Poker Cup（約 8/1–8/10），共約 86 場賽事，總保證獎金約 KRW 20 億",
+      "url": "https://www.pokernews.com/news/2026/05/k-poker-cup-king-poker-cup-jeju-2026-schedule-51287.htm"
+    },
+    {
       "series": "APPT Manila 2026",
       "region": "亞洲",
       "country": "菲律賓",
@@ -69,26 +102,15 @@
       "url": "https://www.wsop.com/news/wsop-circuit-announces-2026-season-with-shift-to-calendar-year-format/"
     },
     {
-      "series": "WSOP 2026 主賽事",
-      "region": "北美",
-      "country": "美國",
-      "city": "拉斯維加斯",
-      "venue": "Horseshoe Las Vegas／Paris Las Vegas",
-      "start": "2026-07-02",
-      "end": "2026-08-05",
-      "note": "主賽事 7/2 起開打，決賽桌延至 8/3–8/5 於 Horseshoe 舉行並於 ESPN 黃金時段播出（20 天延播新賽制）",
-      "url": "https://www.pokernews.com/tours/wsop/2026-wsop/schedule.htm"
-    },
-    {
-      "series": "K Poker Cup × King Poker Cup 2026",
+      "series": "APC Taipei III 2026",
       "region": "亞洲",
-      "country": "韓國",
-      "city": "濟州",
-      "venue": "LES A Casino（Jeju Shinhwa World）",
-      "start": "2026-07-25",
+      "country": "台灣",
+      "city": "台北",
+      "venue": "CTP Asia Poker Arena",
+      "start": "2026-08-05",
       "end": "2026-08-10",
-      "note": "濟州暑期系列",
-      "url": "https://somuchpoker.com/poker-guides/venue/les-a-casino"
+      "note": "Asia Poker Championship 台北站第三屆",
+      "url": "https://somuchpoker.com/events-calendar/apc/2026/apc-taipei-iii-2026"
     },
     {
       "series": "APT Incheon 2026",
@@ -113,6 +135,17 @@
       "url": "https://www.worldpokertour.com/event/schedule"
     },
     {
+      "series": "WPT Cyprus Championship",
+      "region": "歐洲",
+      "country": "賽普勒斯（北賽普勒斯）",
+      "city": "凱里尼亞",
+      "venue": "Chamada Prestige Hotel & Casino",
+      "start": "2026-08-12",
+      "end": "2026-08-24",
+      "note": "總決賽約 8/19–8/24",
+      "url": "https://www.pokernews.com/"
+    },
+    {
       "series": "EPT Barcelona 2026",
       "region": "歐洲",
       "country": "西班牙",
@@ -133,6 +166,17 @@
       "end": "2026-08-31",
       "note": "共 104 場賽事，總保證獎金約新台幣 3,900 萬元",
       "url": "https://pokercalendar.asia/en/pokertournaments/players-series-championship-iv-taipei-2026/"
+    },
+    {
+      "series": "WSOP Super Circuit Canada",
+      "region": "北美",
+      "country": "加拿大",
+      "city": "卡納瓦克（魁北克）",
+      "venue": "Playground Poker Club",
+      "start": "2026-08-24",
+      "end": "2026-09-09",
+      "note": "加拿大暨北美首個 WSOP Super Circuit，主賽事保證獎金 C$10,000,000，共發出 18 條金手鏈",
+      "url": "https://www.wsop.com/"
     },
     {
       "series": "WSOP Circuit Mexico",
@@ -175,8 +219,19 @@
       "venue": "CTP Asia Poker Arena",
       "start": "2026-09-03",
       "end": "2026-09-14",
-      "note": "",
+      "note": "2026「馬年」主題系列最終站",
       "url": "https://somuchpoker.com/poker-calendar/2026"
+    },
+    {
+      "series": "Triton Super High Roller Series Jeju II 2026",
+      "region": "亞洲",
+      "country": "韓國",
+      "city": "濟州",
+      "venue": "LES A Casino（Jeju Shinhwa World）",
+      "start": "2026-09-04",
+      "end": "2026-09-21",
+      "note": "頂級超高額買入系列（歷史買入約 $20,000–$150,000），結束日期各方報導不一（09/21 或 09/26），以最先official報導為準",
+      "url": "https://www.hochgepokert.com/2026/07/08/drei-triton-events-stehen-in-der-zweiten-haelfte-2026-an/"
     },
     {
       "series": "WPT Australia",
@@ -190,15 +245,26 @@
       "url": "https://www.worldpokertour.com/event/schedule"
     },
     {
+      "series": "GOP Taipei 2026 II「The Trial of Wisdom」",
+      "region": "亞洲",
+      "country": "台灣",
+      "city": "台北",
+      "venue": "CTP Asia Poker Arena",
+      "start": "2026-09-18",
+      "end": "2026-09-27",
+      "note": "Gods of Poker 台北站，細節尚未完全公布",
+      "url": "https://pokercalendar.asia/en/pokertournaments/the-trial-of-wisdom-gop-taipei-2026-ii/"
+    },
+    {
       "series": "APT Jeju 2026",
       "region": "亞洲",
       "country": "韓國",
       "city": "濟州",
-      "venue": "Jeju Shinhwa World（LES A Casino）",
+      "venue": "LES A Casino（Jeju Shinhwa World）",
       "start": "2026-09-25",
-      "end": "2026-10-04",
-      "note": "Asian Poker Tour 20 週年",
-      "url": "https://www.theasianpokertour.com/news/apt-2026-schedule"
+      "end": "2026-10-07",
+      "note": "Asian Poker Tour 20 週年，136 場賽事，較原定 10/4 結束延長 3 天，總保證獎金約 KRW 49 億",
+      "url": "https://www.theasianpokertour.com/series/apt-jeju-south-korea-2026/events"
     },
     {
       "series": "WSOP Circuit Malta",
@@ -210,6 +276,28 @@
       "end": "2026-10-05",
       "note": "WSOP Circuit 2026 歐洲站之一",
       "url": "https://www.wsop.com/news/wsop-circuit-announces-2026-season-with-shift-to-calendar-year-format/"
+    },
+    {
+      "series": "Harbour Poker Cup II 2026",
+      "region": "亞洲",
+      "country": "台灣",
+      "city": "台北",
+      "venue": "CTP Asia Poker Arena",
+      "start": "2026-09-30",
+      "end": "2026-10-04",
+      "note": "僅單一來源彙整資料，日期待進一步官方確認",
+      "url": "https://somuchpoker.com/poker-calendar/2026"
+    },
+    {
+      "series": "WPT Prime Cyprus Championship",
+      "region": "歐洲",
+      "country": "賽普勒斯（北賽普勒斯）",
+      "city": "凱里尼亞",
+      "venue": "Chamada Prestige Hotel & Casino",
+      "start": "2026-10-07",
+      "end": "2026-10-19",
+      "note": "原訂 3 月因故延期至此，總決賽約 10/15–10/19",
+      "url": "https://www.worldpokertour.com/event/schedule"
     },
     {
       "series": "APPT Manila Championship 2026",
@@ -230,8 +318,8 @@
       "venue": "CTP Asia Poker Arena",
       "start": "2026-10-16",
       "end": "2026-10-26",
-      "note": "",
-      "url": "https://somuchpoker.com/poker-calendar/2026"
+      "note": "主賽事買入約新台幣 30,000 元，保證獎金新台幣 3,000 萬元以上",
+      "url": "https://somuchpoker.com/events-calendar/tour/taiwan-millions-tournament"
     },
     {
       "series": "WSOP Circuit Madrid",
@@ -245,6 +333,28 @@
       "url": "https://www.wsop.com/news/wsop-circuit-announces-2026-season-with-shift-to-calendar-year-format/"
     },
     {
+      "series": "Triton One Northern Cyprus 2026",
+      "region": "歐洲",
+      "country": "賽普勒斯（北賽普勒斯）",
+      "city": "凱里尼亞",
+      "venue": "Merit Royal Diamond Hotel & Casino",
+      "start": "2026-11-04",
+      "end": "2026-11-15",
+      "note": "賽程細節尚待公布，官方將接續舉辦 Triton SHRS North Cyprus（約 11/15–11/28）",
+      "url": "https://www.hochgepokert.com/2026/07/08/drei-triton-events-stehen-in-der-zweiten-haelfte-2026-an/"
+    },
+    {
+      "series": "WSOP Circuit Belgium",
+      "region": "歐洲",
+      "country": "比利時",
+      "city": "米德爾克爾克",
+      "venue": "Casino Middelkerke Betfirst",
+      "start": "2026-11-06",
+      "end": "2026-11-15",
+      "note": "WSOP Circuit 2026 歐洲站之一",
+      "url": "https://www.wsop.com/news/wsop-circuit-announces-2026-season-with-shift-to-calendar-year-format/"
+    },
+    {
       "series": "Triton Poker Series",
       "region": "亞洲",
       "country": "待公布",
@@ -252,7 +362,7 @@
       "venue": "",
       "start": "",
       "end": "",
-      "note": "日期未定：2026 賽季目前僅公布濟州（3 月）與蒙特內哥羅（5 月）站，官方預告稍後將公布更多場次",
+      "note": "日期未定：其餘 2026 賽季場次尚未公布（濟州 9 月、蒙特內哥羅 5 月、北賽普勒斯 11 月站已個別列出），官方預告稍後將公布更多場次",
       "url": "https://triton-series.com/"
     }
   ]
