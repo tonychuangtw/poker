@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-10",
+  "updated": "2026-07-11",
   "note": "每日自動更新（來源：各巡迴賽官網與撲克媒體公開行程），區間為即日起約 4 個月",
   "events": [
     {
@@ -36,26 +36,26 @@
       "url": "https://somuchpoker.com/events-calendar/tmt/2026/taiwan-millions-tournament-tmt-20"
     },
     {
-      "series": "British Poker Series",
+      "series": "British Poker Series (BPS)",
       "region": "歐洲",
       "country": "英國",
       "city": "倫敦",
-      "venue": "Grosvenor",
-      "start": "2026-07-15",
-      "end": "",
-      "note": "",
-      "url": "https://maineventtravel.com/tours"
+      "venue": "Genting Casino Stratford",
+      "start": "2026-07-14",
+      "end": "2026-10-11",
+      "note": "全年多個分站：BPS200（7/14–19）、BPS Carnival（8/12–23）、BPS200（9/8–13）、BPS Championship（9/30–10/11）",
+      "url": "https://www.britishpokerseries.com/"
     },
     {
       "series": "Grosvenor Goliath",
       "region": "歐洲",
       "country": "英國",
       "city": "考文垂",
-      "venue": "Grosvenor Casino Coventry",
+      "venue": "Grosvenor Casino Coventry（Ricoh Arena）",
       "start": "2026-07-23",
-      "end": "",
-      "note": "全球最大現場賽事之一（低買入巨型 field）",
-      "url": "https://maineventtravel.com/tours"
+      "end": "2026-08-02",
+      "note": "全球最大現場賽事之一，買入 £200，保證獎金約 £200 萬，共 25 場賽事、9 個起始梯次",
+      "url": "https://www.pokernews.com/news/2026/04/grosvenor-poker-goliath-2026-schedule-dates-prize-pool-51057.htm"
     },
     {
       "series": "WSOP Circuit Estonia",
@@ -77,7 +77,7 @@
       "start": "2026-07-25",
       "end": "2026-08-10",
       "note": "濟州暑期系列，K Poker Cup（約 7/25–8/4）銜接高額買入 King Poker Cup（約 8/1–8/10），共約 86 場賽事，總保證獎金約 KRW 20 億",
-      "url": "https://www.pokernews.com/news/2026/05/k-poker-cup-king-poker-cup-jeju-2026-schedule-51287.htm"
+      "url": "https://www.pokernews.com/news/2026/06/k-poker-cup-king-poker-cup-new-details-jeju-festival-51466.htm"
     },
     {
       "series": "APPT Manila 2026",
@@ -98,7 +98,7 @@
       "venue": "Card Casino",
       "start": "2026-07-31",
       "end": "2026-08-11",
-      "note": "WSOP Circuit 2026 歐洲站之一",
+      "note": "WSOP Circuit 2026 歐洲站之一，€280 萬保證獎金，共 12 場金手鏈賽",
       "url": "https://www.wsop.com/news/wsop-circuit-announces-2026-season-with-shift-to-calendar-year-format/"
     },
     {
@@ -220,7 +220,7 @@
       "start": "2026-09-03",
       "end": "2026-09-14",
       "note": "2026「馬年」主題系列最終站",
-      "url": "https://somuchpoker.com/poker-calendar/2026"
+      "url": "https://somuchpoker.com/events-calendar/zsop/2026/zsop-the-final-horse-2026"
     },
     {
       "series": "Triton Super High Roller Series Jeju II 2026",
@@ -252,7 +252,7 @@
       "venue": "CTP Asia Poker Arena",
       "start": "2026-09-18",
       "end": "2026-09-27",
-      "note": "Gods of Poker 台北站，細節尚未完全公布",
+      "note": "Gods of Poker 台北站，2026 年 Asia 巡迴第二站（首站為 1 月「The Titan Assembly」）",
       "url": "https://pokercalendar.asia/en/pokertournaments/the-trial-of-wisdom-gop-taipei-2026-ii/"
     },
     {
@@ -322,6 +322,17 @@
       "url": "https://somuchpoker.com/events-calendar/tour/taiwan-millions-tournament"
     },
     {
+      "series": "WPT Bay 101 Shooting Star",
+      "region": "北美",
+      "country": "美國",
+      "city": "聖荷西",
+      "venue": "Bay 101 Casino",
+      "start": "2026-10-17",
+      "end": "2026-10-31",
+      "note": "WPT 經典站，Championship Event 買入 $5,300，約 10/25–10/29 進行，決賽桌後續於拉斯維加斯進行",
+      "url": "https://www.pokernews.com/news/2025/09/wpt-bay-101-shooting-star-49736.htm"
+    },
+    {
       "series": "WSOP Circuit Madrid",
       "region": "歐洲",
       "country": "西班牙",
@@ -340,8 +351,8 @@
       "venue": "Merit Royal Diamond Hotel & Casino",
       "start": "2026-11-04",
       "end": "2026-11-15",
-      "note": "賽程細節尚待公布，官方將接續舉辦 Triton SHRS North Cyprus（約 11/15–11/28）",
-      "url": "https://www.hochgepokert.com/2026/07/08/drei-triton-events-stehen-in-der-zweiten-haelfte-2026-an/"
+      "note": "Triton One（較低買入姊妹賽）北賽普勒斯站",
+      "url": "https://www.pokernews.com/tours/triton/triton-one-northern-cyprus-69167/"
     },
     {
       "series": "WSOP Circuit Belgium",
@@ -362,7 +373,7 @@
       "venue": "",
       "start": "",
       "end": "",
-      "note": "日期未定：其餘 2026 賽季場次尚未公布（濟州 9 月、蒙特內哥羅 5 月、北賽普勒斯 11 月站已個別列出），官方預告稍後將公布更多場次",
+      "note": "日期未定：其餘 2026 賽季場次尚未公布（濟州 9 月、北賽普勒斯 11 月站已個別列出），官方預告稍後將公布更多場次",
       "url": "https://triton-series.com/"
     }
   ]
