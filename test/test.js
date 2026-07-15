@@ -380,6 +380,43 @@ console.log('  5bb push ' + n5.pushPct.toFixed(1) + '% / call ' + n5.callPct.toF
   '%; 10bb ' + n10.pushPct.toFixed(1) + '/' + n10.callPct.toFixed(1) +
   '; 20bb ' + n20.pushPct.toFixed(1) + '/' + n20.callPct.toFixed(1));
 
+// ---------- 6b. Range vs 手牌 ----------
+console.log('--- Equity vs combos (range vs hand) ---');
+
+function combosOf(notation) {
+  var out = [];
+  PushFold.rangeFromNotation(notation).forEach(function (ci) {
+    PushFold.expandCombos(ci).forEach(function (vc) { out.push(vc); });
+  });
+  return out;
+}
+
+// AA vs {KK} 翻前 MC ~81%
+var rvh1 = EquityLib.computeEquityVsCombos(cards('As Ah'), combosOf('KK'), [], 40000);
+assert(rvh1.method === 'montecarlo', 'preflop vs combos uses MC');
+assert(Math.abs(rvh1.hero - 0.815) < 0.03, 'AA vs KK range ~81.5% (got ' + (rvh1.hero * 100).toFixed(1) + ')');
+assert(rvh1.combos === 6, 'KK has 6 combos vs AA (no blockers)');
+
+// blocker：hero KsKh 讓 KK 只剩 1 combo
+var rvh2 = EquityLib.computeEquityVsCombos(cards('Ks Kh'), combosOf('KK'), [], 5000);
+assert(rvh2.combos === 1, 'KK vs KK hero blocks to 1 combo');
+assert(Math.abs(rvh2.hero - 0.5) < 0.03, 'KK vs KK mirror ~50%');
+
+// 全被 block → throw
+var threw = false;
+try { EquityLib.computeEquityVsCombos(cards('As Ah'), [[Evaluator.cardFromString('As'), Evaluator.cardFromString('Ad')]], []); }
+catch (e) { threw = true; }
+assert(threw, 'all-blocked range throws');
+
+// flop exact：AA vs QQ+/AK（少 combo 時窮舉），AA 應大幅領先
+var rvh3 = EquityLib.computeEquityVsCombos(cards('As Ah'), combosOf('QQ+ AKs AKo'), cards('2c 7d 9h'));
+assert(rvh3.method === 'exact', 'flop small range uses exact enumeration');
+assert(rvh3.hero > 0.75, 'AA crushes QQ+/AK on dry flop (got ' + (rvh3.hero * 100).toFixed(1) + ')');
+
+// river exact 單一 combo：nuts vs air = 100%
+var rvh4 = EquityLib.computeEquityVsCombos(cards('As Ks'), combosOf('32o'), cards('Qs Js Ts 2d 7h'));
+assert(rvh4.method === 'exact' && rvh4.hero === 1, 'royal flush vs 32o on river = 100%');
+
 // ---------- 7. 賽事資料 ----------
 console.log('--- Tournaments data ---');
 var tourneys = JSON.parse(require('fs').readFileSync(__dirname + '/../data/tournaments.json', 'utf8'));

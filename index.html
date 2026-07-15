@@ -55,10 +55,13 @@
         <label>時數（選填，算時薪用）
           <input type="number" id="fHours" inputmode="decimal" step="any" min="0" placeholder="0">
         </label>
-        <label>備註
-          <input type="text" id="fNote" placeholder="選填">
+        <label>大盲（選填，現金局算 bb 統計）
+          <input type="number" id="fBB" inputmode="decimal" step="any" min="0" placeholder="0">
         </label>
       </div>
+      <label>備註
+        <input type="text" id="fNote" placeholder="選填">
+      </label>
       <button type="submit" class="btn primary full">新增</button>
     </form>
   </div>
@@ -164,6 +167,26 @@
       </label>
     </div>
     <div class="ev-result" id="evResult">先計算勝率，再輸入底池與跟注金額。</div>
+  </div>
+
+  <div class="card">
+    <h2>Range vs 手牌</h2>
+    <p class="hint">用上方選好的 Hero 手牌與公牌，對上對手的整個 range（含 blocker 效應）。
+      range 可用記號（例：22+ ATs+ KQo）或「前 X%」。</p>
+    <label>對手 range 記號（留空則用前 X%）
+      <input type="text" id="rvhNotation" placeholder="例：22+ A9s+ KTs+ AJo+ KQo" autocapitalize="off" autocomplete="off">
+    </label>
+    <label>或 前 X% 手牌
+      <input type="number" id="rvhPct" inputmode="decimal" step="any" min="0.1" max="100" value="20">
+    </label>
+    <button class="btn primary full" id="btnCalcRvh">計算 vs range 勝率</button>
+    <div id="rvhResult" hidden>
+      <div class="eqp-row">
+        <div class="eqp-head"><span class="pos" id="rvhHeroTxt"></span><span id="rvhRangeTxt"></span></div>
+        <div class="equity-bar eqp-bar"><div class="eq-hero" id="rvhBarHero"></div><div class="eq-villain" id="rvhBarRange"></div></div>
+      </div>
+      <p class="hint" id="rvhDetail"></p>
+    </div>
   </div>
 
   <div class="card">
@@ -304,8 +327,13 @@
   </div>
 
   <div class="card">
-    <h2>Push/Fold 測驗</h2>
-    <p class="hint">隨機給你籌碼深度與手牌，判斷依 Nash 均衡該推還是該棄。</p>
+    <h2>訓練測驗</h2>
+    <p class="hint">Push/Fold：隨機籌碼深度與手牌，依 Nash 均衡判斷推或棄。
+      開牌 RFI：隨機位置與手牌，依 6-max 標準開牌 range 判斷加注或蓋牌。</p>
+    <div class="btn-row">
+      <button class="btn active-role" id="btnQuizModePf">Push/Fold</button>
+      <button class="btn" id="btnQuizModeRfi">開牌 RFI</button>
+    </div>
     <div id="quizIdle">
       <button class="btn primary full big" id="btnQuizStart">開始測驗</button>
       <p class="hint" id="quizScoreTxt"></p>

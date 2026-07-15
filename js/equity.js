@@ -186,7 +186,60 @@
     };
   }
 
-  var EquityLib = { computeEquity: computeEquity, computeEquityMulti: computeEquityMulti, callEV: callEV, buildDeck: buildDeck };
+  /**
+   * Hero 手牌 vs 對手 range（combo 陣列）。
+   * 排除與 hero/board 衝突的 combo；exact（need<=1，或 need==2 且 combo<=200）否則 MC。
+   * @param {number[]} hero    2 張手牌
+   * @param {number[][]} combos 對手 combo 陣列（每個 2 張）
+   * @param {number[]} board   0/3/4/5 張公牌
+   * @param {number} [mcIters]
+   * @returns {{hero:number, tie:number, combos:number, trials:number, method:string}}
+   */
+  function computeEquityVsCombos(hero, combos, board, mcIters) {
+    board = board || [];
+    mcIters = mcIters || 20000;
+    var used = {};
+    hero.concat(board).forEach(function (c) {
+      if (used[c]) throw new Error('duplicate card: ' + Evaluator.cardToString(c));
+      used[c] = true;
+    });
+    var valid = combos.filter(function (vc) { return !used[vc[0]] && !used[vc[1]]; });
+    if (!valid.length) throw new Error('range 內沒有可用 combo（都被 blocker 排除）');
+    var need = 5 - board.length;
+    if (need < 0) throw new Error('board too long');
+
+    var eqSum = 0, tieSum = 0, trials = 0;
+    if (need <= 1 || (need === 2 && valid.length <= 200)) {
+      valid.forEach(function (vc) {
+        var r = computeEquity(hero, vc, board);
+        eqSum += r.hero; tieSum += r.tie; trials += r.trials;
+      });
+      return { hero: eqSum / valid.length, tie: tieSum / valid.length,
+               combos: valid.length, trials: trials, method: 'exact' };
+    }
+
+    var deck = buildDeck(hero.concat(board));
+    var n = deck.length;
+    var drawn = [];
+    for (var t = 0; t < mcIters; t++) {
+      var vc = valid[Math.floor(Math.random() * valid.length)];
+      drawn.length = 0;
+      while (drawn.length < need) {
+        var c = deck[Math.floor(Math.random() * n)];
+        if (c === vc[0] || c === vc[1] || drawn.indexOf(c) !== -1) continue;
+        drawn.push(c);
+      }
+      var fullBoard = board.concat(drawn);
+      var cmp = showdown(hero, vc, fullBoard);
+      if (cmp > 0) eqSum += 1;
+      else if (cmp === 0) { eqSum += 0.5; tieSum += 1; }
+      trials++;
+    }
+    return { hero: eqSum / trials, tie: tieSum / trials,
+             combos: valid.length, trials: trials, method: 'montecarlo' };
+  }
+
+  var EquityLib = { computeEquity: computeEquity, computeEquityMulti: computeEquityMulti, computeEquityVsCombos: computeEquityVsCombos, callEV: callEV, buildDeck: buildDeck };
   if (typeof module !== 'undefined' && module.exports) module.exports = EquityLib;
   else global.EquityLib = EquityLib;
 })(typeof window !== 'undefined' ? window : this);
