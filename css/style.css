@@ -261,3 +261,16 @@ a.ev-name:hover { text-decoration: underline; }
 .sync-ui { position: absolute; top: 12px; right: 12px; display: flex; align-items: center; gap: 6px; }
 .sync-chip { font-weight: 700; border-radius: 50%; width: 34px; height: 34px; border: 1px solid rgba(128,128,128,0.4); background: transparent; cursor: pointer; }
 .sync-status { font-size: 0.75rem; opacity: 0.7; }
+
+/* ===== 月報長條圖 ===== */
+.bar-chart { margin-top: 10px; }
+.bar-row { display: flex; align-items: center; gap: 8px; margin: 5px 0; font-size: .8rem; }
+.bar-row .bar-label { width: 58px; flex-shrink: 0; color: var(--muted); }
+.bar-row .bar-track {
+  flex: 1; height: 14px; background: var(--bg3);
+  border-radius: 6px; overflow: hidden;
+}
+.bar-row .bar-fill { height: 100%; border-radius: 6px; transition: width .4s ease; }
+.bar-fill.bar-pos { background: var(--pos); }
+.bar-fill.bar-neg { background: var(--neg); }
+.bar-row .bar-value { flex-shrink: 0; min-width: 56px; text-align: right; }

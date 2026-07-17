@@ -51,6 +51,7 @@
       date: $('#fDate').value,
       type: $('#fType').value,
       venue: $('#fVenue').value.trim(),
+      tag: $('#fTag').value.trim(),
       buyin: parseFloat($('#fBuyin').value) || 0,
       cashout: parseFloat($('#fCashout').value) || 0,
       hours: parseFloat($('#fHours').value) || 0,
@@ -59,7 +60,8 @@
     };
     sessions.push(rec);
     saveSessions(sessions);
-    $('#fVenue').value = ''; $('#fBuyin').value = ''; $('#fCashout').value = '';
+    $('#fVenue').value = ''; $('#fTag').value = '';
+    $('#fBuyin').value = ''; $('#fCashout').value = '';
     $('#fHours').value = ''; $('#fBB').value = ''; $('#fNote').value = '';
     renderTracker();
   });
@@ -93,7 +95,8 @@
       badge.className = 'type-badge';
       badge.textContent = TYPE_NAMES[r.type] || r.type;
       title.appendChild(badge);
-      title.appendChild(document.createTextNode(r.date + (r.venue ? ' · ' + r.venue : '')));
+      title.appendChild(document.createTextNode(r.date + (r.venue ? ' · ' + r.venue : '') +
+        (r.tag ? ' · ＃' + r.tag : '')));
       var sub = document.createElement('div');
       sub.className = 'session-sub';
       sub.textContent = '買入 ' + fmtMoney(r.buyin) + ' → 兌現 ' + fmtMoney(r.cashout) +
@@ -238,6 +241,91 @@
     tbl.innerHTML = html;
   }
 
+  /* --- 標籤分析 --- */
+  function renderTagStats() {
+    var tbl = $('#tagStatsTable'), hint = $('#tagStatsHint');
+    if (!sessions.length) {
+      tbl.innerHTML = '';
+      hint.textContent = '新增紀錄後顯示。無標籤的紀錄以場地分組。';
+      return;
+    }
+    hint.textContent = '無標籤的舊紀錄以場地分組；依總盈虧排序。';
+    var groups = TrackerStats.tagStats(sessions);
+    var html = '<tr><th>標籤</th><th>場次</th><th>總盈虧</th><th>時薪</th></tr>';
+    groups.forEach(function (g) {
+      var plCls = g.pl > 0 ? 'pos' : g.pl < 0 ? 'neg' : 'muted';
+      html += '<tr><td>' + escapeHtml(g.tag) + '</td><td>' + g.n +
+        '</td><td class="' + plCls + '">' + fmtPL(g.pl) + '</td><td>' +
+        (g.hourly === null ? '—' : fmtPL(Math.round(g.hourly * 100) / 100) + ' /hr') +
+        '</td></tr>';
+    });
+    tbl.innerHTML = html;
+  }
+
+  /* --- 月報 --- */
+  function renderMonthly() {
+    var tbl = $('#monthlyTable'), chart = $('#monthlyChart'), hint = $('#monthlyHint');
+    chart.innerHTML = '';
+    if (!sessions.length) {
+      tbl.innerHTML = '';
+      hint.textContent = '新增紀錄後顯示每月盈虧。';
+      return;
+    }
+    hint.textContent = '';
+    var months = TrackerStats.monthlyStats(sessions);
+    var html = '<tr><th>月份</th><th>場次</th><th>盈虧</th><th>時數</th></tr>';
+    months.forEach(function (m) {
+      var plCls = m.pl > 0 ? 'pos' : m.pl < 0 ? 'neg' : 'muted';
+      html += '<tr><td>' + escapeHtml(m.month) + '</td><td>' + m.n +
+        '</td><td class="' + plCls + '">' + fmtPL(m.pl) + '</td><td>' +
+        (m.hours ? m.hours : '—') + '</td></tr>';
+    });
+    tbl.innerHTML = html;
+    // 純 DOM 長條圖
+    var maxAbs = months.reduce(function (a, m) { return Math.max(a, Math.abs(m.pl)); }, 0);
+    if (!(maxAbs > 0)) return;
+    months.forEach(function (m) {
+      var row = document.createElement('div');
+      row.className = 'bar-row';
+      var lab = document.createElement('span');
+      lab.className = 'bar-label';
+      lab.textContent = m.month;
+      var track = document.createElement('div');
+      track.className = 'bar-track';
+      var fill = document.createElement('div');
+      fill.className = 'bar-fill ' + (m.pl >= 0 ? 'bar-pos' : 'bar-neg');
+      fill.style.width = (Math.abs(m.pl) / maxAbs * 100).toFixed(1) + '%';
+      track.appendChild(fill);
+      var val = document.createElement('span');
+      val.className = 'bar-value ' + (m.pl > 0 ? 'pos' : m.pl < 0 ? 'neg' : 'muted');
+      val.textContent = fmtPL(m.pl);
+      row.appendChild(lab); row.appendChild(track); row.appendChild(val);
+      chart.appendChild(row);
+    });
+  }
+
+  /* --- 傾斜偵測 --- */
+  function renderTilt() {
+    var box = $('#tiltInsight');
+    var t = TrackerStats.tiltStats(sessions);
+    if (t.afterLossCount < 5) {
+      box.textContent = '樣本不足（連輸後的場次需 ≥ 5，目前 ' + t.afterLossCount +
+        '），累積更多紀錄後顯示分析。';
+      return;
+    }
+    var after = Math.round(t.afterLossAvg * 100) / 100;
+    var overall = Math.round(t.overallAvg * 100) / 100;
+    var msg = '輸錢場次後的平均盈虧 ' + fmtPL(after) + ' vs 整體平均 ' + fmtPL(overall) +
+      '（樣本 ' + t.afterLossCount + ' 場）';
+    if (t.afterLossAvg < t.overallAvg) {
+      msg += ' —— 連輸後表現明顯變差，注意傾斜（tilt）。';
+    } else {
+      msg += ' —— 未見明顯傾斜跡象。';
+    }
+    msg += ' 最長連敗：' + t.longestLossStreak + ' 場。';
+    box.textContent = msg;
+  }
+
   /* --- 手牌筆記 --- */
   var NOTES_KEY = 'poker.notes';
   function loadNotes() {
@@ -377,6 +465,9 @@
     renderList();
     renderStats();
     renderAdvStats();
+    renderTagStats();
+    renderMonthly();
+    renderTilt();
     drawChart();
   }
 
@@ -396,9 +487,9 @@
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
   $('#btnExportCsv').addEventListener('click', function () {
-    var rows = [['日期', '類型', '場地', '買入', '兌現', '盈虧', '時數', '大盲', '備註']];
+    var rows = [['日期', '類型', '場地', '標籤', '買入', '兌現', '盈虧', '時數', '大盲', '備註']];
     sessions.forEach(function (r) {
-      rows.push([r.date, TYPE_NAMES[r.type] || r.type, r.venue, r.buyin, r.cashout,
+      rows.push([r.date, TYPE_NAMES[r.type] || r.type, r.venue, r.tag || '', r.buyin, r.cashout,
         r.cashout - r.buyin, r.hours || '', r.bb || '', r.note]);
     });
     var csv = '\uFEFF' + rows.map(function (row) { return row.map(csvEscape).join(','); }).join('\r\n');
@@ -797,6 +888,76 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
     });
   }
+
+  /* ================= Tab 3c: Final Table 分錢 ================= */
+  var DEAL_MAX_PLAYERS = 9;
+  function addDealPlayerRow(name, stack, locked) {
+    if ($$('#dealPlayerRows .dyn-row').length >= DEAL_MAX_PLAYERS) {
+      alert('最多 ' + DEAL_MAX_PLAYERS + ' 位玩家');
+      return;
+    }
+    makeRow($('#dealPlayerRows'), {
+      inputs: [
+        { type: 'text', placeholder: '名字（選填）', cls: 'name-input', value: name },
+        { placeholder: '籌碼', cls: 'deal-stack', value: stack },
+        { placeholder: '已鎖定獎金', cls: 'deal-locked', value: locked }
+      ]
+    });
+  }
+  $('#btnAddDealPlayer').addEventListener('click', function () { addDealPlayerRow(); });
+  addDealPlayerRow('', 5000); addDealPlayerRow('', 3000); addDealPlayerRow('', 2000);
+
+  $('#btnCalcDeal').addEventListener('click', function () {
+    var pool = parseFloat($('#dealPool').value);
+    if (!(pool > 0)) { alert('請輸入剩餘獎池'); return; }
+    var payouts = readPayouts();
+    if (!payouts.length) { alert('請先在上方輸入獎金結構（ICM 分法需要比例）'); return; }
+    var players = [];
+    $$('#dealPlayerRows .dyn-row').forEach(function (row, i) {
+      var stack = parseFloat(row.querySelector('.deal-stack').value);
+      if (stack > 0) {
+        players.push({
+          name: row.querySelector('.name-input').value.trim() || ('玩家 ' + (i + 1)),
+          stack: stack,
+          locked: parseFloat(row.querySelector('.deal-locked').value) || 0
+        });
+      }
+    });
+    if (players.length < 2 || players.length > DEAL_MAX_PLAYERS) {
+      alert('請輸入 2–' + DEAL_MAX_PLAYERS + ' 位玩家籌碼');
+      return;
+    }
+    var stacks = players.map(function (p) { return p.stack; });
+    var locked = players.map(function (p) { return p.locked; });
+    var icmAmts, chopAmts;
+    try {
+      icmAmts = ICM.icmDeal(stacks, payouts, pool, locked);
+      chopAmts = ICM.chipChopDeal(stacks, pool, locked);
+    } catch (err) {
+      alert(err.message);
+      return;
+    }
+    var totalChips = stacks.reduce(function (a, b) { return a + b; }, 0);
+    var lockedSum = locked.reduce(function (a, b) { return a + b; }, 0);
+    var html = '<tr><th>玩家</th><th>籌碼%</th><th>ICM 分法</th><th>Chip-chop</th><th>差異</th></tr>';
+    players
+      .map(function (p, i) { return { p: p, icm: icmAmts[i], chop: chopAmts[i] }; })
+      .sort(function (a, b) { return b.p.stack - a.p.stack; })
+      .forEach(function (x) {
+        var diff = x.icm - x.chop;
+        var dCls = diff > 0.005 ? 'pos' : diff < -0.005 ? 'neg' : 'muted';
+        html += '<tr><td>' + escapeHtml(x.p.name) + '</td><td>' +
+          (x.p.stack / totalChips * 100).toFixed(1) + '</td><td>' +
+          fmtMoney(Math.round(x.icm * 100) / 100) + '</td><td>' +
+          fmtMoney(Math.round(x.chop * 100) / 100) + '</td><td class="' + dCls + '">' +
+          fmtPL(Math.round(diff * 100) / 100) + '</td></tr>';
+      });
+    html += '<tr><td><b>合計</b></td><td>100.0</td><td>' +
+      fmtMoney(Math.round((pool + lockedSum) * 100) / 100) + '</td><td>' +
+      fmtMoney(Math.round((pool + lockedSum) * 100) / 100) + '</td><td>—</td></tr>';
+    $('#dealTable').innerHTML = html;
+    $('#dealResultWrap').hidden = false;
+  });
 
   /* ================= Tab 3b: Push/Fold 決策 ================= */
   function refreshPfSelects() {

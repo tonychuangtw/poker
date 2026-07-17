@@ -7,6 +7,7 @@ var ASSETS = [
   './js/evaluator.js',
   './js/equity.js',
   './js/icm.js',
+  './js/tracker-stats.js',
   './js/preflop-table.js',
   './js/pushfold.js',
   './js/ranges.js',

@@ -41,9 +41,14 @@
           </select>
         </label>
       </div>
-      <label>場地
-        <input type="text" id="fVenue" placeholder="例：CTP、線上…">
-      </label>
+      <div class="grid-2">
+        <label>場地
+          <input type="text" id="fVenue" placeholder="例：CTP、線上…">
+        </label>
+        <label>標籤（系列，選填）
+          <input type="text" id="fTag" placeholder="例：WSOP、週五常規…">
+        </label>
+      </div>
       <div class="grid-2">
         <label>買入（含 rebuy/addon）
           <input type="number" id="fBuyin" inputmode="decimal" step="any" min="0" required placeholder="0">
@@ -85,6 +90,28 @@
       <table class="stats-table" id="advStatsTable"></table>
     </div>
     <p class="hint" id="advStatsHint"></p>
+  </div>
+
+  <div class="card">
+    <h2>標籤分析</h2>
+    <div class="stats-table-wrap">
+      <table class="stats-table" id="tagStatsTable"></table>
+    </div>
+    <p class="hint" id="tagStatsHint"></p>
+  </div>
+
+  <div class="card">
+    <h2>月報</h2>
+    <div class="stats-table-wrap">
+      <table class="stats-table" id="monthlyTable"></table>
+    </div>
+    <div id="monthlyChart" class="bar-chart"></div>
+    <p class="hint" id="monthlyHint"></p>
+  </div>
+
+  <div class="card">
+    <h2>傾斜偵測</h2>
+    <div class="hint" id="tiltInsight"></div>
   </div>
 
   <div class="card">
@@ -232,6 +259,21 @@
     <h2>ICM 結果</h2>
     <div class="stats-table-wrap">
       <table class="stats-table" id="icmTable"></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Final Table 分錢計算器</h2>
+    <p class="hint">ICM 分法：依上方「獎金結構」的比例算各玩家 equity，乘上剩餘獎池再加回已鎖定獎金。
+      Chip-chop：直接依籌碼比例分。剩餘獎池 = 已鎖定獎金之外、尚待分配的金額。玩家 2–9 位。</p>
+    <label>剩餘獎池
+      <input type="number" id="dealPool" inputmode="decimal" step="any" min="0" placeholder="0">
+    </label>
+    <div id="dealPlayerRows"></div>
+    <button class="btn full" id="btnAddDealPlayer">＋ 新增玩家</button>
+    <button class="btn primary full big" id="btnCalcDeal">計算分錢</button>
+    <div class="stats-table-wrap" id="dealResultWrap" hidden>
+      <table class="stats-table" id="dealTable"></table>
     </div>
   </div>
 
@@ -458,6 +500,7 @@
 <script src="js/evaluator.js"></script>
 <script src="js/equity.js"></script>
 <script src="js/icm.js"></script>
+<script src="js/tracker-stats.js"></script>
 <script src="js/preflop-table.js"></script>
 <script src="js/pushfold.js"></script>
 <script src="js/ranges.js"></script>
