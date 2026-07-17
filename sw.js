@@ -10,6 +10,7 @@ var ASSETS = [
   './js/preflop-table.js',
   './js/pushfold.js',
   './js/ranges.js',
+  './js/hands.js',
   './js/nash.js',
   './js/app.js',
   './manifest.json',

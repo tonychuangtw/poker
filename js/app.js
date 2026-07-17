@@ -1230,6 +1230,260 @@
       ' combo（平手依勝率折半計入）';
   });
 
+  /* ================= Tab 5b: 關鍵手牌複盤 ================= */
+  var HANDS_KEY = 'poker.hands';
+  var HANDS_CAP = 100;
+  function loadHands() {
+    try {
+      var arr = JSON.parse(localStorage.getItem(HANDS_KEY));
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
+  }
+  function saveHands(list) { localStorage.setItem(HANDS_KEY, JSON.stringify(list)); }
+  var handRecords = loadHands();
+
+  var HS_BOARD_LABEL = {
+    flop: '翻牌公牌（3 張，例：Qh 7d 2s）',
+    turn: '轉牌（第 4 張，例：9c）',
+    river: '河牌（第 5 張，例：2d）'
+  };
+  (function buildStreetBlocks() {
+    var box = $('#hStreets');
+    HANDS.STREETS.forEach(function (st) {
+      var div = document.createElement('div');
+      div.className = 'street-block';
+      div.dataset.street = st;
+      var html = '<h3>' + HANDS.STREET_NAMES[st] + '</h3>';
+      if (HS_BOARD_LABEL[st]) {
+        html += '<label>' + HS_BOARD_LABEL[st] +
+          '<input type="text" class="hs-board" autocapitalize="off" autocomplete="off"></label>';
+      }
+      html += '<div class="grid-3">' +
+        '<label>行動前底池(bb)<input type="number" class="hs-pot" inputmode="decimal" step="any" min="0"></label>' +
+        '<label>需跟注(bb)<input type="number" class="hs-call" inputmode="decimal" step="any" min="0" placeholder="0"></label>' +
+        '<label>我的行動<select class="hs-action"><option value="">（略過）</option>' +
+        '<option value="fold">蓋牌</option><option value="call">跟注</option>' +
+        '<option value="raise">加注</option><option value="allin">全下</option></select></label>' +
+        '</div>' +
+        '<label>對手估計 range（例：77+ A9s+ KQo）' +
+        '<input type="text" class="hs-range" autocapitalize="off" autocomplete="off"></label>';
+      div.innerHTML = html;
+      box.appendChild(div);
+    });
+  })();
+
+  // 讀取各街輸入；board 逐街累積（flop 3 張 + turn 1 張 + river 1 張）
+  function readStreetInputs() {
+    var out = [], boardSoFar = [];
+    HANDS.STREETS.forEach(function (st) {
+      var block = document.querySelector('#hStreets .street-block[data-street="' + st + '"]');
+      var boardInput = block.querySelector('.hs-board');
+      if (boardInput && boardInput.value.trim()) {
+        var need = st === 'flop' ? 3 : 1;
+        boardSoFar = boardSoFar.concat(HANDS.parseCards(boardInput.value, need));
+      }
+      var action = block.querySelector('.hs-action').value;
+      if (!action) return; // 該街略過
+      if (boardSoFar.length !== HANDS.BOARD_LEN[st]) {
+        throw new Error(HANDS.STREET_NAMES[st] + ' 決策需要 ' + HANDS.BOARD_LEN[st] +
+          ' 張公牌（目前 ' + boardSoFar.length + ' 張，前面街的公牌也要填）');
+      }
+      var pot = parseFloat(block.querySelector('.hs-pot').value);
+      var toCall = parseFloat(block.querySelector('.hs-call').value) || 0;
+      var range = block.querySelector('.hs-range').value.trim();
+      if (!(pot >= 0)) throw new Error(HANDS.STREET_NAMES[st] + '：請輸入行動前底池（bb）');
+      if (!range) throw new Error(HANDS.STREET_NAMES[st] + '：請輸入對手估計 range');
+      out.push({ street: st, board: boardSoFar.slice(), pot: pot, toCall: toCall,
+                 action: action, range: range });
+    });
+    return out;
+  }
+
+  $('#btnSaveHand').addEventListener('click', function () {
+    var heroCards;
+    try { heroCards = HANDS.parseCards($('#hHero').value, 2); }
+    catch (err) { alert('手牌錯誤：' + err.message); return; }
+    var streets;
+    try { streets = readStreetInputs(); }
+    catch (err) { alert(err.message); return; }
+    if (!streets.length) { alert('至少記錄一街的決策（選一個行動）'); return; }
+    var btn = $('#btnSaveHand');
+    btn.disabled = true;
+    btn.textContent = '分析中…';
+    setTimeout(function () {
+      try {
+        streets.forEach(function (s) {
+          s.analysis = HANDS.analyzeStreet({
+            street: s.street, heroCards: heroCards, board: s.board,
+            range: s.range, pot: s.pot, toCall: s.toCall,
+            action: s.action, mcIters: 20000
+          });
+          s.boardTxt = s.board.map(Evaluator.cardToString).join(' ');
+          delete s.board;
+        });
+        var rec = {
+          id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+          date: new Date().toISOString().slice(0, 10),
+          blinds: $('#hBlinds').value.trim(),
+          ante: parseFloat($('#hAnte').value) || 0,
+          stack: parseFloat($('#hStack').value) || 0,
+          pos: $('#hPos').value,
+          hero: heroCards.map(Evaluator.cardToString).join(' '),
+          result: $('#hResult').value === '' ? null : parseFloat($('#hResult').value),
+          note: $('#hNote').value.trim(),
+          streets: streets
+        };
+        handRecords.unshift(rec);
+        if (handRecords.length > HANDS_CAP) handRecords = handRecords.slice(0, HANDS_CAP);
+        saveHands(handRecords);
+        // 清空手牌相關輸入（保留盲注 / 籌碼 / 位置方便連續記錄）
+        $('#hHero').value = ''; $('#hResult').value = ''; $('#hNote').value = '';
+        $$('#hStreets .hs-board').forEach(function (el) { el.value = ''; });
+        $$('#hStreets .hs-pot').forEach(function (el) { el.value = ''; });
+        $$('#hStreets .hs-call').forEach(function (el) { el.value = ''; });
+        $$('#hStreets .hs-range').forEach(function (el) { el.value = ''; });
+        $$('#hStreets .hs-action').forEach(function (el) { el.value = ''; });
+        renderHands(rec.id);
+      } catch (err) {
+        alert('分析失敗：' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '儲存並分析';
+      }
+    }, 30);
+  });
+
+  function streetDetailHtml(st) {
+    var a = st.analysis;
+    var eqPct = (a.equity * 100).toFixed(1), needPct = (a.needed * 100).toFixed(1);
+    var evRounded = Math.round(a.evBB * 100) / 100;
+    var vCls = a.leak ? 'neg'
+      : (a.verdict === 'good_call' || a.verdict === 'good_fold' || a.verdict === 'raise_ahead')
+        ? 'pos' : 'muted';
+    var html = '<b>' + HANDS.STREET_NAMES[st.street] + '</b>' +
+      (st.boardTxt ? ' ｜ 公牌 ' + escapeHtml(st.boardTxt) : '') +
+      ' ｜ 底池 ' + st.pot + ' bb，需跟注 ' + st.toCall + ' bb，行動：' +
+      HANDS.ACTION_NAMES[st.action] + '<br>' +
+      '對手 range「' + escapeHtml(st.range) + '」：' + a.rangeClasses + ' 類 / ' +
+      a.combos + ' combo（' + (a.method === 'exact' ? '窮舉' : 'Monte Carlo') + '）<br>' +
+      '需要勝率 ' + needPct + '% vs 實際勝率 <b>' + eqPct + '%</b><br>';
+    if (st.action === 'call') {
+      html += '跟注 EV = ' + eqPct + '% × (' + st.pot + ' + ' + st.toCall + ') − ' + st.toCall +
+        ' = <b class="' + (a.evBB >= 0 ? 'pos' : 'neg') + '">' + fmtPL(evRounded) + ' bb</b><br>';
+    } else if (st.action === 'fold') {
+      html += '蓋牌 EV = 0 bb' +
+        (a.verdict === 'missed_call'
+          ? '（跟注本可 ' + fmtPL(Math.round(HANDS.callEVbb(a.equity, st.pot, st.toCall) * 100) / 100) + ' bb）'
+          : '') + '<br>';
+    } else {
+      html += '視同跟注 EV = ' + fmtPL(evRounded) + ' bb（簡化模型，未計 fold equity）<br>';
+    }
+    html += '<span class="' + vCls + '">' + HANDS.verdictText(a.verdict) + '</span>';
+    return html;
+  }
+
+  function renderLeaks() {
+    var s = HANDS.leakSummary(handRecords);
+    var tbl = $('#leakTable'), hint = $('#leakHint');
+    if (!s.decisions) {
+      tbl.innerHTML = '';
+      hint.textContent = '儲存手牌後，統計各街的 −EV 跟注與錯過的 +EV 跟注。';
+      return;
+    }
+    var html = '<tr><th>街</th><th>決策數</th><th>−EV 跟注</th><th>錯過 +EV</th></tr>';
+    HANDS.STREETS.forEach(function (st) {
+      var b = s.byStreet[st];
+      if (!b.decisions) return;
+      html += '<tr><td>' + HANDS.STREET_NAMES[st] + '</td><td>' + b.decisions +
+        '</td><td class="' + (b.badCalls ? 'neg' : 'muted') + '">' + b.badCalls +
+        '</td><td class="' + (b.missedCalls ? 'neg' : 'muted') + '">' + b.missedCalls + '</td></tr>';
+    });
+    html += '<tr><td><b>合計</b></td><td>' + s.decisions +
+      '</td><td class="' + (s.badCalls ? 'neg' : 'muted') + '">' + s.badCalls +
+      '</td><td class="' + (s.missedCalls ? 'neg' : 'muted') + '">' + s.missedCalls + '</td></tr>';
+    tbl.innerHTML = html;
+    var leaks = s.badCalls + s.missedCalls;
+    hint.textContent = leaks
+      ? '共 ' + leaks + ' 個 leak（跟注決策）— 點下方手牌看完整分析。加注 / 全下未計 fold equity，不列入 leak。'
+      : '目前跟注決策沒有 leak，繼續保持。';
+  }
+
+  function renderHandList(expandId) {
+    var ul = $('#handList');
+    ul.innerHTML = '';
+    if (!handRecords.length) {
+      ul.innerHTML = '<li class="empty-msg">尚無複盤紀錄</li>';
+      return;
+    }
+    handRecords.forEach(function (h) {
+      var li = document.createElement('li');
+      li.className = 'hand-item';
+      var head = document.createElement('div');
+      head.className = 'session-item';
+      var main = document.createElement('div');
+      main.className = 'session-main';
+      var title = document.createElement('div');
+      title.className = 'session-title';
+      var badge = document.createElement('span');
+      badge.className = 'type-badge';
+      badge.textContent = h.pos;
+      title.appendChild(badge);
+      title.appendChild(document.createTextNode(
+        h.date + ' · ' + h.hero + (h.blinds ? ' · ' + h.blinds : '')));
+      var sub = document.createElement('div');
+      sub.className = 'session-sub';
+      sub.textContent = (h.streets || []).map(function (st) {
+        return HANDS.STREET_NAMES[st.street] + HANDS.ACTION_NAMES[st.action] + '：' +
+          HANDS.verdictText(st.analysis.verdict);
+      }).join(' ｜ ');
+      main.appendChild(title);
+      main.appendChild(sub);
+      var pl = document.createElement('span');
+      pl.className = 'session-pl ' +
+        (h.result > 0 ? 'pos' : h.result < 0 ? 'neg' : 'muted');
+      pl.textContent = (h.result === null || h.result === undefined)
+        ? '—' : fmtPL(h.result) + ' bb';
+      var del = document.createElement('button');
+      del.className = 'del-btn';
+      del.textContent = '✕';
+      del.setAttribute('aria-label', '刪除手牌');
+      del.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (!confirm('刪除這手複盤紀錄？')) return;
+        handRecords = handRecords.filter(function (x) { return x.id !== h.id; });
+        saveHands(handRecords);
+        renderHands();
+      });
+      head.appendChild(main);
+      head.appendChild(pl);
+      head.appendChild(del);
+      var detail = document.createElement('div');
+      detail.className = 'hand-detail';
+      detail.hidden = h.id !== expandId;
+      var dHtml = '';
+      if (h.stack || h.ante) {
+        dHtml += '<p class="hint">有效籌碼 ' + h.stack + ' bb' +
+          (h.ante ? '，前注/人 ' + h.ante : '') + '</p>';
+      }
+      (h.streets || []).forEach(function (st) {
+        dHtml += '<div class="ev-result">' + streetDetailHtml(st) + '</div>';
+      });
+      if (h.note) dHtml += '<p class="hint">' + escapeHtml(h.note) + '</p>';
+      detail.innerHTML = dHtml;
+      main.style.cursor = 'pointer';
+      main.addEventListener('click', function () { detail.hidden = !detail.hidden; });
+      li.appendChild(head);
+      li.appendChild(detail);
+      ul.appendChild(li);
+    });
+  }
+
+  function renderHands(expandId) {
+    renderLeaks();
+    renderHandList(expandId);
+  }
+  renderHands();
+
   /* ================= Tab 5: 世界賽事 ================= */
   var evData = null;
 

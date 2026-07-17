@@ -19,6 +19,7 @@
   <button class="tab-btn" data-tab="equity">現金局 EV</button>
   <button class="tab-btn" data-tab="icm">錦標賽 ICM</button>
   <button class="tab-btn" data-tab="nash">圖表</button>
+  <button class="tab-btn" data-tab="hands">複盤</button>
   <button class="tab-btn" data-tab="events">賽事</button>
 </nav>
 
@@ -376,6 +377,61 @@
   </div>
 </section>
 
+<!-- ============ Tab 5b: 關鍵手牌複盤 ============ -->
+<section id="tab-hands" class="tab-panel">
+  <div class="card">
+    <h2>Leak 清單</h2>
+    <div class="stats-table-wrap">
+      <table class="stats-table" id="leakTable"></table>
+    </div>
+    <p class="hint" id="leakHint"></p>
+  </div>
+
+  <div class="card">
+    <h2>記錄關鍵手牌</h2>
+    <p class="hint">每街記錄一個關鍵決策（選填街可留空行動）。金額一律用 bb。
+      牌用文字輸入（例：As Kd）；range 用記號（例：77+ A9s+ KQo）。</p>
+    <div class="grid-3">
+      <label>盲注
+        <input type="text" id="hBlinds" placeholder="例：5/10">
+      </label>
+      <label>前注/人
+        <input type="number" id="hAnte" inputmode="decimal" step="any" min="0" placeholder="0">
+      </label>
+      <label>有效籌碼（bb）
+        <input type="number" id="hStack" inputmode="decimal" step="any" min="0" placeholder="100">
+      </label>
+    </div>
+    <div class="grid-2">
+      <label>我的位置
+        <select id="hPos">
+          <option>UTG</option><option>HJ</option><option>CO</option>
+          <option selected>BTN</option><option>SB</option><option>BB</option>
+        </select>
+      </label>
+      <label>我的手牌（例：As Kd）
+        <input type="text" id="hHero" placeholder="As Kd" autocapitalize="off" autocomplete="off">
+      </label>
+    </div>
+    <div id="hStreets"></div>
+    <div class="grid-2">
+      <label>淨結果（±bb，選填）
+        <input type="number" id="hResult" inputmode="decimal" step="any" placeholder="例：-35">
+      </label>
+      <label>備註（選填）
+        <input type="text" id="hNote" placeholder="對手 read、牌局脈絡…">
+      </label>
+    </div>
+    <button class="btn primary full big" id="btnSaveHand">儲存並分析</button>
+    <p class="hint">加注 / 全下的評估為簡化模型（未計 fold equity），僅顯示 vs range 勝率參考。</p>
+  </div>
+
+  <div class="card">
+    <h2>手牌紀錄</h2>
+    <ul id="handList" class="session-list"></ul>
+  </div>
+</section>
+
 <!-- ============ Tab 5: 世界賽事 ============ -->
 <section id="tab-events" class="tab-panel">
   <div class="card">
@@ -405,6 +461,7 @@
 <script src="js/preflop-table.js"></script>
 <script src="js/pushfold.js"></script>
 <script src="js/ranges.js"></script>
+<script src="js/hands.js"></script>
 <script src="js/nash.js"></script>
 <script src="js/app.js"></script>
 <script src="js/sync.js"></script>

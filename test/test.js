@@ -479,6 +479,115 @@ assert(rvh3.hero > 0.75, 'AA crushes QQ+/AK on dry flop (got ' + (rvh3.hero * 10
 var rvh4 = EquityLib.computeEquityVsCombos(cards('As Ks'), combosOf('32o'), cards('Qs Js Ts 2d 7h'));
 assert(rvh4.method === 'exact' && rvh4.hero === 1, 'royal flush vs 32o on river = 100%');
 
+// ---------- 6c. 關鍵手牌複盤 ----------
+console.log('--- Hands review (HANDS) ---');
+var HANDS = require('../js/hands.js');
+
+// potOdds
+assert(Math.abs(HANDS.potOdds(100, 50) - 1 / 3) < 1e-9, 'potOdds(100,50) = 1/3');
+assert(HANDS.potOdds(100, 0) === 0, 'potOdds with toCall=0 -> 0 (check)');
+threw = false;
+try { HANDS.potOdds(-1, 10); } catch (e) { threw = true; }
+assert(threw, 'potOdds rejects negative pot');
+
+// callEVbb
+assert(Math.abs(HANDS.callEVbb(0.4, 100, 50) - 10) < 1e-9, 'callEVbb(0.4,100,50) = 10');
+assert(Math.abs(HANDS.callEVbb(1 / 3, 100, 50)) < 1e-9, 'breakeven equity -> EV = 0');
+assert(HANDS.callEVbb(0.2, 100, 50) < 0, 'below breakeven -> negative EV');
+
+// classifyDecision: call
+var cd1 = HANDS.classifyDecision('call', 0.4, 100, 50);
+assert(cd1.verdict === 'good_call' && !cd1.leak && Math.abs(cd1.evBB - 10) < 1e-9,
+  '+EV call -> good_call, EV=10bb');
+var cd2 = HANDS.classifyDecision('call', 0.2, 100, 50);
+assert(cd2.verdict === 'bad_call' && cd2.leak && cd2.evBB < 0,
+  '-EV call -> bad_call (leak)');
+
+// classifyDecision: fold
+var cd3 = HANDS.classifyDecision('fold', 0.5, 100, 50);
+assert(cd3.verdict === 'missed_call' && cd3.leak && cd3.evBB === 0,
+  'fold with equity > pot odds -> missed_call (leak), EV=0');
+var cd4 = HANDS.classifyDecision('fold', 0.2, 100, 50);
+assert(cd4.verdict === 'good_fold' && !cd4.leak && cd4.evBB === 0,
+  'fold with equity < pot odds -> good_fold');
+var cd5 = HANDS.classifyDecision('fold', 0.9, 100, 0);
+assert(cd5.verdict === 'good_fold', 'fold facing no bet -> not a missed call');
+
+// classifyDecision: raise / allin（簡化：未計 fold equity）
+var cd6 = HANDS.classifyDecision('raise', 0.6, 100, 50);
+assert(cd6.verdict === 'raise_ahead' && cd6.simplified && !cd6.leak,
+  'raise with equity >= 50% -> raise_ahead, simplified flag');
+var cd7 = HANDS.classifyDecision('allin', 0.3, 100, 50);
+assert(cd7.verdict === 'raise_behind' && cd7.simplified && !cd7.leak,
+  'allin behind range -> raise_behind, not counted as leak');
+threw = false;
+try { HANDS.classifyDecision('check', 0.5, 100, 50); } catch (e) { threw = true; }
+assert(threw, 'unknown action throws');
+
+// parseCards
+var pc1 = HANDS.parseCards('As Kd', 2);
+assert(pc1.length === 2 &&
+  Evaluator.cardToString(pc1[0]) === 'As' && Evaluator.cardToString(pc1[1]) === 'Kd',
+  'parseCards "As Kd"');
+var pc2 = HANDS.parseCards('AsKd', 2);
+assert(pc2[0] === pc1[0] && pc2[1] === pc1[1], 'parseCards concatenated "AsKd"');
+assert(HANDS.parseCards('Qh 7d 2s', 3).length === 3, 'parseCards 3-card flop');
+threw = false;
+try { HANDS.parseCards('As As', 2); } catch (e) { threw = true; }
+assert(threw, 'parseCards rejects duplicate cards');
+threw = false;
+try { HANDS.parseCards('As', 2); } catch (e) { threw = true; }
+assert(threw, 'parseCards enforces expected count');
+
+// analyzeStreet：river exact，nuts vs 32o -> equity 100%、+EV call
+var as1 = HANDS.analyzeStreet({
+  street: 'river',
+  heroCards: cards('As Ks'),
+  board: cards('Qs Js Ts 2d 7h'),
+  range: '32o', pot: 10, toCall: 5, action: 'call'
+});
+assert(as1.method === 'exact' && as1.equity === 1, 'analyzeStreet river nuts equity = 100%');
+assert(as1.verdict === 'good_call' && Math.abs(as1.evBB - 10) < 1e-9,
+  'analyzeStreet nuts call: EV = 1x(10+5)-5 = 10bb');
+assert(Math.abs(as1.needed - 1 / 3) < 1e-9, 'analyzeStreet pot odds = 33.3%');
+
+// analyzeStreet：river drawing dead 卻跟注 -> bad_call
+var as2 = HANDS.analyzeStreet({
+  street: 'river',
+  heroCards: cards('3c 2h'),
+  board: cards('Qs Js Ts 2d 7h'),
+  range: 'AA', pot: 10, toCall: 5, action: 'call'
+});
+assert(as2.equity === 0 && as2.verdict === 'bad_call' && as2.leak,
+  'analyzeStreet drawing-dead call -> bad_call leak');
+
+// analyzeStreet 驗證 board 張數
+threw = false;
+try {
+  HANDS.analyzeStreet({ street: 'flop', heroCards: cards('As Ks'),
+    board: cards('Qs Js'), range: 'AA', pot: 10, toCall: 5, action: 'call' });
+} catch (e) { threw = true; }
+assert(threw, 'analyzeStreet rejects wrong board length for street');
+
+// leakSummary
+var fakeHands = [
+  { streets: [
+    { street: 'flop', analysis: { verdict: 'bad_call' } },
+    { street: 'river', analysis: { verdict: 'missed_call' } }
+  ] },
+  { streets: [
+    { street: 'flop', analysis: { verdict: 'good_call' } },
+    { street: 'flop', analysis: { verdict: 'bad_call' } }
+  ] }
+];
+var ls = HANDS.leakSummary(fakeHands);
+assert(ls.decisions === 4 && ls.badCalls === 2 && ls.missedCalls === 1,
+  'leakSummary totals: 4 decisions / 2 bad calls / 1 missed call');
+assert(ls.byStreet.flop.badCalls === 2 && ls.byStreet.river.missedCalls === 1 &&
+       ls.byStreet.turn.decisions === 0,
+  'leakSummary per-street breakdown');
+assert(HANDS.leakSummary([]).decisions === 0, 'leakSummary empty list ok');
+
 // ---------- 7. 賽事資料 ----------
 console.log('--- Tournaments data ---');
 var tourneys = JSON.parse(require('fs').readFileSync(__dirname + '/../data/tournaments.json', 'utf8'));
