@@ -336,6 +336,68 @@ var badTok = false;
 try { PushFold.rangeFromNotation('AK'); } catch (e) { badTok = true; }
 assert(badTok, 'non-pair without s/o rejected');
 
+// 區間記號（dash）
+assert(labels('88-22') === '88 77 66 55 44 33 22', '88-22 pair range expands');
+assert(labels('22-44') === '44 33 22', '22-44 order-insensitive pair range');
+assert(labels('A5s-A2s') === 'A5s A4s A3s A2s', 'A5s-A2s suited kicker range');
+assert(labels('A2o-A4o') === 'A4o A3o A2o', 'A2o-A4o order-insensitive offsuit range');
+assert(PushFold.rangeComboTotal(PushFold.rangeFromNotation('K9s-K6s')) === 16,
+  'K9s-K6s = 4 classes x 4 combos = 16');
+var badDash = 0;
+try { PushFold.rangeFromNotation('A9s-K6s'); } catch (e) { badDash++; } // 高牌不同
+try { PushFold.rangeFromNotation('A9s-A6o'); } catch (e) { badDash++; } // s/o 不一致
+try { PushFold.rangeFromNotation('A9-A6'); } catch (e) { badDash++; }   // 缺 s/o
+try { PushFold.rangeFromNotation('88s-22'); } catch (e) { badDash++; }  // 對子帶 s
+assert(badDash === 4, 'invalid dash notations all rejected');
+
+// ---------- 5d. 防守 range 資料（js/ranges.js） ----------
+console.log('--- Defense ranges (vs RFI) ---');
+var Ranges = require('../js/ranges.js');
+
+assert(Array.isArray(Ranges.DEF_SPOT_KEYS) && Ranges.DEF_SPOT_KEYS.length === 5,
+  '5 defense spots defined');
+assert(Ranges.DEF_SPOT_KEYS.every(function (k) { return Ranges.DEF_SPOTS[k]; }),
+  'every spot key resolves to a spot definition');
+
+Ranges.DEF_SPOT_KEYS.forEach(function (key) {
+  var spot = Ranges.DEF_SPOTS[key];
+  var tb, call, parsed = true;
+  try {
+    tb = PushFold.rangeFromNotation(spot.threeBet);
+    call = PushFold.rangeFromNotation(spot.call);
+  } catch (e) { parsed = false; }
+  assert(parsed, key + ': notations parse');
+  if (!parsed) return;
+  assert(tb.length > 0 && call.length > 0, key + ': 3bet & call ranges non-empty');
+  var tbC = PushFold.rangeComboTotal(tb), callC = PushFold.rangeComboTotal(call);
+  var tbPct = tbC / 1326 * 100, totPct = (tbC + callC) / 1326 * 100;
+  assert(tbPct >= 3 && tbPct <= 15,
+    key + ': 3bet in 3-15% (' + tbPct.toFixed(1) + '%, ' + tbC + ' combos)');
+  // call 與 3bet 不可重疊（測驗需要唯一正解）
+  var tbSet = {};
+  tb.forEach(function (i) { tbSet[i] = true; });
+  assert(call.every(function (i) { return !tbSet[i]; }), key + ': call/3bet disjoint');
+  if (key.indexOf('bb_') === 0) {
+    assert(totPct >= 20 && totPct <= 45,
+      key + ': BB total defend in 20-45% (' + totPct.toFixed(1) + '%)');
+  } else {
+    assert(totPct < 30, key + ': non-BB total continue < 30% (' + totPct.toFixed(1) + '%)');
+  }
+  // 價值核心：AA/KK 一定在 3bet range
+  var idxAA = labelIdx('AA'), idxKK = labelIdx('KK');
+  assert(tbSet[idxAA] && tbSet[idxKK], key + ': AA & KK in 3bet range');
+  // 垃圾牌一定蓋：72o 不在 call 也不在 3bet
+  var idx72o = labelIdx('72o');
+  assert(!tbSet[idx72o] && call.indexOf(idx72o) < 0, key + ': 72o folded');
+});
+
+// BB 防守寬於中間位置的冷跟 range
+var bbBtnTot = PushFold.rangeComboTotal(PushFold.rangeFromNotation(Ranges.DEF_SPOTS.bb_vs_btn.call)) +
+  PushFold.rangeComboTotal(PushFold.rangeFromNotation(Ranges.DEF_SPOTS.bb_vs_btn.threeBet));
+var coUtgTot = PushFold.rangeComboTotal(PushFold.rangeFromNotation(Ranges.DEF_SPOTS.co_vs_utg.call)) +
+  PushFold.rangeComboTotal(PushFold.rangeFromNotation(Ranges.DEF_SPOTS.co_vs_utg.threeBet));
+assert(bbBtnTot > coUtgTot * 2, 'BB vs BTN defends much wider than CO vs UTG');
+
 // ---------- 6. Nash HU push/fold ----------
 console.log('--- Nash HU push/fold ---');
 var Nash = require('../js/nash.js');

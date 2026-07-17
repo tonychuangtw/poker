@@ -959,6 +959,42 @@
   });
   renderRfi('utg');
 
+  /* ---------- 面對開牌（3-bet / 防守）range ---------- */
+  // 每情境快取 { callSet, tbSet, callCombos, tbCombos }
+  var defSets = {};
+  function defSet(key) {
+    if (!defSets[key]) {
+      var spot = Ranges.DEF_SPOTS[key];
+      var callCls = PushFold.rangeFromNotation(spot.call);
+      var tbCls = PushFold.rangeFromNotation(spot.threeBet);
+      var callSet = {}, tbSet = {};
+      callCls.forEach(function (i) { callSet[i] = true; });
+      tbCls.forEach(function (i) { tbSet[i] = true; });
+      defSets[key] = {
+        callSet: callSet, tbSet: tbSet,
+        callCombos: PushFold.rangeComboTotal(callCls),
+        tbCombos: PushFold.rangeComboTotal(tbCls)
+      };
+    }
+    return defSets[key];
+  }
+
+  function renderDef(key) {
+    var spot = Ranges.DEF_SPOTS[key];
+    var s = defSet(key);
+    var html = '';
+    for (var i = 0; i < 169; i++) {
+      var cls = s.tbSet[i] ? 'tb' : s.callSet[i] ? 'in' : 'out';
+      html += '<div class="nash-cell ' + cls + '">' + PushFold.classLabel(i) + '</div>';
+    }
+    $('#defGrid').innerHTML = html;
+    $('#defTxt').textContent = spot.sizeTxt + '｜3-bet ' +
+      (s.tbCombos / 1326 * 100).toFixed(1) + '%（' + s.tbCombos + ' combo）＋跟注 ' +
+      (s.callCombos / 1326 * 100).toFixed(1) + '%（' + s.callCombos + ' combo）';
+  }
+  $('#defSpot').addEventListener('change', function () { renderDef(this.value); });
+  renderDef('co_vs_utg');
+
   /* ---------- Outs / 賠率速查表 ---------- */
   (function () {
     var DRAWS = {
@@ -976,9 +1012,9 @@
     $('#oddsTable').innerHTML = html;
   })();
 
-  /* ---------- 訓練測驗（Push/Fold + 開牌 RFI） ---------- */
-  var QUIZ_KEYS = { pf: 'poker.nash_quiz', rfi: 'poker.rfi_quiz' };
-  var quizMode = 'pf'; // 'pf' | 'rfi'
+  /* ---------- 訓練測驗（Push/Fold + 開牌 RFI + 面對開牌） ---------- */
+  var QUIZ_KEYS = { pf: 'poker.nash_quiz', rfi: 'poker.rfi_quiz', def: 'poker.def_quiz' };
+  var quizMode = 'pf'; // 'pf' | 'rfi' | 'def'
 
   function quizScore(mode) {
     try {
@@ -994,7 +1030,8 @@
   }
   function renderQuizScore() {
     $('#quizScoreTxt').textContent =
-      [scoreLine('Push/Fold', quizScore('pf')), scoreLine('RFI', quizScore('rfi'))]
+      [scoreLine('Push/Fold', quizScore('pf')), scoreLine('RFI', quizScore('rfi')),
+       scoreLine('面對開牌', quizScore('def'))]
         .filter(Boolean).join(' ｜ ');
   }
 
@@ -1023,11 +1060,14 @@
     quizMode = mode;
     $('#btnQuizModePf').classList.toggle('active-role', mode === 'pf');
     $('#btnQuizModeRfi').classList.toggle('active-role', mode === 'rfi');
-    $('#btnQuizPush').textContent = mode === 'pf' ? '全下' : '加注';
+    $('#btnQuizModeDef').classList.toggle('active-role', mode === 'def');
+    $('#btnQuizPush').textContent = mode === 'pf' ? '全下' : mode === 'rfi' ? '加注' : '3-bet';
+    $('#btnQuizCall').hidden = mode !== 'def';
     if (!$('#quizRun').hidden) quizNext();
   }
   $('#btnQuizModePf').addEventListener('click', function () { setQuizMode('pf'); });
   $('#btnQuizModeRfi').addEventListener('click', function () { setQuizMode('rfi'); });
+  $('#btnQuizModeDef').addEventListener('click', function () { setQuizMode('def'); });
 
   var RFI_POS_KEYS = ['utg', 'hj', 'co', 'btn', 'sb'];
   var quizCur = null;
@@ -1036,34 +1076,50 @@
       var S = 2 + Math.floor(Math.random() * 14); // 2–15 bb
       quizCur = { mode: 'pf', S: S, idx: randHandIdx() };
       $('#quizInfo').textContent = '你在 SB（按鈕位），有效籌碼 ' + S + ' bb。推還是棄？';
-    } else {
+    } else if (quizMode === 'rfi') {
       var pos = RFI_POS_KEYS[Math.floor(Math.random() * RFI_POS_KEYS.length)];
       quizCur = { mode: 'rfi', pos: pos, idx: randHandIdx() };
       $('#quizInfo').textContent = '6-max，你在 ' + RFI_RANGES[pos].name +
         '，前面無人入池。開牌加注還是蓋牌？';
+    } else {
+      var spotKey = Ranges.DEF_SPOT_KEYS[Math.floor(Math.random() * Ranges.DEF_SPOT_KEYS.length)];
+      var spot = Ranges.DEF_SPOTS[spotKey];
+      quizCur = { mode: 'def', spot: spotKey, idx: randHandIdx() };
+      $('#quizInfo').textContent = '6-max 100bb，' + spot.sizeTxt + '，你在 ' + spot.hero +
+        '。3-bet、跟注還是蓋牌？';
     }
     $('#quizHand').textContent = PushFold.classLabel(quizCur.idx);
     $('#quizFeedback').hidden = true;
     $('#btnQuizNext').hidden = true;
     $('#btnQuizPush').disabled = false;
+    $('#btnQuizCall').disabled = false;
     $('#btnQuizFold').disabled = false;
   }
-  function quizAnswer(userAggro) {
+  // action: 'aggro'（全下/加注/3-bet）| 'call' | 'fold'
+  function quizAnswer(action) {
     if (!quizCur) return;
-    var correct, detail;
+    var ok, detail;
     if (quizCur.mode === 'pf') {
       var sol = NashHU.solveCached(quizCur.S);
-      correct = sol.pushSet[quizCur.idx];
+      var correct = sol.pushSet[quizCur.idx];
+      ok = (action === 'aggro') === !!correct;
       detail = ' Nash 均衡：' + PushFold.classLabel(quizCur.idx) + ' 在 ' + quizCur.S + ' bb ' +
         (correct ? '應該<b>全下</b>' : '應該<b>蓋牌</b>') +
         '（均衡全下頻率 ' + Math.round(sol.push[quizCur.idx] * 100) + '%）。';
-    } else {
-      correct = !!rfiSet(quizCur.pos)[quizCur.idx];
+    } else if (quizCur.mode === 'rfi') {
+      var inRange = !!rfiSet(quizCur.pos)[quizCur.idx];
+      ok = (action === 'aggro') === inRange;
       detail = ' 標準 RFI：' + PushFold.classLabel(quizCur.idx) + ' 在 ' +
         RFI_RANGES[quizCur.pos].name +
-        (correct ? ' 屬於開牌 range，應該<b>加注</b>。' : ' 不在開牌 range，應該<b>蓋牌</b>。');
+        (inRange ? ' 屬於開牌 range，應該<b>加注</b>。' : ' 不在開牌 range，應該<b>蓋牌</b>。');
+    } else {
+      var ds = defSet(quizCur.spot);
+      var best = ds.tbSet[quizCur.idx] ? 'aggro' : ds.callSet[quizCur.idx] ? 'call' : 'fold';
+      ok = action === best;
+      var bestTxt = best === 'aggro' ? '<b>3-bet</b>' : best === 'call' ? '<b>跟注</b>' : '<b>蓋牌</b>';
+      detail = ' ' + Ranges.DEF_SPOTS[quizCur.spot].name + '：' +
+        PushFold.classLabel(quizCur.idx) + ' 應該' + bestTxt + '。';
     }
-    var ok = userAggro === correct;
     var s = quizScore(quizCur.mode);
     s.total++; if (ok) s.correct++;
     quizSave(quizCur.mode, s);
@@ -1073,6 +1129,7 @@
       detail + '<br>目前成績 ' + s.correct + ' / ' + s.total;
     $('#btnQuizNext').hidden = false;
     $('#btnQuizPush').disabled = true;
+    $('#btnQuizCall').disabled = true;
     $('#btnQuizFold').disabled = true;
   }
   $('#btnQuizStart').addEventListener('click', function () {
@@ -1080,8 +1137,9 @@
     $('#quizRun').hidden = false;
     quizNext();
   });
-  $('#btnQuizPush').addEventListener('click', function () { quizAnswer(true); });
-  $('#btnQuizFold').addEventListener('click', function () { quizAnswer(false); });
+  $('#btnQuizPush').addEventListener('click', function () { quizAnswer('aggro'); });
+  $('#btnQuizCall').addEventListener('click', function () { quizAnswer('call'); });
+  $('#btnQuizFold').addEventListener('click', function () { quizAnswer('fold'); });
   $('#btnQuizNext').addEventListener('click', quizNext);
   $('#btnQuizQuit').addEventListener('click', function () {
     $('#quizRun').hidden = true;

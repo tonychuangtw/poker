@@ -319,6 +319,23 @@
   </div>
 
   <div class="card">
+    <h2>面對開牌（3-bet / 防守）</h2>
+    <p class="hint">100bb 6-max，前面有人開牌時的應對 range（簡化 GTO 近似）。
+      <span class="legend-tb">紅</span> = 3-bet、<span class="legend-call">綠</span> = 跟注、灰 = 蓋牌。</p>
+    <label>情境
+      <select id="defSpot">
+        <option value="co_vs_utg">CO vs UTG 開牌</option>
+        <option value="btn_vs_co">BTN vs CO 開牌</option>
+        <option value="sb_vs_btn">SB vs BTN 開牌</option>
+        <option value="bb_vs_btn">BB vs BTN 開牌（防守）</option>
+        <option value="bb_vs_sb">BB vs SB 開牌（防守）</option>
+      </select>
+    </label>
+    <p class="hint" id="defTxt"></p>
+    <div class="nash-grid-wrap"><div id="defGrid" class="nash-grid"></div></div>
+  </div>
+
+  <div class="card">
     <h2>Outs / 賠率速查</h2>
     <p class="hint">「4-2 法則」：翻牌後兩張約 outs×4%，只剩一張約 outs×2%。下表為精確值。</p>
     <div class="stats-table-wrap">
@@ -329,10 +346,12 @@
   <div class="card">
     <h2>訓練測驗</h2>
     <p class="hint">Push/Fold：隨機籌碼深度與手牌，依 Nash 均衡判斷推或棄。
-      開牌 RFI：隨機位置與手牌，依 6-max 標準開牌 range 判斷加注或蓋牌。</p>
+      開牌 RFI：隨機位置與手牌，依 6-max 標準開牌 range 判斷加注或蓋牌。
+      面對開牌：隨機防守情境，判斷 3-bet、跟注或蓋牌。</p>
     <div class="btn-row">
       <button class="btn active-role" id="btnQuizModePf">Push/Fold</button>
       <button class="btn" id="btnQuizModeRfi">開牌 RFI</button>
+      <button class="btn" id="btnQuizModeDef">面對開牌</button>
     </div>
     <div id="quizIdle">
       <button class="btn primary full big" id="btnQuizStart">開始測驗</button>
@@ -345,6 +364,7 @@
       </div>
       <div class="btn-row">
         <button class="btn primary big" id="btnQuizPush">全下</button>
+        <button class="btn big" id="btnQuizCall" hidden>跟注</button>
         <button class="btn big" id="btnQuizFold">蓋牌</button>
       </div>
       <div class="ev-result" id="quizFeedback" hidden></div>
@@ -384,6 +404,7 @@
 <script src="js/icm.js"></script>
 <script src="js/preflop-table.js"></script>
 <script src="js/pushfold.js"></script>
+<script src="js/ranges.js"></script>
 <script src="js/nash.js"></script>
 <script src="js/app.js"></script>
 <script src="js/sync.js"></script>
