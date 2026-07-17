@@ -1086,39 +1086,106 @@
   });
   renderNashGrid();
 
-  /* ---------- 6-max RFI 開牌 range ---------- */
-  var RFI_RANGES = {
-    utg: { name: 'UTG', notation: '66+ ATs+ KTs+ QTs+ JTs T9s 98s 87s 76s 65s AJo+ KQo' },
-    hj:  { name: 'HJ',  notation: '44+ A9s+ A5s A4s KTs+ QTs+ J9s+ T9s 98s 87s 76s 65s ATo+ KJo+ QJo' },
-    co:  { name: 'CO',  notation: '22+ A2s+ K9s+ Q9s+ J9s+ T8s+ 97s+ 86s+ 75s+ 65s 54s A9o+ KTo+ QTo+ JTo' },
-    btn: { name: 'BTN', notation: '22+ A2s+ K2s+ Q5s+ J7s+ T7s+ 96s+ 85s+ 74s+ 64s+ 53s+ 43s A2o+ K9o+ Q9o+ J9o+ T9o 98o' },
-    sb:  { name: 'SB',  notation: '22+ A2s+ K4s+ Q6s+ J7s+ T7s+ 97s+ 86s+ 75s+ 65s 54s A4o+ K9o+ Q9o+ J9o+ T9o' }
-  };
+  /* ---------- 自訂 range 覆寫存取（localStorage 稀疏差異） ---------- */
+  var CUSTOM_RANGES_KEY = 'poker.custom_ranges';
+  function loadCustomRanges() {
+    try {
+      var o = JSON.parse(localStorage.getItem(CUSTOM_RANGES_KEY));
+      return (o && typeof o === 'object') ? o : {};
+    } catch (e) { return {}; }
+  }
+  function getRangeOverride(key) {
+    var ov = loadCustomRanges()[key];
+    return (ov && Object.keys(ov).length) ? ov : null;
+  }
+  function setRangeOverride(key, diff) {
+    var all = loadCustomRanges();
+    if (diff && Object.keys(diff).length) all[key] = diff;
+    else delete all[key];
+    localStorage.setItem(CUSTOM_RANGES_KEY, JSON.stringify(all));
+  }
 
-  function renderRfi(pos) {
-    var def = RFI_RANGES[pos];
-    var classes = PushFold.rangeFromNotation(def.notation);
-    var inSet = {};
-    classes.forEach(function (i) { inSet[i] = true; });
-    var html = '';
+  /* ---------- 開牌 RFI range（6-max / 9-max，可手動編輯） ---------- */
+  var RFI_TABLES = { '6': Ranges.RFI_RANGES_6, '9': Ranges.RFI_RANGES_9 };
+  var RFI_RANGES = Ranges.RFI_RANGES_6; // 測驗一律以 6-max 建議值評分
+  var rfiTable = '6', rfiPosCur = 'utg', rfiEdit = false;
+
+  function rfiChartKey() { return 'rfi' + rfiTable + ':' + rfiPosCur; }
+  function rfiDefaultMap() {
+    var map = {};
+    PushFold.rangeFromNotation(RFI_TABLES[rfiTable][rfiPosCur].notation)
+      .forEach(function (i) { map[PushFold.classLabel(i)] = 'in'; });
+    return map;
+  }
+  function renderRfi() {
+    var def = RFI_TABLES[rfiTable][rfiPosCur];
+    var ov = getRangeOverride(rfiChartKey());
+    var map = Ranges.mergeOverride(rfiDefaultMap(), ov);
+    var html = '', combos = 0;
     for (var i = 0; i < 169; i++) {
-      html += '<div class="nash-cell ' + (inSet[i] ? 'in' : 'out') + '">' +
-        PushFold.classLabel(i) + '</div>';
+      var lbl = PushFold.classLabel(i);
+      var isIn = map[lbl] === 'in';
+      if (isIn) combos += PushFold.comboCount(i);
+      html += '<div class="nash-cell ' + (isIn ? 'in' : 'out') + '" data-i="' + i + '">' +
+        lbl + '</div>';
     }
     $('#rfiGrid').innerHTML = html;
-    var combos = PushFold.rangeComboTotal(classes);
-    $('#rfiTxt').textContent = def.name + ' 開牌 range：' +
+    $('#rfiGrid').classList.toggle('editing', rfiEdit);
+    $('#rfiTxt').textContent = rfiTable + '-max ' + def.name + ' 開牌 range：' +
       (combos / 1326 * 100).toFixed(1) + '% 的手牌（' + combos + ' combo）';
+    $('#rfiCustomRow').hidden = !ov;
+  }
+  function buildRfiPosRow() {
+    var keys = rfiTable === '9' ? Ranges.RFI_POS_9 : Ranges.RFI_POS_6;
+    if (keys.indexOf(rfiPosCur) < 0) rfiPosCur = keys[0];
+    $('#rfiPosRow').innerHTML = keys.map(function (k) {
+      return '<button class="btn pos-btn' + (k === rfiPosCur ? ' active-role' : '') +
+        '" data-pos="' + k + '">' + RFI_TABLES[rfiTable][k].name + '</button>';
+    }).join('');
   }
   $('#rfiPosRow').addEventListener('click', function (e) {
     var btn = e.target.closest('.pos-btn');
     if (!btn) return;
+    rfiPosCur = btn.dataset.pos;
     $$('#rfiPosRow .pos-btn').forEach(function (b) {
       b.classList.toggle('active-role', b === btn);
     });
-    renderRfi(btn.dataset.pos);
+    renderRfi();
   });
-  renderRfi('utg');
+  $('#rfiTableRow').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-table]');
+    if (!btn || btn.dataset.table === rfiTable) return;
+    rfiTable = btn.dataset.table;
+    $$('#rfiTableRow [data-table]').forEach(function (b) {
+      b.classList.toggle('active-role', b === btn);
+    });
+    buildRfiPosRow();
+    renderRfi();
+  });
+  $('#btnRfiEdit').addEventListener('click', function () {
+    rfiEdit = !rfiEdit;
+    this.classList.toggle('active-role', rfiEdit);
+    this.textContent = rfiEdit ? '✔ 完成編輯' : '✏️ 編輯';
+    renderRfi();
+  });
+  $('#rfiGrid').addEventListener('click', function (e) {
+    if (!rfiEdit) return;
+    var cell = e.target.closest('.nash-cell');
+    if (!cell) return;
+    var lbl = PushFold.classLabel(+cell.dataset.i);
+    var defMap = rfiDefaultMap();
+    var full = Ranges.mergeOverride(defMap, getRangeOverride(rfiChartKey()));
+    full[lbl] = Ranges.cycleState('rfi', full[lbl] || 'out');
+    setRangeOverride(rfiChartKey(), Ranges.diffOverride(defMap, full));
+    renderRfi();
+  });
+  $('#btnRfiReset').addEventListener('click', function () {
+    if (!confirm('確定捨棄這張圖的自訂內容，還原為建議 range？')) return;
+    setRangeOverride(rfiChartKey(), null);
+    renderRfi();
+  });
+  buildRfiPosRow();
+  renderRfi();
 
   /* ---------- 面對開牌（3-bet / 防守）range ---------- */
   // 每情境快取 { callSet, tbSet, callCombos, tbCombos }
@@ -1140,21 +1207,63 @@
     return defSets[key];
   }
 
-  function renderDef(key) {
-    var spot = Ranges.DEF_SPOTS[key];
-    var s = defSet(key);
-    var html = '';
+  var defKeyCur = 'co_vs_utg', defEdit = false;
+  function defChartKey() { return 'def:' + defKeyCur; }
+  function defDefaultMap() {
+    var spot = Ranges.DEF_SPOTS[defKeyCur], map = {};
+    PushFold.rangeFromNotation(spot.call)
+      .forEach(function (i) { map[PushFold.classLabel(i)] = 'in'; });
+    PushFold.rangeFromNotation(spot.threeBet)
+      .forEach(function (i) { map[PushFold.classLabel(i)] = 'tb'; });
+    return map;
+  }
+  function renderDef() {
+    var spot = Ranges.DEF_SPOTS[defKeyCur];
+    var ov = getRangeOverride(defChartKey());
+    var map = Ranges.mergeOverride(defDefaultMap(), ov);
+    var html = '', tbCombos = 0, callCombos = 0;
     for (var i = 0; i < 169; i++) {
-      var cls = s.tbSet[i] ? 'tb' : s.callSet[i] ? 'in' : 'out';
-      html += '<div class="nash-cell ' + cls + '">' + PushFold.classLabel(i) + '</div>';
+      var lbl = PushFold.classLabel(i);
+      var st = map[lbl] || 'out';
+      if (st === 'tb') tbCombos += PushFold.comboCount(i);
+      else if (st === 'in') callCombos += PushFold.comboCount(i);
+      html += '<div class="nash-cell ' + (st === 'in' || st === 'tb' ? st : 'out') +
+        '" data-i="' + i + '">' + lbl + '</div>';
     }
     $('#defGrid').innerHTML = html;
+    $('#defGrid').classList.toggle('editing', defEdit);
     $('#defTxt').textContent = spot.sizeTxt + '｜3-bet ' +
-      (s.tbCombos / 1326 * 100).toFixed(1) + '%（' + s.tbCombos + ' combo）＋跟注 ' +
-      (s.callCombos / 1326 * 100).toFixed(1) + '%（' + s.callCombos + ' combo）';
+      (tbCombos / 1326 * 100).toFixed(1) + '%（' + tbCombos + ' combo）＋跟注 ' +
+      (callCombos / 1326 * 100).toFixed(1) + '%（' + callCombos + ' combo）';
+    $('#defCustomRow').hidden = !ov;
   }
-  $('#defSpot').addEventListener('change', function () { renderDef(this.value); });
-  renderDef('co_vs_utg');
+  $('#defSpot').addEventListener('change', function () {
+    defKeyCur = this.value;
+    renderDef();
+  });
+  $('#btnDefEdit').addEventListener('click', function () {
+    defEdit = !defEdit;
+    this.classList.toggle('active-role', defEdit);
+    this.textContent = defEdit ? '✔ 完成編輯' : '✏️ 編輯';
+    renderDef();
+  });
+  $('#defGrid').addEventListener('click', function (e) {
+    if (!defEdit) return;
+    var cell = e.target.closest('.nash-cell');
+    if (!cell) return;
+    var lbl = PushFold.classLabel(+cell.dataset.i);
+    var defMap = defDefaultMap();
+    var full = Ranges.mergeOverride(defMap, getRangeOverride(defChartKey()));
+    full[lbl] = Ranges.cycleState('def', full[lbl] || 'out');
+    setRangeOverride(defChartKey(), Ranges.diffOverride(defMap, full));
+    renderDef();
+  });
+  $('#btnDefReset').addEventListener('click', function () {
+    if (!confirm('確定捨棄這張圖的自訂內容，還原為建議 range？')) return;
+    setRangeOverride(defChartKey(), null);
+    renderDef();
+  });
+  renderDef();
 
   /* ---------- Outs / 賠率速查表 ---------- */
   (function () {
@@ -1246,8 +1355,8 @@
       var spotKey = Ranges.DEF_SPOT_KEYS[Math.floor(Math.random() * Ranges.DEF_SPOT_KEYS.length)];
       var spot = Ranges.DEF_SPOTS[spotKey];
       quizCur = { mode: 'def', spot: spotKey, idx: randHandIdx() };
-      $('#quizInfo').textContent = '6-max 100bb，' + spot.sizeTxt + '，你在 ' + spot.hero +
-        '。3-bet、跟注還是蓋牌？';
+      $('#quizInfo').textContent = (spot.table === 9 ? '9-max' : '6-max') + ' 100bb，' +
+        spot.sizeTxt + '，你在 ' + spot.hero + '。3-bet、跟注還是蓋牌？';
     }
     $('#quizHand').textContent = PushFold.classLabel(quizCur.idx);
     $('#quizFeedback').hidden = true;

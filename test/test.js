@@ -445,8 +445,10 @@ assert(badDash === 4, 'invalid dash notations all rejected');
 console.log('--- Defense ranges (vs RFI) ---');
 var Ranges = require('../js/ranges.js');
 
-assert(Array.isArray(Ranges.DEF_SPOT_KEYS) && Ranges.DEF_SPOT_KEYS.length === 5,
-  '5 defense spots defined');
+assert(Array.isArray(Ranges.DEF_SPOT_KEYS) && Ranges.DEF_SPOT_KEYS.length === 7,
+  '7 defense spots defined (5 six-max + 2 nine-max)');
+assert(Ranges.DEF_SPOTS.hj_vs_utg9.table === 9 && Ranges.DEF_SPOTS.bb_vs_utg9.table === 9,
+  '9-max defense spots flagged table=9');
 assert(Ranges.DEF_SPOT_KEYS.every(function (k) { return Ranges.DEF_SPOTS[k]; }),
   'every spot key resolves to a spot definition');
 
@@ -488,6 +490,82 @@ var bbBtnTot = PushFold.rangeComboTotal(PushFold.rangeFromNotation(Ranges.DEF_SP
 var coUtgTot = PushFold.rangeComboTotal(PushFold.rangeFromNotation(Ranges.DEF_SPOTS.co_vs_utg.call)) +
   PushFold.rangeComboTotal(PushFold.rangeFromNotation(Ranges.DEF_SPOTS.co_vs_utg.threeBet));
 assert(bbBtnTot > coUtgTot * 2, 'BB vs BTN defends much wider than CO vs UTG');
+
+// ---------- 5e. RFI range 資料（6-max / 9-max） ----------
+console.log('--- RFI ranges (6-max / 9-max) ---');
+
+function rfiCombos(tbl, pos) {
+  return PushFold.rangeComboTotal(PushFold.rangeFromNotation(tbl[pos].notation));
+}
+
+assert(Ranges.RFI_POS_6.length === 5 &&
+  Ranges.RFI_POS_6.every(function (k) { return Ranges.RFI_RANGES_6[k]; }),
+  '6-max RFI: 5 positions all defined');
+assert(Ranges.RFI_POS_9.length === 8 &&
+  Ranges.RFI_POS_9.every(function (k) { return Ranges.RFI_RANGES_9[k]; }),
+  '9-max RFI: 8 positions all defined');
+
+var rfi9Parsed = true;
+try {
+  Ranges.RFI_POS_9.forEach(function (k) {
+    PushFold.rangeFromNotation(Ranges.RFI_RANGES_9[k].notation);
+  });
+} catch (e) { rfi9Parsed = false; }
+assert(rfi9Parsed, '9-max RFI: all notations parse');
+
+// 6-max 資料驅動的單調性（UTG < HJ < CO < BTN）
+var w6 = ['utg', 'hj', 'co', 'btn'].map(function (k) { return rfiCombos(Ranges.RFI_RANGES_6, k); });
+assert(w6[0] < w6[1] && w6[1] < w6[2] && w6[2] < w6[3],
+  '6-max RFI data widens by position: ' + w6.join(' < '));
+
+// 9-max 單調性（UTG < UTG+1 < MP < LJ < HJ < CO < BTN）
+var order9 = ['utg', 'utg1', 'mp', 'lj', 'hj', 'co', 'btn'];
+var w9 = order9.map(function (k) { return rfiCombos(Ranges.RFI_RANGES_9, k); });
+var mono9 = w9.every(function (w, i) { return i === 0 || w9[i - 1] < w; });
+assert(mono9, '9-max RFI widens monotonically UTG->BTN: ' + w9.join(' < '));
+
+// 寬度合理：UTG 約 10%、BTN 40% 以上，且 9-max UTG 緊於 6-max UTG
+var utg9Pct = rfiCombos(Ranges.RFI_RANGES_9, 'utg') / 1326 * 100;
+var btn9Pct = rfiCombos(Ranges.RFI_RANGES_9, 'btn') / 1326 * 100;
+assert(utg9Pct >= 8 && utg9Pct <= 13, '9-max UTG in 8-13% (' + utg9Pct.toFixed(1) + '%)');
+assert(btn9Pct >= 40 && btn9Pct <= 55, '9-max BTN in 40-55% (' + btn9Pct.toFixed(1) + '%)');
+assert(rfiCombos(Ranges.RFI_RANGES_9, 'utg') < rfiCombos(Ranges.RFI_RANGES_6, 'utg'),
+  '9-max UTG tighter than 6-max UTG');
+// SB 介於 CO 與 BTN 之間
+var sb9 = rfiCombos(Ranges.RFI_RANGES_9, 'sb');
+assert(sb9 > rfiCombos(Ranges.RFI_RANGES_9, 'co') && sb9 < rfiCombos(Ranges.RFI_RANGES_9, 'btn'),
+  '9-max SB width between CO and BTN');
+
+// ---------- 5f. 自訂 range 覆寫（純函式） ----------
+console.log('--- Custom range overrides ---');
+
+// cycleState：RFI 兩態循環；def 三態循環
+assert(Ranges.cycleState('rfi', 'out') === 'in' && Ranges.cycleState('rfi', 'in') === 'out',
+  'cycleState rfi: out <-> in');
+assert(Ranges.cycleState('def', 'out') === 'in' &&
+  Ranges.cycleState('def', 'in') === 'tb' &&
+  Ranges.cycleState('def', 'tb') === 'out',
+  'cycleState def: out -> in (call) -> tb -> out');
+
+// mergeOverride：空覆寫 = 原樣，且不改動輸入
+var baseMap = { AA: 'tb', KQs: 'in', T9s: 'in' };
+var merged0 = Ranges.mergeOverride(baseMap, null);
+assert(JSON.stringify(merged0) === JSON.stringify(baseMap) && merged0 !== baseMap,
+  'mergeOverride: empty override returns equal copy');
+var merged1 = Ranges.mergeOverride(baseMap, { T9s: 'out', '72o': 'in', KQs: 'tb' });
+assert(!merged1.T9s && merged1['72o'] === 'in' && merged1.KQs === 'tb' && merged1.AA === 'tb',
+  'mergeOverride: applies out/add/change');
+assert(baseMap.T9s === 'in' && !baseMap['72o'], 'mergeOverride: does not mutate default map');
+
+// diffOverride：merge 後再 diff 回到相同覆寫；無差異 -> 空物件
+var diff1 = Ranges.diffOverride(baseMap, merged1);
+assert(diff1.T9s === 'out' && diff1['72o'] === 'in' && diff1.KQs === 'tb' && !('AA' in diff1),
+  'diffOverride: sparse diff round-trips');
+assert(Object.keys(Ranges.diffOverride(baseMap, merged0)).length === 0,
+  'diffOverride: identical maps -> empty diff');
+// 再套 diff 應還原完整自訂 map
+assert(JSON.stringify(Ranges.mergeOverride(baseMap, diff1)) === JSON.stringify(merged1),
+  'mergeOverride(default, diff) reconstructs custom map');
 
 // ---------- 6. Nash HU push/fold ----------
 console.log('--- Nash HU push/fold ---');

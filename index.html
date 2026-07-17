@@ -342,23 +342,28 @@
   </div>
 
   <div class="card">
-    <h2>6-max 開牌 range（RFI）</h2>
-    <p class="hint">100bb 現金局／深籌碼 MTT 的標準 raise-first-in 建議 range（無人入池時的開牌手牌）。</p>
-    <div class="btn-row" id="rfiPosRow">
-      <button class="btn pos-btn active-role" data-pos="utg">UTG</button>
-      <button class="btn pos-btn" data-pos="hj">HJ</button>
-      <button class="btn pos-btn" data-pos="co">CO</button>
-      <button class="btn pos-btn" data-pos="btn">BTN</button>
-      <button class="btn pos-btn" data-pos="sb">SB</button>
+    <h2>開牌 range（RFI）</h2>
+    <p class="hint">100bb 現金局／深籌碼 MTT 的標準 raise-first-in 建議 range（無人入池時的開牌手牌）。
+      按「✏️ 編輯」後點格子可自訂開牌與否。</p>
+    <div class="btn-row" id="rfiTableRow">
+      <button class="btn active-role" data-table="6">6-max</button>
+      <button class="btn" data-table="9">9-max</button>
+      <button class="btn edit-btn" id="btnRfiEdit">✏️ 編輯</button>
     </div>
+    <div class="btn-row" id="rfiPosRow"></div>
     <p class="hint" id="rfiTxt"></p>
+    <div class="custom-row" id="rfiCustomRow" hidden>
+      <span class="custom-badge">已自訂</span>
+      <button class="btn" id="btnRfiReset">還原建議值</button>
+    </div>
     <div class="nash-grid-wrap"><div id="rfiGrid" class="nash-grid"></div></div>
   </div>
 
   <div class="card">
     <h2>面對開牌（3-bet / 防守）</h2>
-    <p class="hint">100bb 6-max，前面有人開牌時的應對 range（簡化 GTO 近似）。
-      <span class="legend-tb">紅</span> = 3-bet、<span class="legend-call">綠</span> = 跟注、灰 = 蓋牌。</p>
+    <p class="hint">100bb，前面有人開牌時的應對 range（簡化 GTO 近似）。
+      <span class="legend-tb">紅</span> = 3-bet、<span class="legend-call">綠</span> = 跟注、灰 = 蓋牌。
+      按「✏️ 編輯」後點格子循環切換 棄牌 → 跟注 → 3-bet。</p>
     <label>情境
       <select id="defSpot">
         <option value="co_vs_utg">CO vs UTG 開牌</option>
@@ -366,9 +371,18 @@
         <option value="sb_vs_btn">SB vs BTN 開牌</option>
         <option value="bb_vs_btn">BB vs BTN 開牌（防守）</option>
         <option value="bb_vs_sb">BB vs SB 開牌（防守）</option>
+        <option value="hj_vs_utg9">HJ vs UTG 開牌（9-max）</option>
+        <option value="bb_vs_utg9">BB vs UTG 開牌（9-max 防守）</option>
       </select>
     </label>
+    <div class="btn-row">
+      <button class="btn edit-btn" id="btnDefEdit">✏️ 編輯</button>
+    </div>
     <p class="hint" id="defTxt"></p>
+    <div class="custom-row" id="defCustomRow" hidden>
+      <span class="custom-badge">已自訂</span>
+      <button class="btn" id="btnDefReset">還原建議值</button>
+    </div>
     <div class="nash-grid-wrap"><div id="defGrid" class="nash-grid"></div></div>
   </div>
 
@@ -385,6 +399,7 @@
     <p class="hint">Push/Fold：隨機籌碼深度與手牌，依 Nash 均衡判斷推或棄。
       開牌 RFI：隨機位置與手牌，依 6-max 標準開牌 range 判斷加注或蓋牌。
       面對開牌：隨機防守情境，判斷 3-bet、跟注或蓋牌。</p>
+    <p class="hint">📌 測驗以建議 range 為準，圖表的自訂編輯不影響評分。</p>
     <div class="btn-row">
       <button class="btn active-role" id="btnQuizModePf">Push/Fold</button>
       <button class="btn" id="btnQuizModeRfi">開牌 RFI</button>

@@ -350,6 +350,21 @@ canvas { width: 100%; display: block; border-radius: 8px; }
 .nash-cell.tb { background: linear-gradient(160deg, #ef7a70, #bc4038); color: #2e0e0c; font-weight: 700; }
 .legend-tb { color: #ef7a70; font-weight: 600; }
 .legend-call { color: #4bdc8b; font-weight: 600; }
+.nash-grid.editing {
+  outline: 2px dashed var(--accent);
+  outline-offset: 4px; border-radius: 6px;
+}
+.nash-grid.editing .nash-cell { cursor: pointer; }
+.custom-row {
+  display: flex; align-items: center; gap: 10px; margin: 8px 0;
+}
+.custom-badge {
+  display: inline-block; padding: 3px 10px;
+  background: rgba(212, 175, 106, .15);
+  border: 1px solid var(--accent); color: var(--accent);
+  border-radius: 999px; font-size: .78rem; font-weight: 700;
+}
+.custom-row .btn { padding: 6px 12px; font-size: .82rem; min-width: 0; }
 .btn.active-role {
   background: var(--gold-grad);
   border-color: rgba(255, 235, 190, .4); color: #241a08; font-weight: 700;
