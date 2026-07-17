@@ -1259,17 +1259,21 @@
   // action: 'aggro'（全下/加注/3-bet）| 'call' | 'fold'
   function quizAnswer(action) {
     if (!quizCur) return;
-    var ok, detail;
+    var ok, detail, bestAct, qKey;
     if (quizCur.mode === 'pf') {
       var sol = NashHU.solveCached(quizCur.S);
       var correct = sol.pushSet[quizCur.idx];
       ok = (action === 'aggro') === !!correct;
+      bestAct = correct ? 'aggro' : 'fold';
+      qKey = 'pf:' + quizCur.S + ':' + quizCur.idx;
       detail = ' Nash 均衡：' + PushFold.classLabel(quizCur.idx) + ' 在 ' + quizCur.S + ' bb ' +
         (correct ? '應該<b>全下</b>' : '應該<b>蓋牌</b>') +
         '（均衡全下頻率 ' + Math.round(sol.push[quizCur.idx] * 100) + '%）。';
     } else if (quizCur.mode === 'rfi') {
       var inRange = !!rfiSet(quizCur.pos)[quizCur.idx];
       ok = (action === 'aggro') === inRange;
+      bestAct = inRange ? 'aggro' : 'fold';
+      qKey = 'rfi:' + quizCur.pos + ':' + quizCur.idx;
       detail = ' 標準 RFI：' + PushFold.classLabel(quizCur.idx) + ' 在 ' +
         RFI_RANGES[quizCur.pos].name +
         (inRange ? ' 屬於開牌 range，應該<b>加注</b>。' : ' 不在開牌 range，應該<b>蓋牌</b>。');
@@ -1277,6 +1281,8 @@
       var ds = defSet(quizCur.spot);
       var best = ds.tbSet[quizCur.idx] ? 'aggro' : ds.callSet[quizCur.idx] ? 'call' : 'fold';
       ok = action === best;
+      bestAct = best;
+      qKey = 'def:' + quizCur.spot + ':' + quizCur.idx;
       var bestTxt = best === 'aggro' ? '<b>3-bet</b>' : best === 'call' ? '<b>跟注</b>' : '<b>蓋牌</b>';
       detail = ' ' + Ranges.DEF_SPOTS[quizCur.spot].name + '：' +
         PushFold.classLabel(quizCur.idx) + ' 應該' + bestTxt + '。';
@@ -1284,6 +1290,11 @@
     var s = quizScore(quizCur.mode);
     s.total++; if (ok) s.correct++;
     quizSave(quizCur.mode, s);
+    // 訓練系統：記錄答題（滾動熟練度 / 錯題本 / 每日任務）
+    if (window.TRAINING && window.TRAINING.record) {
+      window.TRAINING.record(quizCur.mode, ok, qKey,
+        { idx: quizCur.idx, best: bestAct, info: $('#quizInfo').textContent });
+    }
     var fb = $('#quizFeedback');
     fb.hidden = false;
     fb.innerHTML = (ok ? '<span class="pos">✔ 正確！</span>' : '<span class="neg">✘ 錯誤。</span>') +

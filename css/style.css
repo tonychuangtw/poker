@@ -273,4 +273,10 @@ a.ev-name:hover { text-decoration: underline; }
 .bar-row .bar-fill { height: 100%; border-radius: 6px; transition: width .4s ease; }
 .bar-fill.bar-pos { background: var(--pos); }
 .bar-fill.bar-neg { background: var(--neg); }
+.bar-fill.bar-acc { background: var(--accent); }
+
+/* ===== 訓練 tab ===== */
+.train-task { margin: 6px 0; font-size: .9rem; }
+#masteryBars .bar-label { width: 84px; }
+#masteryBars .bar-value { min-width: 96px; }
 .bar-row .bar-value { flex-shrink: 0; min-width: 56px; text-align: right; }

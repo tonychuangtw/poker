@@ -19,6 +19,7 @@
   <button class="tab-btn" data-tab="equity">現金局 EV</button>
   <button class="tab-btn" data-tab="icm">錦標賽 ICM</button>
   <button class="tab-btn" data-tab="nash">圖表</button>
+  <button class="tab-btn" data-tab="train">訓練</button>
   <button class="tab-btn" data-tab="hands">複盤</button>
   <button class="tab-btn" data-tab="events">賽事</button>
 </nav>
@@ -419,6 +420,49 @@
   </div>
 </section>
 
+<!-- ============ Tab 4b: 訓練 ============ -->
+<section id="tab-train" class="tab-panel">
+  <div class="card">
+    <h2>今日任務</h2>
+    <div id="trainTasks"></div>
+    <p class="hint" id="trainStreak"></p>
+  </div>
+
+  <div class="card">
+    <h2>熟練度（滾動 30 題）</h2>
+    <p class="hint">在「圖表」分頁作答測驗即可累積；最近 30 題正確率 ≥ 90% 獲得 🏆。</p>
+    <div id="masteryBars" class="bar-chart"></div>
+  </div>
+
+  <div class="card">
+    <h2>錯題本</h2>
+    <p class="hint" id="mistakeCountTxt"></p>
+    <button class="btn primary full" id="btnDrillStart">錯題重練</button>
+    <div id="drillRun" hidden>
+      <div class="quiz-q">
+        <div class="quiz-hand" id="drillHand"></div>
+        <div class="quiz-info" id="drillInfo"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary big" id="btnDrillAggro">全下</button>
+        <button class="btn big" id="btnDrillCall" hidden>跟注</button>
+        <button class="btn big" id="btnDrillFold">蓋牌</button>
+      </div>
+      <div class="ev-result" id="drillFeedback" hidden></div>
+      <div class="btn-row">
+        <button class="btn" id="btnDrillNext" hidden>下一題</button>
+        <button class="btn" id="btnDrillQuit">結束</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>週報（近 7 天）</h2>
+    <div id="weekChart" class="bar-chart"></div>
+    <p class="hint" id="weekTotals"></p>
+  </div>
+</section>
+
 <!-- ============ Tab 5b: 關鍵手牌複盤 ============ -->
 <section id="tab-hands" class="tab-panel">
   <div class="card">
@@ -507,6 +551,7 @@
 <script src="js/hands.js"></script>
 <script src="js/nash.js"></script>
 <script src="js/app.js"></script>
+<script src="js/training.js"></script>
 <script src="js/sync.js"></script>
 </body>
 </html>

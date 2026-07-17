@@ -679,6 +679,85 @@ assert(ls.byStreet.flop.badCalls === 2 && ls.byStreet.river.missedCalls === 1 &&
   'leakSummary per-street breakdown');
 assert(HANDS.leakSummary([]).decisions === 0, 'leakSummary empty list ok');
 
+// ---------- 6b. 訓練系統（純函式） ----------
+console.log('--- Training ---');
+var TRAINING = require('../js/training.js');
+
+// rollPush：推入 + 截尾
+var roll = [];
+roll = TRAINING.rollPush(roll, 1);
+roll = TRAINING.rollPush(roll, 0);
+assert(roll.length === 2 && roll[0] === 1 && roll[1] === 0, 'rollPush appends 0/1');
+var full = [];
+for (var ri = 0; ri < 35; ri++) full = TRAINING.rollPush(full, 1, 30);
+assert(full.length === 30, 'rollPush trims to window size (30)');
+assert(TRAINING.rollPush([1, 1, 0], 1, 3).join(',') === '1,0,1',
+  'rollPush drops oldest when full');
+var orig = [1, 0];
+TRAINING.rollPush(orig, 1);
+assert(orig.length === 2, 'rollPush does not mutate input array');
+
+// accuracy
+assert(TRAINING.accuracy([]) === 0, 'accuracy of empty = 0');
+assert(Math.abs(TRAINING.accuracy([1, 1, 0, 0]) - 0.5) < 1e-9, 'accuracy 2/4 = 50%');
+
+// isMastered 邊界：需滿 30 題且 >= 90%
+function mkRoll(correct, total) {
+  var a = [];
+  for (var i = 0; i < total; i++) a.push(i < correct ? 1 : 0);
+  return a;
+}
+assert(TRAINING.isMastered(mkRoll(27, 30)) === true, 'mastered at exactly 27/30 (90%)');
+assert(TRAINING.isMastered(mkRoll(26, 30)) === false, 'not mastered at 26/30 (86.7%)');
+assert(TRAINING.isMastered(mkRoll(29, 29)) === false, 'not mastered with only 29 answers (100%)');
+assert(TRAINING.isMastered(mkRoll(30, 30)) === true, 'mastered at 30/30');
+assert(TRAINING.isMastered([]) === false, 'empty roll not mastered');
+
+// dateAdd
+assert(TRAINING.dateAdd('2026-07-16', -1) === '2026-07-15', 'dateAdd -1 day');
+assert(TRAINING.dateAdd('2026-03-01', -1) === '2026-02-28', 'dateAdd across month');
+assert(TRAINING.dateAdd('2026-12-31', 1) === '2027-01-01', 'dateAdd across year');
+
+// lastNDays
+var week = TRAINING.lastNDays('2026-07-16', 7);
+assert(week.length === 7 && week[0] === '2026-07-10' && week[6] === '2026-07-16',
+  'lastNDays 7-day window oldest->newest');
+
+// updateStreak
+var st0 = { current: 0, best: 0, lastDone: '' };
+var st1 = TRAINING.updateStreak(st0, '2026-07-15');
+assert(st1.current === 1 && st1.best === 1 && st1.lastDone === '2026-07-15',
+  'streak starts at 1');
+var st2 = TRAINING.updateStreak(st1, '2026-07-16');
+assert(st2.current === 2 && st2.best === 2, 'streak increments when lastDone = yesterday');
+var st3 = TRAINING.updateStreak(st2, '2026-07-16');
+assert(st3.current === 2 && st3.lastDone === '2026-07-16', 'same-day repeat is a no-op');
+var st4 = TRAINING.updateStreak(st2, '2026-07-20');
+assert(st4.current === 1 && st4.best === 2, 'streak resets to 1 after a gap, best kept');
+
+// pruneActivity：保留 60 天內
+var act = {};
+act['2026-07-16'] = { pf: 1 };
+act['2026-05-18'] = { pf: 2 }; // 60 天窗口內最舊一天
+act['2026-05-17'] = { pf: 3 }; // 第 61 天，應剔除
+var pruned = TRAINING.pruneActivity(act, '2026-07-16', 60);
+assert(!!pruned['2026-07-16'] && !!pruned['2026-05-18'] && !pruned['2026-05-17'],
+  'pruneActivity keeps 60-day window, drops day 61');
+
+// addMistake：去重 + 上限
+var ms = [];
+ms = TRAINING.addMistake(ms, { kind: 'pf', key: 'pf:10:5', ts: 1 });
+ms = TRAINING.addMistake(ms, { kind: 'rfi', key: 'rfi:utg:5', ts: 2 });
+ms = TRAINING.addMistake(ms, { kind: 'pf', key: 'pf:10:5', ts: 3 });
+assert(ms.length === 2, 'addMistake dedups by kind+key');
+assert(ms[1].kind === 'pf' && ms[1].ts === 3, 'dedup keeps latest entry (moved to end)');
+var big = [];
+for (var mi = 0; mi < 105; mi++) {
+  big = TRAINING.addMistake(big, { kind: 'pf', key: 'pf:2:' + mi, ts: mi }, 100);
+}
+assert(big.length === 100 && big[0].key === 'pf:2:5' && big[99].key === 'pf:2:104',
+  'addMistake caps at 100, drops oldest');
+
 // ---------- 7. 賽事資料 ----------
 console.log('--- Tournaments data ---');
 var tourneys = JSON.parse(require('fs').readFileSync(__dirname + '/../data/tournaments.json', 'utf8'));

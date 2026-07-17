@@ -14,6 +14,7 @@ var ASSETS = [
   './js/hands.js',
   './js/nash.js',
   './js/app.js',
+  './js/training.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png'
