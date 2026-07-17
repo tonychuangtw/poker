@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-15",
+  "updated": "2026-07-17",
   "note": "每日自動更新（來源：各巡迴賽官網與撲克媒體公開行程），區間為即日起約 4 個月",
   "events": [
     {
@@ -10,7 +10,7 @@
       "venue": "Horseshoe Las Vegas／Paris Las Vegas",
       "start": "2026-07-02",
       "end": "2026-08-05",
-      "note": "第 57 屆世界撲克大賽主賽事，買入 $10,000。主賽事 7/2 起分四梯次開打，決賽桌延至 8/3–8/5 於 Horseshoe 舉行並於 ESPN 黃金時段播出（20 天延播新賽制）",
+      "note": "第 57 屆世界撲克大賽主賽事，買入 $10,000，共 9,208 人次參賽。7/2 起分四梯次開打，7/13 進入決賽桌，依新賽制延後三週於 8/3–8/5 在 Horseshoe Las Vegas 以 ESPN 黃金時段播出決賽桌，9 人決賽桌保證最低獎金各 $100 萬，冠軍獎金 $1,000 萬",
       "url": "https://www.wsop.com/news/2026-world-series-of-poker/"
     },
     {
@@ -32,8 +32,19 @@
       "venue": "CTP Asia Poker Arena（前段於姊妹場地 Red Space）",
       "start": "2026-07-08",
       "end": "2026-08-03",
-      "note": "CTP 主辦台灣撲克盛事，全系列保證獎金約 410 萬美元（歷屆新高），一般 Main Event 保證 200 萬美元，另加碼高買入 Crown Main Event（7/26–8/3，買入約 $600，保證 100 萬美元），雙 Main Event 賽制，賽事已開打",
+      "note": "CTP 主辦台灣撲克盛事，全系列保證獎金約 USD 3,000,000–4,100,000（各來源數字略有出入，以個別賽事頁 USD 4,100,000 為主），共 50 餘場賽事；一般 Main Event（買入約 $300，7/19–7/27）保證 200 萬美元，另加碼高買入 Crown Main Event（買入約 $600，7/26–8/3，保證 100 萬美元），雙 Main Event 賽制，賽事已開打",
       "url": "https://somuchpoker.com/events-calendar/tmt/2026/taiwan-millions-tournament-tmt-20"
+    },
+    {
+      "series": "WPT Legends of Poker",
+      "region": "北美",
+      "country": "美國",
+      "city": "貝爾花園（洛杉磯近郊）",
+      "venue": "Parkwest Bicycle Casino（The Bike）",
+      "start": "2026-07-17",
+      "end": "2026-09-07",
+      "note": "共 60 個編號賽事（另設每日 survivor 賽），全系列保證獎金逾 $500 萬；主賽事「PWC V」（8/30–9/7）買入 $400，保證獎金 $500,000。本次查詢區間起始日（7/17）大部分賽期尚未展開",
+      "url": "https://www.thebike.com/play/major_tournament_lop_2026.php"
     },
     {
       "series": "British Poker Series (BPS)",
@@ -76,7 +87,7 @@
       "venue": "LES A Casino（Jeju Shinhwa World）",
       "start": "2026-07-25",
       "end": "2026-08-10",
-      "note": "濟州暑期系列，K Poker Cup 階段（7/25–8/4，主賽事保證 KRW 8.8 億、買入 KRW 1,300,000）銜接高額買入 King Poker Cup 第二階段（含 King's Main Event，買入 $15,000，起始日各方報導略有 8/1 或 8/3 之出入）及壓軸 Final Coronation Super High Roller（買入 $30,000），至 8/10 結束，系列總保證獎金約 KRW 20 億",
+      "note": "濟州暑期系列，兩階段重疊銜接：K Poker Cup（7/25–8/4，主賽事保證 KRW 8.8 億、買入 KRW 1,300,000）與高額買入 King Poker Cup（8/1–8/10，與 K Poker Cup 尾聲重疊），King's Main Event 分 Day 1A（8/6）、Day 1B（8/7）開打、8/9 決出冠軍，買入約 $15,000；系列壓軸為 8/10 舉行的 Final Coronation Super High Roller（買入 $30,000），系列總保證獎金約 KRW 20 億",
       "url": "https://www.pokernews.com/news/2026/06/k-poker-cup-king-poker-cup-new-details-jeju-festival-51466.htm"
     },
     {
@@ -87,7 +98,7 @@
       "venue": "Cove Manila／Okada Manila",
       "start": "2026-07-28",
       "end": "2026-08-10",
-      "note": "PokerStars LIVE Asia Pacific Poker Tour，保證獎金逾 1.32 億披索",
+      "note": "PokerStars LIVE Asia Pacific Poker Tour，官方宣傳總保證獎金逾 1.32 億披索；截至 2026-07-17 查證，主賽事確切買入與保證金額官網賽程頁尚未填入完整細節",
       "url": "https://www.pokerstarslive.com/appt/"
     },
     {
@@ -98,7 +109,7 @@
       "venue": "Card Casino Šamorín",
       "start": "2026-07-31",
       "end": "2026-08-11",
-      "note": "WSOP Circuit 2026 歐洲站之一，€280 萬保證獎金，共 12 場金手鏈賽，NLH 與 PLO 冠軍賽各保證 €1,000,000（場地更正：實際位於斯洛伐克沙莫林，非原先所列捷克場地）",
+      "note": "WSOP Circuit 2026 歐洲站之一，共 13 場金手鏈賽，全系列保證獎金 €2,800,000（部分報導另引用 €3.8M，經查證以多數英語／德語撲克媒體採用的 €2.8M 為準），主賽事買入 €1,350+€150，保證 €1,000,000",
       "url": "https://thepokerchronicle.com/twelve-wsop-rings-and-e2-8-million-guarantee-at-the-wsop-circuit-slovakia-at-card-casino-samorin/"
     },
     {
@@ -109,7 +120,7 @@
       "venue": "CTP Asia Poker Arena",
       "start": "2026-08-05",
       "end": "2026-08-10",
-      "note": "Asia Poker Championship 台北站第三屆，官方尚未公布完整賽程與保證獎金金額",
+      "note": "Asia Poker Championship 台北站第三屆，官方尚未公布完整賽程與保證獎金金額（截至 2026-07-17 再次查證，pokercalendar.asia 官方頁面仍標示「賽程即將公布」，僅場地與日期確定）",
       "url": "https://somuchpoker.com/events-calendar/apc/2026/apc-taipei-iii-2026"
     },
     {
@@ -120,7 +131,7 @@
       "venue": "Paradise City",
       "start": "2026-08-07",
       "end": "2026-08-16",
-      "note": "Asian Poker Tour × Paradise Group，與 9 月的 APPT Korea 為不同系列，全系列保證約 KRW 40 億，主賽事買入 KRW 2,500,000，保證獎金約 KRW 15 億",
+      "note": "Asian Poker Tour × Paradise Group，與 9 月的 APPT Korea 為不同系列，全系列超過 108 場賽事、保證約 KRW 40 億（約 US$2.7M），主賽事（8/9–8/15）買入 KRW 2,500,000，保證獎金約 KRW 15 億，冠軍可獲 3 個 APTC 台北 2026 席位；另設 Super High Roller（買入 KRW 15,000,000，保證 KRW 5 億）",
       "url": "https://www.theasianpokertour.com/news/apt-incheon-2026-the-preview"
     },
     {
@@ -131,8 +142,19 @@
       "venue": "NagaWorld Integrated Resort",
       "start": "2026-08-12",
       "end": "2026-08-24",
-      "note": "Championship 主賽事 8/20–8/24，買入 $1,300，保證獎金 $500,000，全系列約 70 場賽事、總保證獎金逾 $100 萬",
+      "note": "Championship 主賽事 8/20–8/24，買入 $1,300，保證獎金 $500,000，全系列約 70 場賽事、總保證獎金逾 $100 萬；此為 NagaWorld 2026 年第二場 WPT 賽事（首場為 1/21–2/9 舉行、總保證 $3.5M 的 WPT Cambodia Championship，已於本次查詢區間開始前結束），兩場為各自獨立系列",
       "url": "https://www.pokernews.com/news/2026/06/wpt-cambodia-passport-to-the-world-championship-51584.htm"
+    },
+    {
+      "series": "WSOP Circuit — Harrah's Atlantic City",
+      "region": "北美",
+      "country": "美國",
+      "city": "大西洋城",
+      "venue": "Harrah's Resort Atlantic City",
+      "start": "2026-08-13",
+      "end": "2026-08-24",
+      "note": "睽違五年重返大西洋城，共 18 場金戒指賽事，系列保證獎金逾 $150 萬，主賽事買入 $1,700，分三梯次（8/21–8/23）開打",
+      "url": "https://www.wsop.com/news/the-wsop-circuit-returns-to-harrah-s-atlantic-city-for-first-time-in-five-years/"
     },
     {
       "series": "WPT Cyprus Championship",
@@ -142,7 +164,7 @@
       "venue": "Chamada Prestige Hotel & Casino",
       "start": "2026-08-12",
       "end": "2026-08-24",
-      "note": "Championship 主賽事 8/19–8/24，買入 $3,500，保證獎金 $200 萬",
+      "note": "Championship 主賽事 8/19–8/24，買入 $3,500，保證獎金 $200 萬，設 3 個起始梯次",
       "url": "https://www.pokernews.com/news/2026/06/world-poker-tour-announces-two-season-24-stops-in-cyprus-51444.htm"
     },
     {
@@ -153,7 +175,7 @@
       "venue": "Casino Barcelona",
       "start": "2026-08-16",
       "end": "2026-08-29",
-      "note": "含 PokerStars Open（8/16–8/22）與 EPT Main Event（買入 €5,300，8/22 起，保證獎金約 €1,000 萬）暨 €100k 超高額買入賽",
+      "note": "含 PokerStars Open（8/16–8/22，買入 €1,650）與 EPT Main Event（買入 €5,300，8/22 起，保證獎金約 €1,000 萬）暨 €10,300 高額買入賽、€100k 超高額買入賽；官方 2026 年 EPT 年度僅四站（巴黎／摩納哥／巴塞隆納／布拉格），先前傳出的馬爾他站並未回歸",
       "url": "https://www.pokerstarslive.com/ept/barcelona/"
     },
     {
@@ -164,7 +186,7 @@
       "venue": "CTP Asia Poker Arena",
       "start": "2026-08-19",
       "end": "2026-08-31",
-      "note": "共 104 場賽事，總保證獎金逾新台幣 3,900 萬元；主賽事（8/25–8/31，分 A–F 梯次）保證新台幣 1,500 萬元，另有 Natural8 Open 暖身主賽事（8/20–8/22）保證新台幣 500 萬元",
+      "note": "共 104 場賽事（其中 92 場為正式編號賽事），總保證獎金逾新台幣 3,900 萬元；主賽事（8/25–8/31，分 6 個起始梯次）保證新台幣 1,500 萬元，另有 Natural8 Open 暖身主賽事（8/20–8/22）保證新台幣 500 萬元，全系列最高買入為 Superstar Challenge（新台幣 120,000 元）",
       "url": "https://somuchpoker.com/news/ps-championship-iv-taipei-2026-event-schedule"
     },
     {
@@ -175,7 +197,7 @@
       "venue": "bestbet Jacksonville",
       "start": "2026-08-20",
       "end": "2026-09-09",
-      "note": "冠軍賽事約 9/4–9/9，買入 $5,000，保證獎金 $1,000,000",
+      "note": "冠軍賽事 9/4–9/9，買入 $5,000，保證獎金 $1,000,000",
       "url": "https://www.worldpokertour.com/press-release/wpt-set-to-return-to-jacksonville-for-1-million-guaranteed-wpt-bestbet-scramble-championship"
     },
     {
@@ -186,7 +208,7 @@
       "venue": "Playground Poker Club",
       "start": "2026-08-26",
       "end": "2026-09-12",
-      "note": "日期更正（官方為 8/26–9/12，非先前所列 8/24–9/9）：加拿大暨北美首個 WSOP Super Circuit，主賽事保證獎金 C$10,000,000，號稱加拿大撲克史上最大賽事，全系列保證逾 C$14,000,000",
+      "note": "加拿大暨北美首個 WSOP Super Circuit，主賽事買入 C$5,000，保證獎金 C$10,000,000，號稱加拿大撲克史上最大賽事，全系列保證逾 C$14,000,000；日期存在來源差異：wsop.com 賽程總表標示 8/26–9/12，但 Playground 官網與 WSOP 官方社群貼文標示 8/24–9/9（主賽事 9/3–9/11），建議賽前以較新公告的官方社群／Playground 官網為準",
       "url": "https://www.wsop.com/tournaments/wsop-super-circuit-canada/"
     },
     {
@@ -194,10 +216,10 @@
       "region": "中南美",
       "country": "墨西哥",
       "city": "墨西哥城",
-      "venue": "Big Bola Casinos",
+      "venue": "Big Bola Casinos（Barceló México Santa Fe）",
       "start": "2026-08-31",
       "end": "2026-09-11",
-      "note": "WSOP Circuit 首度進駐墨西哥城（拉丁美洲首站），主賽事買入 $1,700，共 12 場金手鏈賽",
+      "note": "WSOP Circuit 首度進駐墨西哥城（拉丁美洲首站），主賽事買入 $1,700（9/4–9/9），共 12 場金戒指賽事，金戒指得主可獲 $5,000 WSOP 巴哈馬套票",
       "url": "https://www.wsop.com/news/wsop-circuit-announces-2026-season-with-shift-to-calendar-year-format/"
     },
     {
@@ -208,7 +230,7 @@
       "venue": "Partouche Casino Club",
       "start": "2026-09-01",
       "end": "2026-09-14",
-      "note": "WSOP Circuit 2026 歐洲站之一（官方結束日更正為 9/14，非先前所列 9/12）",
+      "note": "WSOP Circuit 2026 歐洲站之一，與 Groupe Partouche 合作新場地，主賽事買入約 €1,500",
       "url": "https://www.wsop.com/tournaments/wsop-circuit-partouche-casino-club/"
     },
     {
@@ -219,7 +241,7 @@
       "venue": "Paradise City",
       "start": "2026-09-03",
       "end": "2026-09-14",
-      "note": "睽違六年重返韓國仁川，與 8 月的 APT Incheon 為不同系列；主賽事 9/10–9/14，買入約 KRW 1,800,000，保證獎金約 KRW 10 億",
+      "note": "睽違六年重返韓國仁川，與 8 月的 APT Incheon 為不同系列；賽程含 Kickoff（9/3–9/4）、APPT National（9/7–9/10）、Main Event（9/10–9/14，買入約 KRW 1,800,000）",
       "url": "https://www.pokerstarslive.com/appt/korea/"
     },
     {
@@ -230,8 +252,19 @@
       "venue": "CTP Asia Poker Arena",
       "start": "2026-09-03",
       "end": "2026-09-14",
-      "note": "2026「馬年」主題系列最終且最盛大一站，為期 12 天，官方尚未公布完整保證獎金金額",
+      "note": "2026「馬年」主題系列最終且最盛大一站，為期 12 天；官方頁面截至 2026-07-17 再次查證，僅稱「準備推出多元買入賽事」，完整保證獎金金額仍未公布",
       "url": "https://somuchpoker.com/events-calendar/zsop/2026/zsop-the-final-horse-2026"
+    },
+    {
+      "series": "Triton Poker Super High Roller Series Jeju II 2026",
+      "region": "亞洲",
+      "country": "韓國",
+      "city": "濟州",
+      "venue": "LES A Casino（Jeju Shinhwa World）",
+      "start": "2026-09-04",
+      "end": "2026-09-17",
+      "note": "Triton 10 週年賽季濟州第二站，官方已於 2026-07 公布完整 14 天賽程（編號 #1–#16），買入區間約 $15,000–$200,000，含 9/12 開打的 $200,000 Triton Invitational 與 9/14 開打的 $100,000 主賽事，9/16 另設 10 週年特別賽（$150,000，早鳥享 5 折優惠）；GTD 保證獎金官方尚未公布。此前部分彙整站誤植結束日為 9/26，經直接查核 PokerNews 官方賽程稿後更正為 9/17",
+      "url": "https://www.pokernews.com/news/2026/07/triton-poker-jeju-2026-full-schedule-announced-51914.htm"
     },
     {
       "series": "WPT Australia",
@@ -241,8 +274,19 @@
       "venue": "The Star Sydney",
       "start": "2026-09-10",
       "end": "2026-09-30",
-      "note": "首度採雙冠軍賽制：WPT Prime Australia Championship（AUD$1,500，9/17–9/22）與 WPT Australia Championship（AUD$5,000，9/24–9/30），另設 AUD$500 女子錦標賽（9/15–9/16）",
+      "note": "首度採雙冠軍賽制：WPT Prime Australia Championship（AUD$1,500，9/17–9/22）與 WPT Australia Championship（AUD$5,000，9/24–9/30），另設 AUD$500 女子錦標賽（9/15–9/16），全系列共 36 場賽事，冠軍賽決賽桌均於 WPT YouTube 頻道直播，共送出 9 張 WPT 世界冠軍賽門票",
       "url": "https://www.worldpokertour.com/event/schedule"
+    },
+    {
+      "series": "WSOP Circuit Liechtenstein",
+      "region": "歐洲",
+      "country": "列支敦士登",
+      "city": "甘普林",
+      "venue": "Grand Casino Liechtenstein",
+      "start": "2026-09-10",
+      "end": "2026-09-22",
+      "note": "2026 年內第二度移師列支敦士登（2 月已在同場地舉辦過一場 CHF 150 萬保證主賽事的 Circuit 賽事，此為下半年加場，非重複資訊），共 12 場金戒指賽事，主賽事保證 CHF 750,000，全系列保證獎金合計 CHF 1,000,000",
+      "url": "https://www.pokerfirma.com/news/wsop-circuit-kehrt-noch-2026-ins-grand-casino-liechtenstein-zurueck-chf-1-000-000-garantiert/967767"
     },
     {
       "series": "GOP Taipei 2026 II「The Trial of Wisdom」",
@@ -252,7 +296,7 @@
       "venue": "CTP Asia Poker Arena",
       "start": "2026-09-18",
       "end": "2026-09-27",
-      "note": "Gods of Poker 台北站，2026 年 Asia 巡迴第二站（首站為 1 月「The Titan Assembly」，保證新台幣 4,200 萬），完整賽程與保證獎金尚待官方公布",
+      "note": "Gods of Poker 台北站，2026 年 Asia 巡迴第二站（首站為 1 月「The Titan Assembly」，保證新台幣 4,200 萬）；官方頁面截至 2026-07-17 再次查證仍僅標示「More details soon」，完整賽程與保證獎金尚待官方公布",
       "url": "https://pokercalendar.asia/en/pokertournaments/the-trial-of-wisdom-gop-taipei-2026-ii/"
     },
     {
@@ -274,7 +318,7 @@
       "venue": "LES A Casino（Jeju Shinhwa World）",
       "start": "2026-09-25",
       "end": "2026-10-07",
-      "note": "Asian Poker Tour 20 週年，136 場賽事，總保證獎金逾 KRW 49 億（約 350 萬美元），較原定 10/4 結束延長 3 天；主賽事（9/27–10/3）保證 KRW 22 億、買入 KRW 2,700,000，並送出 5 個 APTC 台北站主賽事席位",
+      "note": "Asian Poker Tour 回歸濟州，136 場賽事、13 天賽期，總保證獎金逾 USD 350 萬（較原定 10/4 結束延長 3 天）；主賽事（4 個起始梯次）保證 KRW 22 億、買入 KRW 2,700,000，並送出 12 個 APT Championship 台北站主賽事席位（每席價值 $10,000）；另設 APT Super High Roller（買入 KRW 1,500 萬，保證 KRW 5 億）",
       "url": "https://www.theasianpokertour.com/series/apt-jeju-south-korea-2026/events"
     },
     {
@@ -289,17 +333,6 @@
       "url": "https://www.lifeofpoker.com/news/2026/03/wsop-circuit-heads-to-malta-for-historic-first-stop-at-casino-malta-september-25-october-5"
     },
     {
-      "series": "APPT Manila Championship 2026",
-      "region": "亞洲",
-      "country": "菲律賓",
-      "city": "馬尼拉（帕拉納克）",
-      "venue": "Okada Manila",
-      "start": "2026-10-08",
-      "end": "2026-10-19",
-      "note": "2026 年度最後一站 APPT 賽事，主賽事約 10/15–10/19，保證獎金逾 1.32 億披索",
-      "url": "https://www.pokerstarslive.com/appt/manilachampionship/"
-    },
-    {
       "series": "WPT Prime Cyprus Championship",
       "region": "歐洲",
       "country": "賽普勒斯（北賽普勒斯）",
@@ -307,8 +340,19 @@
       "venue": "Chamada Prestige Hotel & Casino",
       "start": "2026-10-07",
       "end": "2026-10-19",
-      "note": "原訂 2026 年 3/5–3/9 因中東情勢導致航班中斷而延期，WPT 拆分為兩場賽普勒斯賽事（8 月 WPT Cyprus Championship、本場 10 月站），冠軍賽主賽事 10/15–10/19，買入 $1,100，保證獎金 $1,000,000",
+      "note": "原訂 2026 年 3/5 因中東情勢導致航班中斷而延期，WPT 拆分為兩場賽普勒斯賽事（8 月 WPT Cyprus Championship、本場 10 月站），冠軍賽主賽事 10/15–10/19，買入 $1,100，保證獎金 $1,000,000",
       "url": "https://www.worldpokertour.com/event/prime-wpt-prime-cyprus-championship-season-2026"
+    },
+    {
+      "series": "APPT Manila Championship 2026",
+      "region": "亞洲",
+      "country": "菲律賓",
+      "city": "馬尼拉（帕拉納克）",
+      "venue": "Okada Manila",
+      "start": "2026-10-08",
+      "end": "2026-10-19",
+      "note": "2026 年度最後一站 APPT 賽事，主賽事約 10/15–10/19；官方沿用「逾 1.32 億披索」保證文案，截至 2026-07-17 再次查證仍未見本站專屬完整賽程與買入金額公布",
+      "url": "https://www.pokerstarslive.com/appt/manilachampionship/"
     },
     {
       "series": "TMT Championship 2026",
@@ -318,7 +362,7 @@
       "venue": "CTP Asia Poker Arena",
       "start": "2026-10-16",
       "end": "2026-10-26",
-      "note": "TMT 系列高端衍生賽事，主辦方尚未公布 2026 年正式買入與保證獎金金額；歷屆（如 2024 年）主賽事買入約新台幣 33,000 元、保證新台幣 2,000 萬元、共約 30 場獎盃賽事，可作為結構參考，惟尚無官方頁面明確標示為 2026 年數字；上一屆（2025）總獎金約 2.8M 美元／4,400 萬新台幣，49 場賽事、6,575 人次參賽，可作為規模參考",
+      "note": "TMT 系列高端衍生賽事，多方來源交叉確認日期一致，惟主辦方截至 2026-07-17 查證仍未公布 2026 年正式買入與保證獎金金額；上一屆（2025，10/17–10/27）主賽事買入新台幣 35,000 元、保證新台幣 3,000 萬元，共 30 個編號賽事＋8 場高額賽事，全系列保證約新台幣 7,500 萬元，可作為規模參考，惟非 2026 年官方確認數字",
       "url": "https://somuchpoker.com/events-calendar/tmt/2026/tmt-championship-2026"
     },
     {
@@ -333,6 +377,17 @@
       "url": "https://www.wsop.com/tournaments/wsop-circuit-casino-gran-via/"
     },
     {
+      "series": "Jeju Poker Festival (JPF) 2026",
+      "region": "亞洲",
+      "country": "韓國",
+      "city": "濟州",
+      "venue": "LES A Casino（Jeju Shinhwa World）",
+      "start": "2026-10-28",
+      "end": "2026-11-08",
+      "note": "日期確定但賽程細節待公布：官方頁面僅標示「場地與賽制詳情即將公布」。經比對 2025 年同名前身賽事（JPF 2025，11/1–11/12，含 Red Dragon Championship／Red Dragon Mini Main Event 等命名賽事、並與 KPC 聯名一場 Super High Roller），研判本站極可能為 Red Dragon Poker Tour（RDPT）2026 年第三個濟州站（以「JPF」品牌另外命名），惟官方尚未證實主辦單位與完整賽程，建議持續追蹤",
+      "url": "https://somuchpoker.com/events-calendar/jpf/2026/jeju-poker-festival-2026"
+    },
+    {
       "series": "AJPC Samurai Circuit — Taiwan 2026 II",
       "region": "亞洲",
       "country": "台灣",
@@ -340,7 +395,7 @@
       "venue": "CTP Asia Poker Arena",
       "start": "2026-10-28",
       "end": "2026-11-03",
-      "note": "日本 AJPC 武士盃系列，CTP 官方 Threads 帳號公告總保證獎金新台幣 7,000,000 元、主賽事保證新台幣 4,000,000 元、免費賽送出 20 張武士道冠軍賽門票；AJPC 官方網站與 somuchpoker 賽曆截至查詢時（2026-07-15）僅將本場列為「Taiwan 2026 II，10/1–10/30，場地待定」之佔位資訊，尚未同步列出精確的 10/28–11/3 檔期；需留意本場保證獎金金額與檔期（10/28–11/2/3）恰與 2025 年 10 月同系列場次幾乎相同，不排除官方沿用固定文案／金額之可能，惟 CTP Threads 貼文文字本身確為近期可搜得之公開貼文，日期以 CTP 官方公告為準，建議持續留意後續正式賽程確認",
+      "note": "日本 AJPC 武士盃系列，CTP 官方 Threads 帳號公告總保證獎金新台幣 7,000,000 元、主賽事保證新台幣 4,000,000 元、免費賽送出 20 張武士道冠軍賽門票；惟截至 2026-07-17 再次查證，AJPC 官方網站（samurai.ajpc.jp/en）2026 年賽程列表僅列出 Taiwan 2026 第一屆（5/11–5/18）與「2026/8/21–30 仁川站」，仍未見任何「Taiwan 2026 II」條目，第三方彙整站亦無法提供獨立確認來源；日期與保證獎金金額恰與 2025 年 10 月同系列場次幾乎相同，不排除官方沿用固定文案之可能，日期以 CTP 官方公告為準，建議持續留意 AJPC 官網後續正式賽程確認",
       "url": "https://www.threads.com/@ctpclub/post/DP_OQziCb6C/"
     },
     {
@@ -351,7 +406,7 @@
       "venue": "Merit Royal Diamond Hotel & Casino",
       "start": "2026-11-04",
       "end": "2026-11-15",
-      "note": "Triton One（較低買入姊妹賽）首度登陸北賽普勒斯，為 Triton 2026 年除濟州、蒙特內哥羅外額外確認的分站，官方完整賽程截至查詢時仍標示「Full schedule TBA」",
+      "note": "Triton 新推出的中額買入系列（首度嘗試低於 Super High Roller 等級的賽制），首度登陸北賽普勒斯，買入約 $2,000–$15,000，鎖定非傳統高額桌客層；官方完整賽程截至 2026-07-17 查證仍標示「Full schedule TBA」",
       "url": "https://www.pokernews.com/tours/triton/triton-one-northern-cyprus-69167/"
     },
     {
@@ -362,7 +417,7 @@
       "venue": "Hilton Panama",
       "start": "2026-11-05",
       "end": "2026-11-15",
-      "note": "WSOP Circuit 史上首度登陸巴拿馬，為 2026 年拉丁美洲第二個新增站點（另一站為 8-9 月墨西哥城）",
+      "note": "WSOP Circuit 史上首度登陸巴拿馬，為 2026 年拉丁美洲第二個新增站點（另一站為 8-9 月墨西哥城），共 12 場金戒指賽事，主賽事分 5 個起始梯次（11/10–11/13）",
       "url": "https://www.wsop.com/news/panama-city-makes-highly-anticipated-wsop-circuit-debut/"
     },
     {
@@ -373,7 +428,7 @@
       "venue": "Casino Middelkerke Betfirst",
       "start": "2026-11-06",
       "end": "2026-11-15",
-      "note": "WSOP Circuit 2026 歐洲站之一，位於海濱、造型獨特的球形賭場，為年末歐洲賽季倒數第二站",
+      "note": "WSOP Circuit 2026 歐洲站之一，位於海濱、造型獨特的球形賭場，為年末歐洲賽季倒數第二站，2026 年逐場賽程截至 2026-07-17 尚未正式公布",
       "url": "https://www.wsop.com/news/wsop-circuit-announces-2026-season-with-shift-to-calendar-year-format/"
     },
     {
@@ -381,10 +436,10 @@
       "region": "亞洲",
       "country": "台灣",
       "city": "台北",
-      "venue": "CTP Asia Poker Arena／Red Space",
-      "start": "2026-11-12",
+      "venue": "Red Space 與 Asia Poker Arena 雙場館並用（皆為 CTP 中華德州撲克俱樂部合作場地）",
+      "start": "2026-11-13",
       "end": "2026-11-29",
-      "note": "Asian Poker Tour 年度總決賽站，與 CTP（中華德州撲克俱樂部）合作，共 210 場賽事、23 場冠軍賽，總保證獎金逾 $810 萬，主賽事（Freezeout，買入 $10,000／約新台幣 311,900 元）保證 $500 萬（約新台幣 1.65 億元）、賽期 11/23–11/27，另設 $15,000／$25,000／$50,000 高額買入冠軍賽；官方開賽日期更正為 11/12（非先前所列 11/13），本次查詢區間僅涵蓋至開賽後數日，後續賽程請留意官方公告",
+      "note": "Asian Poker Tour 年度總決賽站，與 CTP（中華德州撲克俱樂部）合作，正式「17 天賽事」官方確認為 11/13–11/29（11/12 另有一場前置的 Asia Gaming Industry Championship Freezeout，同樣辦於 Red Space，不計入官方 17 天賽期），共 210 場賽事（含 26 場衛星賽）、23 場冠軍賽，總保證獎金約新台幣 2.56 億元（約 $810 萬美元）；主賽事（Freezeout，買入 $10,000）保證約 $500 萬美元，另設 $15,000／$25,000／$50,000 高額買入冠軍賽；本次查詢區間（至 11/17）僅涵蓋開賽後數日，後續賽程請留意官方公告",
       "url": "https://www.theasianpokertour.com/series/apt-championship-taipei-2026/events"
     },
     {
@@ -395,7 +450,7 @@
       "venue": "Merit Royal Diamond Hotel & Casino",
       "start": "2026-11-15",
       "end": "2026-11-28",
-      "note": "緊接於同場地 Triton One Northern Cyprus 之後舉行的 Triton 主系列高額買入賽事，買入區間約 $25,000–$150,000，官方完整賽程截至查詢時仍標示「Full schedule TBA」，本次查詢區間僅涵蓋開賽首日",
+      "note": "緊接於同場地 Triton One Northern Cyprus 之後舉行的 Triton 主系列高額買入賽事，買入區間約 $25,000–$150,000，官方完整賽程截至 2026-07-17 查證仍標示「Full schedule TBA」，本次查詢區間僅涵蓋開賽首三日",
       "url": "https://www.pokernews.com/tours/triton/"
     },
     {
@@ -406,30 +461,19 @@
       "venue": "Bay 101 Casino",
       "start": "",
       "end": "",
-      "note": "日期未定：上一屆（2025）於 10/17–11/2 舉行，截至查詢時（2026-07-15）官方仍尚未公布 2026 年確切日期",
+      "note": "日期未定：上一屆（2025）於 10/17–11/2 舉行（冠軍賽 10/24–10/28，買入 $5,300）；截至 2026-07-17 再次查證，官方頁面仍僅標示 2025 賽季，尚無任何 2026 年續辦公告或日期（部分第三方彙整站流傳「10/17–10/31」等說法，因無法直接核實官網原始頁面，暫不採用）",
       "url": "https://www.pokernewsdaily.com/bay-101-shooting-star-to-return-to-wpt-schedule-45657/"
     },
     {
-      "series": "Harbour Poker Cup II 2026",
+      "series": "Harbour Poker Cup（港撲超）2026",
       "region": "亞洲",
       "country": "台灣",
       "city": "台北",
-      "venue": "CTP Asia Poker Arena（推測，若延續上屆模式）",
+      "venue": "CTP Asia Poker Arena（推測，若延續歷屆模式）",
       "start": "",
       "end": "",
-      "note": "日期未定：經多方搜尋精確片語「Harbour Poker Cup II」，查無任何官方公告、媒體報導或社群貼文可證實 2026 年續辦日期，先前彙整站流傳的「9/30–10/4」說法查無實際出處，故予以移除、暫不列出確切日期。唯一可查證的是 2025 年首屆 Harbour Poker Cup，由 Yibi × 香港撲克玩家協會（HKPPA）× CTP Club 合辦，於 2025-10-01 至 2025-10-07 在 CTP Asia Poker Arena 舉行（主賽事 10/3–10/5），共 30 項獎盃賽事；截至查詢時尚未見官方就 2026 年第二屆發布任何確認消息",
-      "url": "https://officialyibi.medium.com/harbour-poker-cup-yibi-7th-anniversary-celebration-get-ready-for-the-ultimate-poker-party-6c6888d1434c"
-    },
-    {
-      "series": "Triton Super High Roller Series Jeju II 2026",
-      "region": "亞洲",
-      "country": "韓國",
-      "city": "濟州",
-      "venue": "LES A Casino（Jeju Shinhwa World）",
-      "start": "",
-      "end": "",
-      "note": "日期未定：Triton 官方 2025 年 12 月公告 2026 年賽季時僅正式確認 3 月濟州站與 5 月蒙特內哥羅站（皆已結束），並表示完整賽程尚未全部公布；截至 2026-07-15，Triton 官網與 PokerNews 仍未正式宣布第二次濟州站（Jeju II）的確切日期。部分第三方彙整網站流傳「2026-09-04～09-21」或「09-04～09-26」等期間，經查證極可能是與 2025 年 9 月已舉行過的同名場次（Triton SHRS Jeju II by WPT Global）混淆所致，並非官方證實的 2026 年新資訊，故仍列為日期未定，請留意官方後續正式公告",
-      "url": "https://www.pokernews.com/news/2025/12/triton-poker-2026-schedule-10th-anniversary-50208.htm"
+      "note": "日期未定：Harbour Poker Cup（港撲超）是由香港撲克玩家協會（HKPPA）與 CTP Club 自 2019 年起合辦的年度常態系列（非全新賽事），2025 年適逢十週年特別賽，於 2025-10-01 至 2025-10-07 在 CTP Asia Poker Arena 舉行，保證獎金新台幣 6,000,000 元、買入新台幣 20,000 元；經多方搜尋「Harbour Poker Cup II」與「9/30–10/4」等 2026 年場次說法，截至 2026-07-17 查證均查無可靠一手來源（CTP 官網 ctpclub.com／ctpclub.app 與 somuchpoker 專屬頁面均無法驗證此具體日期），研判可能為搜尋引擎誤植或幻覺，暫不採信；惟依歷屆慣例（每年 9–10 月間），2026 年大機率仍會續辦，僅日期尚待官方確認",
+      "url": "https://www.facebook.com/ctpclub/"
     },
     {
       "series": "WPG（World Poker Games）Taiwan 下一場",
@@ -439,7 +483,7 @@
       "venue": "CTP Asia Poker Arena",
       "start": "",
       "end": "",
-      "note": "日期未定：上一場 WPG Taiwan Series 2026 已於 5/23–5/31 舉行（58 場賽事，總保證獎金新台幣 2,400 萬元，早於本次查詢區間），主辦方稱與 CTP 有長期多年合作，惟截至查詢時（2026-07-15）尚未公布本區間（7/15–11/15）內下一場賽事日期",
+      "note": "日期未定：上一場 WPG Taiwan Series 2026 已於 5/23–5/31 舉行（58 場賽事，總保證獎金新台幣 2,400 萬元，早於本次查詢區間），主辦方稱與 CTP 有長期多年合作，惟截至 2026-07-17 再次查證 wpg.poker 官網 Events 頁面，僅列出已結束的台灣站與 2024 年胡志明市站，並無任何 2026 年下半年新場次公告",
       "url": "https://www.pokernews.com/news/promotions/2026/04/wpg-taiwan-series-2026-full-schedule-51152.htm"
     }
   ]
