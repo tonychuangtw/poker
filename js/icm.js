@@ -37,7 +37,48 @@
     return ev;
   }
 
-  var ICM = { icmEV: icmEV, MAX_PLAYERS: MAX_PLAYERS, MAX_PLACES: MAX_PLACES };
+  /**
+   * ICM 分錢（final table deal）：
+   * 依獎金結構比例算出各玩家 ICM equity 佔比，乘上剩餘獎池，再加回已鎖定獎金。
+   * @param {number[]} stacks   各玩家籌碼
+   * @param {number[]} payouts  剩餘名次的獎金結構（只取比例，總額不必等於 pool）
+   * @param {number}   pool     剩餘（尚待分配）獎池
+   * @param {number[]} [locked] 各玩家已鎖定獎金（選填，預設 0）
+   * @returns {number[]} 每位玩家分得金額；合計 = pool + Σlocked
+   */
+  function icmDeal(stacks, payouts, pool, locked) {
+    var n = stacks.length;
+    if (n < 2) throw new Error('至少需要 2 位玩家');
+    if (!(pool >= 0)) throw new Error('剩餘獎池必須 ≥ 0');
+    var pays = payouts.slice(0, n); // 剩 n 人最多只能拿前 n 名
+    var tot = pays.reduce(function (a, b) { return a + b; }, 0);
+    if (!(tot > 0)) throw new Error('請輸入獎金結構');
+    var ev = icmEV(stacks, pays);
+    return ev.map(function (e, i) {
+      return e / tot * pool + ((locked && locked[i] > 0) ? locked[i] : 0);
+    });
+  }
+
+  /**
+   * Chip-chop 分錢：依籌碼比例分剩餘獎池，再加回已鎖定獎金。
+   * @returns {number[]} 每位玩家分得金額；合計 = pool + Σlocked
+   */
+  function chipChopDeal(stacks, pool, locked) {
+    var n = stacks.length;
+    if (n < 2) throw new Error('至少需要 2 位玩家');
+    if (!(pool >= 0)) throw new Error('剩餘獎池必須 ≥ 0');
+    var tot = 0;
+    stacks.forEach(function (s) {
+      if (!(s > 0)) throw new Error('籌碼必須為正數');
+      tot += s;
+    });
+    return stacks.map(function (s, i) {
+      return s / tot * pool + ((locked && locked[i] > 0) ? locked[i] : 0);
+    });
+  }
+
+  var ICM = { icmEV: icmEV, icmDeal: icmDeal, chipChopDeal: chipChopDeal,
+              MAX_PLAYERS: MAX_PLAYERS, MAX_PLACES: MAX_PLACES };
   if (typeof module !== 'undefined' && module.exports) module.exports = ICM;
   else global.ICM = ICM;
 })(typeof window !== 'undefined' ? window : this);

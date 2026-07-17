@@ -5,6 +5,7 @@ var EquityLib = require('../js/equity.js');
 var ICM = require('../js/icm.js');
 var PreflopTable = require('../js/preflop-table.js');
 var PushFold = require('../js/pushfold.js');
+var TrackerStats = require('../js/tracker-stats.js');
 
 var passed = 0, failed = 0;
 function assert(cond, name) {
@@ -149,6 +150,96 @@ assert(evs2[0] > evs2[1] && evs2[1] > evs2[2] && evs2[2] > evs2[3],
   'ICM EV monotonic in stack size');
 // big stack EV < chip-proportional share of pool (ICM discount)
 assert(evs2[0] < 1000 * (5000 / 11000), 'chip leader EV < chip-EV share');
+
+// ---------- 3b. Final table 分錢 ----------
+console.log('--- Deal calculator ---');
+
+// ICM deal 合計 = 剩餘獎池 + 已鎖定總額
+var deal1 = ICM.icmDeal([5000, 3000, 2000], [50, 30, 20], 1000, [100, 100, 100]);
+var dealSum = deal1.reduce(function (a, b) { return a + b; }, 0);
+assert(Math.abs(dealSum - 1300) < 1e-9, 'ICM deal sums to pool + locked (1300)');
+
+// chip-chop：鎖定以外的部分嚴格依籌碼比例
+var chop1 = ICM.chipChopDeal([5000, 3000, 2000], 1000, [100, 100, 100]);
+assert(Math.abs(chop1[0] - 600) < 1e-9 && Math.abs(chop1[1] - 400) < 1e-9 &&
+       Math.abs(chop1[2] - 300) < 1e-9,
+  'chip-chop proportional: 600/400/300 with 100 locked each');
+var chopSum = chop1.reduce(function (a, b) { return a + b; }, 0);
+assert(Math.abs(chopSum - 1300) < 1e-9, 'chip-chop sums to pool + locked (1300)');
+
+// 已知 2 人對稱情境：籌碼相等 → 各拿一半
+var deal2 = ICM.icmDeal([4000, 4000], [60, 40], 500);
+var chop2 = ICM.chipChopDeal([4000, 4000], 500);
+assert(Math.abs(deal2[0] - 250) < 1e-9 && Math.abs(deal2[1] - 250) < 1e-9,
+  '2-player symmetric ICM deal = 250/250');
+assert(Math.abs(chop2[0] - 250) < 1e-9, '2-player symmetric chip-chop = 250/250');
+
+// ICM 分法對短碼較有利、chip leader 被折價
+var dIcm = ICM.icmDeal([3000, 1000], [60, 40], 100);
+var dChop = ICM.chipChopDeal([3000, 1000], 100);
+assert(dIcm[1] > dChop[1] && dIcm[0] < dChop[0],
+  'ICM deal favors short stack vs chip-chop');
+
+// 獎金結構名次多於剩餘人數時自動截斷（2 人只分前 2 名比例）
+var deal3 = ICM.icmDeal([1000, 1000], [50, 30, 20], 100);
+assert(Math.abs(deal3[0] - 50) < 1e-9 && Math.abs(deal3[1] - 50) < 1e-9,
+  'payouts truncated to remaining players (2 equal stacks -> 50/50)');
+
+// locked 選填：省略時等同全 0
+var deal4 = ICM.icmDeal([5000, 3000, 2000], [50, 30, 20], 1000);
+assert(Math.abs(deal4.reduce(function (a, b) { return a + b; }, 0) - 1000) < 1e-9,
+  'locked omitted -> deal sums to pool only');
+
+// 非法輸入
+var dthrew = false;
+try { ICM.icmDeal([1000], [100], 100); } catch (e) { dthrew = true; }
+assert(dthrew, 'icmDeal rejects single player');
+
+// ---------- 3c. 記帳分析 ----------
+console.log('--- Tracker stats ---');
+
+var tsess = [
+  { date: '2026-01-05', type: 'cash', venue: 'CTP', tag: '系列A', buyin: 100, cashout: 300, hours: 2 },
+  { date: '2026-01-06', type: 'cash', venue: 'CTP', tag: '系列A', buyin: 100, cashout: 0, hours: 2 },
+  { date: '2026-01-07', type: 'mtt', venue: '線上', buyin: 50, cashout: 80 },   // 舊紀錄無 tag → 退回場地
+  { date: '2026-02-02', type: 'mtt', venue: '', buyin: 50, cashout: 40 }        // 無 tag 無場地 → 未標籤
+];
+var tags = TrackerStats.tagStats(tsess);
+assert(tags.length === 3, 'tagStats: 3 groups');
+assert(tags[0].tag === '系列A' && tags[0].n === 2 && Math.abs(tags[0].pl - 100) < 1e-9,
+  'tagStats: 系列A n=2, pl=+100, sorted first');
+assert(Math.abs(tags[0].hourly - 25) < 1e-9, 'tagStats: 系列A hourly = 100/4 = 25');
+assert(tags[1].tag === '線上' && tags[1].hourly === null,
+  'tagStats: untagged falls back to venue, hourly null without hours');
+assert(tags[2].tag === '未標籤' && Math.abs(tags[2].pl + 10) < 1e-9,
+  'tagStats: no tag/venue grouped as 未標籤, sorted last by profit');
+
+var months = TrackerStats.monthlyStats(tsess);
+assert(months.length === 2 && months[0].month === '2026-01' && months[1].month === '2026-02',
+  'monthlyStats: grouped into 2 months, ascending');
+assert(months[0].n === 3 && Math.abs(months[0].pl - 130) < 1e-9 && months[0].hours === 4,
+  'monthlyStats: 2026-01 n=3, pl=+130, hours=4');
+assert(months[1].n === 1 && Math.abs(months[1].pl + 10) < 1e-9,
+  'monthlyStats: 2026-02 n=1, pl=-10');
+
+// 傾斜偵測：合成序列 pl = [100,-50,-50,30,-20,60,10,-40,-40,-40,80]
+var tiltPls = [100, -50, -50, 30, -20, 60, 10, -40, -40, -40, 80];
+var tiltSess = tiltPls.map(function (p, i) {
+  var d = i + 1;
+  return { date: '2026-03-' + (d < 10 ? '0' + d : d), type: 'cash',
+           buyin: 100, cashout: 100 + p };
+});
+var tilt = TrackerStats.tiltStats(tiltSess);
+assert(tilt.n === 11 && Math.abs(tilt.overallAvg - 40 / 11) < 1e-9,
+  'tiltStats: overall avg = 40/11');
+assert(tilt.afterLossCount === 6 && Math.abs(tilt.afterLossAvg - 40 / 6) < 1e-9,
+  'tiltStats: 6 sessions after a loss, avg = 40/6');
+assert(tilt.longestLossStreak === 3, 'tiltStats: longest losing streak = 3');
+
+// 空清單不炸
+var tilt0 = TrackerStats.tiltStats([]);
+assert(tilt0.n === 0 && tilt0.afterLossAvg === null && tilt0.longestLossStreak === 0,
+  'tiltStats: empty list safe defaults');
 
 // ---------- 4. Preflop table ----------
 console.log('--- Preflop table ---');
