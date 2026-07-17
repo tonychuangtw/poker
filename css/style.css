@@ -417,6 +417,21 @@ a.ev-name:hover { text-decoration: underline; }
 }
 .sync-chip:hover { background: rgba(212, 175, 106, .14); box-shadow: 0 0 10px rgba(212, 175, 106, .2); }
 .sync-status { font-size: 0.75rem; opacity: 0.7; }
+.sync-login-wrap { position: relative; overflow: hidden; border-radius: 999px; }
+.sync-login {
+  padding: 7px 16px; font-size: .82rem; letter-spacing: .08em;
+  border-radius: 999px; cursor: pointer;
+  border: 1px solid rgba(212, 175, 106, .35); background: rgba(212, 175, 106, .06);
+  color: var(--accent2);
+  transition: background .18s, box-shadow .18s;
+}
+.sync-login-wrap:hover .sync-login { background: rgba(212, 175, 106, .14); box-shadow: 0 0 10px rgba(212, 175, 106, .2); }
+/* 官方 GIS 按鈕透明覆蓋在自訂按鈕上，點擊落在真按鈕 */
+.gsi-slot {
+  position: absolute; inset: 0; opacity: .0001;
+  display: flex; align-items: center; justify-content: center;
+}
+.gsi-slot > div { transform: scale(2.2); transform-origin: center; }
 
 /* ===== 月報長條圖 ===== */
 .bar-chart { margin-top: 10px; }

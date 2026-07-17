@@ -114,10 +114,10 @@
       ui.innerHTML = "";
       var chip = document.createElement("button");
       chip.className = "icon-btn sync-chip";
-      chip.title = (p.email || "") + " — click to sign out";
+      chip.title = (p.email || "") + " — 點擊登出";
       chip.textContent = (p.given_name || p.name || "?").charAt(0).toUpperCase();
       chip.addEventListener("click", function () {
-        if (confirm("Sign out of cloud sync? (local progress stays on this device)")) {
+        if (confirm("登出雲端同步？（本機資料會保留在此裝置）")) {
           clearToken(); lastPushedHash = null; renderUi();
         }
       });
@@ -128,10 +128,20 @@
     } else {
       ui.innerHTML = "";
       statusEl = null;
+      var wrap = document.createElement("div");
+      wrap.className = "sync-login-wrap";
+      var pill = document.createElement("button");
+      pill.type = "button";
+      pill.className = "sync-login";
+      pill.textContent = "登入";
+      pill.title = "Google 登入，跨裝置同步";
       var slot = document.createElement("div");
-      ui.appendChild(slot);
+      slot.className = "gsi-slot";
+      wrap.appendChild(pill);
+      wrap.appendChild(slot);
+      ui.appendChild(wrap);
       if (window.google && google.accounts && google.accounts.id) {
-        google.accounts.id.renderButton(slot, { type: "icon", shape: "circle", size: "medium" });
+        google.accounts.id.renderButton(slot, { type: "icon", shape: "circle", size: "large" });
       }
     }
   }
