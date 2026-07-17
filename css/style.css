@@ -210,6 +210,9 @@ canvas { width: 100%; display: block; }
 .nash-cell:hover { transform: scale(1.18); z-index: 2; position: relative; }
 .nash-cell.in { background: linear-gradient(160deg, #4bdc8b, #2fae64); color: #0d2b1a; }
 .nash-cell.mix { background: linear-gradient(160deg, #ddb45c, #b58e3c); color: #2e230d; }
+.nash-cell.tb { background: linear-gradient(160deg, #e8756c, #c14a42); color: #2e0e0c; }
+.legend-tb { color: #e8756c; font-weight: 600; }
+.legend-call { color: #4bdc8b; font-weight: 600; }
 .btn.active-role {
   background: linear-gradient(135deg, var(--accent), #3f6fd8);
   border-color: var(--accent); color: #fff; font-weight: 600;

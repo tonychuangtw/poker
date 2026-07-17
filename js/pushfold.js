@@ -270,11 +270,39 @@
     };
   }
 
-  /* ---------- Range 記號展開："77+"、"A9s+"、"KQo"、"T9s" → 類別 index 陣列 ---------- */
+  /* ---------- Range 記號展開："77+"、"A9s+"、"KQo"、"T9s"、"88-22"、"A5s-A2s" → 類別 index 陣列 ---------- */
   function rangeFromNotation(str) {
     var out = {}, parts = String(str).trim().split(/[\s,]+/);
     parts.forEach(function (tok) {
       if (!tok) return;
+      // 區間記號："88-22"（對子區間）或 "A9s-A6s"（同高牌、同 s/o 的 kicker 區間）
+      var md = /^([2-9TJQKA])([2-9TJQKA])(s|o)?-([2-9TJQKA])([2-9TJQKA])(s|o)?$/i.exec(tok);
+      if (md) {
+        var a1 = RANK_CHARS.indexOf(md[1].toUpperCase()),
+            a2 = RANK_CHARS.indexOf(md[2].toUpperCase()),
+            b1 = RANK_CHARS.indexOf(md[4].toUpperCase()),
+            b2 = RANK_CHARS.indexOf(md[5].toUpperCase());
+        var sufA = md[3] ? md[3].toLowerCase() : '',
+            sufB = md[6] ? md[6].toLowerCase() : '';
+        if (a1 === a2 && b1 === b2) { // 對子區間
+          if (sufA || sufB) throw new Error('range 記號錯誤：' + tok);
+          var pHi = Math.min(a1, b1), pLo = Math.max(a1, b1);
+          for (var pp = pHi; pp <= pLo; pp++) out[pp * 13 + pp] = true;
+          return;
+        }
+        if (a1 === a2 || b1 === b2 || !sufA || sufA !== sufB)
+          throw new Error('range 記號錯誤：' + tok);
+        // 正規化：高牌在前
+        if (a1 > a2) { var tA = a1; a1 = a2; a2 = tA; }
+        if (b1 > b2) { var tB = b1; b1 = b2; b2 = tB; }
+        if (a1 !== b1) throw new Error('range 記號錯誤（高牌需相同）：' + tok);
+        var suitedD = sufA === 's';
+        var kHi = Math.min(a2, b2), kLo = Math.max(a2, b2);
+        for (var kk = kHi; kk <= kLo; kk++) {
+          out[suitedD ? a1 * 13 + kk : kk * 13 + a1] = true;
+        }
+        return;
+      }
       var m = /^([2-9TJQKA])([2-9TJQKA])(s|o)?(\+)?$/i.exec(tok);
       if (!m) throw new Error('range 記號錯誤：' + tok);
       var r1 = RANK_CHARS.indexOf(m[1].toUpperCase());
