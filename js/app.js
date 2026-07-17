@@ -1108,7 +1108,7 @@
   /* ---------- 開牌 RFI range（6-max / 9-max，可手動編輯） ---------- */
   var RFI_TABLES = { '6': Ranges.RFI_RANGES_6, '9': Ranges.RFI_RANGES_9 };
   var RFI_RANGES = Ranges.RFI_RANGES_6; // 測驗一律以 6-max 建議值評分
-  var rfiTable = '6', rfiPosCur = 'utg', rfiEdit = false;
+  var rfiTable = '6', rfiPosCur = 'utg', rfiEdit = false, rfiSliding = false;
 
   function rfiChartKey() { return 'rfi' + rfiTable + ':' + rfiPosCur; }
   function rfiDefaultMap() {
@@ -1131,9 +1131,12 @@
     }
     $('#rfiGrid').innerHTML = html;
     $('#rfiGrid').classList.toggle('editing', rfiEdit);
+    var pct = combos / 1326 * 100;
     $('#rfiTxt').textContent = rfiTable + '-max ' + def.name + ' 開牌 range：' +
-      (combos / 1326 * 100).toFixed(1) + '% 的手牌（' + combos + ' combo）';
+      pct.toFixed(1) + '% 的手牌（' + combos + ' combo）';
     $('#rfiCustomRow').hidden = !ov;
+    if (!rfiSliding) $('#rfiPct').value = pct;
+    $('#rfiPctVal').textContent = pct.toFixed(1) + '%';
   }
   function buildRfiPosRow() {
     var keys = rfiTable === '9' ? Ranges.RFI_POS_9 : Ranges.RFI_POS_6;
@@ -1177,6 +1180,19 @@
     var full = Ranges.mergeOverride(defMap, getRangeOverride(rfiChartKey()));
     full[lbl] = Ranges.cycleState('rfi', full[lbl] || 'out');
     setRangeOverride(rfiChartKey(), Ranges.diffOverride(defMap, full));
+    renderRfi();
+  });
+  $('#rfiPct').addEventListener('input', function () {
+    rfiSliding = true;
+    var full = {};
+    PushFold.topPercentRange(+this.value).forEach(function (i) {
+      full[PushFold.classLabel(i)] = 'in';
+    });
+    setRangeOverride(rfiChartKey(), Ranges.diffOverride(rfiDefaultMap(), full));
+    renderRfi();
+  });
+  $('#rfiPct').addEventListener('change', function () {
+    rfiSliding = false;
     renderRfi();
   });
   $('#btnRfiReset').addEventListener('click', function () {
