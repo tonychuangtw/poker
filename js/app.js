@@ -1224,6 +1224,21 @@
   }
 
   var defKeyCur = 'co_vs_utg', defEdit = false;
+  // 「對手開牌 %」滑桿：每情境快取 { pct: 預設開牌%, thr: 校準門檻 }
+  var defDyn = {}, defPctCur = null, defSliding = false;
+  function defDynInfo(key) {
+    if (!defDyn[key]) {
+      var set = defSet(key);
+      var pct = Ranges.openerOpenPct(key);
+      var thr = Ranges.defenseThresholds(
+        PushFold.topPercentRange(pct), set.tbCombos, set.tbCombos + set.callCombos);
+      defDyn[key] = { pct: pct, thr: thr };
+    }
+    return defDyn[key];
+  }
+  function defDynamicActive() {
+    return defPctCur !== null && Math.abs(defPctCur - defDynInfo(defKeyCur).pct) > 0.25;
+  }
   function defChartKey() { return 'def:' + defKeyCur; }
   function defDefaultMap() {
     var spot = Ranges.DEF_SPOTS[defKeyCur], map = {};
@@ -1235,8 +1250,13 @@
   }
   function renderDef() {
     var spot = Ranges.DEF_SPOTS[defKeyCur];
-    var ov = getRangeOverride(defChartKey());
-    var map = Ranges.mergeOverride(defDefaultMap(), ov);
+    var info = defDynInfo(defKeyCur);
+    if (defPctCur === null) defPctCur = info.pct;
+    var dynamic = defDynamicActive();
+    var ov = dynamic ? null : getRangeOverride(defChartKey());
+    var map = dynamic
+      ? Ranges.dynamicDefense(PushFold.topPercentRange(defPctCur), info.thr)
+      : Ranges.mergeOverride(defDefaultMap(), ov);
     var html = '', tbCombos = 0, callCombos = 0;
     for (var i = 0; i < 169; i++) {
       var lbl = PushFold.classLabel(i);
@@ -1247,14 +1267,34 @@
         '" data-i="' + i + '">' + lbl + '</div>';
     }
     $('#defGrid').innerHTML = html;
-    $('#defGrid').classList.toggle('editing', defEdit);
-    $('#defTxt').textContent = spot.sizeTxt + '｜3-bet ' +
-      (tbCombos / 1326 * 100).toFixed(1) + '%（' + tbCombos + ' combo）＋跟注 ' +
-      (callCombos / 1326 * 100).toFixed(1) + '%（' + callCombos + ' combo）';
-    $('#defCustomRow').hidden = !ov;
+    $('#defGrid').classList.toggle('editing', defEdit && !dynamic);
+    if (dynamic) {
+      $('#defTxt').textContent = '動態試算：對手開 ' + defPctCur.toFixed(1) + '% → 3-bet ' +
+        (tbCombos / 1326 * 100).toFixed(1) + '%（' + tbCombos + ' combo）／跟注 ' +
+        (callCombos / 1326 * 100).toFixed(1) + '%（' + callCombos + ' combo）。' +
+        '門檻以建議表校準；簡化 equity 近似，阻斷牌 bluff（如 A5s 3-bet）不在模型內。';
+    } else {
+      $('#defTxt').textContent = spot.sizeTxt + '｜3-bet ' +
+        (tbCombos / 1326 * 100).toFixed(1) + '%（' + tbCombos + ' combo）＋跟注 ' +
+        (callCombos / 1326 * 100).toFixed(1) + '%（' + callCombos + ' combo）';
+    }
+    $('#defCustomRow').hidden = dynamic || !ov;
+    $('#btnDefEdit').disabled = dynamic;
+    if (!defSliding) $('#defOpenPct').value = defPctCur;
+    $('#defOpenPctVal').textContent = defPctCur.toFixed(1) + '%';
   }
   $('#defSpot').addEventListener('change', function () {
     defKeyCur = this.value;
+    defPctCur = defDynInfo(defKeyCur).pct; // 換情境 → 滑桿回到該情境預設開牌寬度
+    renderDef();
+  });
+  $('#defOpenPct').addEventListener('input', function () {
+    defSliding = true;
+    defPctCur = +this.value;
+    renderDef();
+  });
+  $('#defOpenPct').addEventListener('change', function () {
+    defSliding = false;
     renderDef();
   });
   $('#btnDefEdit').addEventListener('click', function () {
@@ -1264,7 +1304,8 @@
     renderDef();
   });
   $('#defGrid').addEventListener('click', function (e) {
-    if (!defEdit) return;
+    if (!defEdit || defDynamicActive()) return; // 動態試算為唯讀，不寫入自訂
+
     var cell = e.target.closest('.nash-cell');
     if (!cell) return;
     var lbl = PushFold.classLabel(+cell.dataset.i);

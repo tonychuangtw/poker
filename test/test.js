@@ -567,6 +567,73 @@ assert(Object.keys(Ranges.diffOverride(baseMap, merged0)).length === 0,
 assert(JSON.stringify(Ranges.mergeOverride(baseMap, diff1)) === JSON.stringify(merged1),
   'mergeOverride(default, diff) reconstructs custom map');
 
+// ---------- 5f. 動態防守試算（opener 開牌 % 滑桿） ----------
+console.log('--- Dynamic defense (opener % slider) ---');
+
+// 預設開牌 % 直接由 RFI notation 算出，非硬編碼
+var openPct = {};
+Ranges.DEF_SPOT_KEYS.forEach(function (k) { openPct[k] = Ranges.openerOpenPct(k); });
+assert(Math.abs(openPct.co_vs_utg - 12.2) < 0.6,
+  'default opener % CO_vs_UTG (6-max UTG) ~12.2: ' + openPct.co_vs_utg.toFixed(1));
+assert(Math.abs(openPct.btn_vs_co - 25.2) < 0.8,
+  'default opener % BTN_vs_CO ~25.2: ' + openPct.btn_vs_co.toFixed(1));
+assert(Math.abs(openPct.sb_vs_btn - 42.1) < 1.2,
+  'default opener % SB_vs_BTN ~42.1: ' + openPct.sb_vs_btn.toFixed(1));
+assert(Math.abs(openPct.hj_vs_utg9 - 10.4) < 0.6,
+  'default opener % HJ_vs_UTG9 (9-max UTG) ~10.4: ' + openPct.hj_vs_utg9.toFixed(1));
+assert(Math.abs(openPct.bb_vs_utg9 - openPct.hj_vs_utg9) < 0.01,
+  'both 9-max UTG spots share the same opener %');
+
+function dynCombos(map, state) {
+  var n = 0;
+  for (var i = 0; i < 169; i++) {
+    if (map[PushFold.classLabel(i)] === state) n += PushFold.comboCount(i);
+  }
+  return n;
+}
+
+Ranges.DEF_SPOT_KEYS.forEach(function (key) {
+  var spot = Ranges.DEF_SPOTS[key];
+  var tbCombos = PushFold.rangeComboTotal(PushFold.rangeFromNotation(spot.threeBet));
+  var contCombos = tbCombos +
+    PushFold.rangeComboTotal(PushFold.rangeFromNotation(spot.call));
+  var villain0 = PushFold.topPercentRange(openPct[key]);
+  var thr = Ranges.defenseThresholds(villain0, tbCombos, contCombos);
+
+  // 門檻排序：3-bet 需要的 equity ≥ 續玩需要的 equity
+  assert(thr.tb >= thr.cont && thr.tb > 0 && thr.tb < 1,
+    key + ': thresholds ordered tb(' + thr.tb.toFixed(3) + ') >= cont(' +
+    thr.cont.toFixed(3) + ')');
+
+  // 校準：在預設 villain 上重建 → combo 數應貼近建議表（±40 combo，容許同分並列）
+  var map0 = Ranges.dynamicDefense(villain0, thr);
+  var tb0 = dynCombos(map0, 'tb'), cont0 = tb0 + dynCombos(map0, 'in');
+  assert(Math.abs(tb0 - tbCombos) <= 40,
+    key + ': calibrated 3-bet combos ' + tb0 + ' ~ curated ' + tbCombos);
+  assert(Math.abs(cont0 - contCombos) <= 40,
+    key + ': calibrated continue combos ' + cont0 + ' ~ curated ' + contCombos);
+});
+
+// 單調性：對手開 5%（緊）→ 續玩必須嚴格少於對手開 20%（鬆）
+(function () {
+  var spot = Ranges.DEF_SPOTS.co_vs_utg;
+  var tbC = PushFold.rangeComboTotal(PushFold.rangeFromNotation(spot.threeBet));
+  var contC = tbC + PushFold.rangeComboTotal(PushFold.rangeFromNotation(spot.call));
+  var thr = Ranges.defenseThresholds(
+    PushFold.topPercentRange(Ranges.openerOpenPct('co_vs_utg')), tbC, contC);
+  var tight = Ranges.dynamicDefense(PushFold.topPercentRange(5), thr);
+  var loose = Ranges.dynamicDefense(PushFold.topPercentRange(20), thr);
+  var contTight = dynCombos(tight, 'tb') + dynCombos(tight, 'in');
+  var contLoose = dynCombos(loose, 'tb') + dynCombos(loose, 'in');
+  assert(contTight < contLoose,
+    'monotonic: continue vs 5% opener (' + contTight + ') < vs 20% opener (' +
+    contLoose + ')');
+  assert(dynCombos(tight, 'tb') <= dynCombos(loose, 'tb'),
+    'monotonic: 3-bet combos vs 5% <= vs 20%');
+  // AA 任何情況都在 3-bet 內
+  assert(tight.AA === 'tb' && loose.AA === 'tb', 'AA always 3-bet in dynamic map');
+})();
+
 // ---------- 6. Nash HU push/fold ----------
 console.log('--- Nash HU push/fold ---');
 var Nash = require('../js/nash.js');

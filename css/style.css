@@ -170,6 +170,10 @@ input[type="range"]:focus { box-shadow: none; }
 }
 .btn:hover { border-color: rgba(212, 175, 106, .55); color: var(--accent2); }
 .btn:active { transform: scale(.96); }
+.btn:disabled {
+  opacity: .4; cursor: not-allowed;
+  border-color: var(--border); color: var(--text); transform: none;
+}
 .btn:focus-visible, .tab-btn:focus-visible, .card-slot:focus-visible, .deck-card:focus-visible {
   outline: 2px solid var(--accent2); outline-offset: 2px;
 }

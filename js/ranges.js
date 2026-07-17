@@ -127,11 +127,88 @@
     return d;
   }
 
+  /* ---------- 動態防守試算（純函式，依 PushFold equity 表） ----------
+   * 想法：先在「預設對手開牌 range」上校準門檻（3-bet / 續玩 各需多少 equity
+   * 才能湊到建議表的 combo 數），之後對手開牌變寬或變窄時，
+   * 用同一組門檻重算 169 手牌 → 得到動態的 3-bet / 跟注 / 棄牌分佈。
+   * 這是簡化的 equity 排序近似：阻斷牌 bluff（如 A5s 3-bet）不在模型內。 */
+
+  function PF() {
+    return (typeof module !== 'undefined' && module.exports)
+      ? require('./pushfold.js') : global.PushFold;
+  }
+
+  /** 該防守情境 opener 的預設 RFI notation（依 6-max / 9-max 表） */
+  function openerRfiNotation(spotKey) {
+    var spot = DEF_SPOTS[spotKey];
+    if (!spot) return null;
+    var table = spot.table === 9 ? RFI_RANGES_9 : RFI_RANGES_6;
+    for (var k in table) {
+      if (table.hasOwnProperty(k) && table[k].name === spot.opener) return table[k].notation;
+    }
+    return null;
+  }
+
+  /** 該情境 opener 的預設開牌寬度（% of 1326 combos） */
+  function openerOpenPct(spotKey) {
+    var pf = PF();
+    var notation = openerRfiNotation(spotKey);
+    if (!notation) return 0;
+    return pf.rangeComboTotal(pf.rangeFromNotation(notation)) / 1326 * 100;
+  }
+
+  /** 169 手牌各自對 villainClasses 的 equity（class 層級，不計 blocker） */
+  function equityMapVs(villainClasses) {
+    var pf = PF(), eq = new Array(169);
+    for (var i = 0; i < 169; i++) {
+      eq[i] = pf.equityVsRange(i, [], villainClasses).equity;
+    }
+    return eq;
+  }
+
+  /** 校準門檻：equity ≥ tb 的手牌約湊滿 tbCombos；≥ cont 的約湊滿 contCombos。
+   * contCombos 應為「續玩總量」= 3-bet + 跟注 combo 數。回傳 { tb, cont }。 */
+  function defenseThresholds(villainClasses, tbCombos, contCombos) {
+    var pf = PF();
+    var eq = equityMapVs(villainClasses);
+    var order = [];
+    for (var i = 0; i < 169; i++) order.push(i);
+    order.sort(function (a, b) { return eq[b] - eq[a]; });
+    var tbThr = tbCombos > 0 ? null : 2;   // 2 = 不可能達到 → 空集合
+    var contThr = contCombos > 0 ? null : 2;
+    var cum = 0;
+    for (i = 0; i < order.length; i++) {
+      cum += pf.comboCount(order[i]);
+      if (tbThr === null && cum >= tbCombos) tbThr = eq[order[i]];
+      if (contThr === null && cum >= contCombos) contThr = eq[order[i]];
+      if (tbThr !== null && contThr !== null) break;
+    }
+    if (tbThr === null) tbThr = 0;
+    if (contThr === null) contThr = 0;
+    if (contThr > tbThr) contThr = tbThr; // 保證 tb ≥ cont（3-bet ⊆ 續玩）
+    return { tb: tbThr, cont: contThr };
+  }
+
+  /** 用校準好的門檻對「新的」對手 range 產生 169 map：
+   * { 手牌標籤: 'tb' | 'in' }，未列出 = 棄牌（與 DEF 圖的狀態字串一致）。 */
+  function dynamicDefense(villainClasses, thresholds) {
+    var pf = PF();
+    var eq = equityMapVs(villainClasses);
+    var map = {};
+    for (var i = 0; i < 169; i++) {
+      if (eq[i] >= thresholds.tb) map[pf.classLabel(i)] = 'tb';
+      else if (eq[i] >= thresholds.cont) map[pf.classLabel(i)] = 'in';
+    }
+    return map;
+  }
+
   var Ranges = {
     DEF_SPOTS: DEF_SPOTS, DEF_SPOT_KEYS: DEF_SPOT_KEYS,
     RFI_RANGES_6: RFI_RANGES_6, RFI_POS_6: RFI_POS_6,
     RFI_RANGES_9: RFI_RANGES_9, RFI_POS_9: RFI_POS_9,
-    cycleState: cycleState, mergeOverride: mergeOverride, diffOverride: diffOverride
+    cycleState: cycleState, mergeOverride: mergeOverride, diffOverride: diffOverride,
+    openerRfiNotation: openerRfiNotation, openerOpenPct: openerOpenPct,
+    defenseThresholds: defenseThresholds, dynamicDefense: dynamicDefense
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = Ranges;
   else global.Ranges = Ranges;

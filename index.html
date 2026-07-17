@@ -382,6 +382,11 @@
     <div class="btn-row">
       <button class="btn edit-btn" id="btnDefEdit">✏️ 編輯</button>
     </div>
+    <label>對手開牌 %（預設 = 建議 RFI 寬度；拉動後依 equity 門檻動態試算）</label>
+    <div class="slider-row">
+      <input type="range" id="defOpenPct" min="2" max="60" step="0.5" value="12">
+      <span class="pct-val" id="defOpenPctVal">12%</span>
+    </div>
     <p class="hint" id="defTxt"></p>
     <div class="custom-row" id="defCustomRow" hidden>
       <span class="custom-badge">已自訂</span>
