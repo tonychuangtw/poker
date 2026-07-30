@@ -676,6 +676,122 @@ Ranges.VS3B_SPOT_KEYS.forEach(function (key) {
     (info.needEq * 100).toFixed(1) + '%)');
 })();
 
+// ---------- 5d-4. 開牌 RFI 與防守的籌碼深度規則 ----------
+console.log('--- Stack depth: RFI & defense ---');
+
+// RFI：深度只換組成，寬度必須維持
+(function () {
+  var target = PushFold.rangeComboTotal(
+    PushFold.rangeFromNotation(Ranges.RFI_RANGES_6.co.notation));
+  function width(bb) {
+    var m = Ranges.rfiAtDepth(target, bb), n = 0;
+    for (var i = 0; i < 169; i++) if (m[PushFold.classLabel(i)] === 'in') n += PushFold.comboCount(i);
+    return n;
+  }
+  [10, 25, 60, 100, 200, 300].forEach(function (bb) {
+    assert(Math.abs(width(bb) - target) <= 40,
+      'RFI @' + bb + 'bb keeps its width (' + width(bb) + ' ~ ' + target + ' combos)');
+  });
+  assert(Ranges.rfiStackInfo(10).mode === 'jam' &&
+    Ranges.rfiStackInfo(Ranges.RFI_JAM_BB).mode === 'jam' &&
+    Ranges.rfiStackInfo(Ranges.RFI_JAM_BB + 5).mode === 'raise',
+    'RFI mode flips to jam at or below ' + Ranges.RFI_JAM_BB + 'bb');
+  assert(Ranges.rfiStackInfo(1).effBb === Ranges.VS3B_MIN_BB &&
+    Ranges.rfiStackInfo(9999).effBb === Ranges.VS3B_MAX_BB, 'RFI stack clamped to 10-300bb');
+
+  // 組成輪替：淺 → 雜色高張進來、同花小連張出去；深 → 反過來
+  var shallow = Ranges.rfiAtDepth(target, 10), deep = Ranges.rfiAtDepth(target, 300);
+  function suitedConnCombos(map) {
+    var n = 0;
+    for (var i = 0; i < 169; i++) {
+      var r = Math.floor(i / 13), c = i % 13;
+      var suited = r < c, hi = 14 - (suited ? r : c), lo = 14 - (suited ? c : r);
+      if (suited && r !== c && hi - lo <= 2 && hi <= 11 &&
+          map[PushFold.classLabel(i)] === 'in') n += PushFold.comboCount(i);
+    }
+    return n;
+  }
+  function offsuitCombos(map) {
+    var n = 0;
+    for (var i = 0; i < 169; i++) {
+      var r = Math.floor(i / 13), c = i % 13;
+      if (r > c && map[PushFold.classLabel(i)] === 'in') n += PushFold.comboCount(i);
+    }
+    return n;
+  }
+  assert(suitedConnCombos(deep) > suitedConnCombos(shallow),
+    'deep RFI holds more suited connectors (' + suitedConnCombos(deep) + ' > ' +
+    suitedConnCombos(shallow) + ')');
+  assert(offsuitCombos(shallow) > offsuitCombos(deep),
+    'shallow RFI holds more offsuit hands (' + offsuitCombos(shallow) + ' > ' +
+    offsuitCombos(deep) + ')');
+  assert(shallow.AA === 'in' && deep.AA === 'in', 'AA opens at every depth');
+})();
+
+// 防守：局面數字 + 深度單調性
+(function () {
+  function contCombos(map, st) {
+    var n = 0;
+    for (var i = 0; i < 169; i++) {
+      if (map[PushFold.classLabel(i)] === st) n += PushFold.comboCount(i);
+    }
+    return n;
+  }
+  // 底池賠率：BB 只要補 1.5bb 進 5.5bb → 27%；CO 要補整份 2.5bb 進 6.5bb → 38%
+  var bbInfo = Ranges.defStackInfo('bb_vs_btn', 100);
+  var coInfo = Ranges.defStackInfo('co_vs_utg', 100);
+  assert(Math.abs(bbInfo.toCall - 1.5) < 1e-9 && Math.abs(bbInfo.pot - 5.5) < 1e-9 &&
+    Math.abs(bbInfo.needEq - 1.5 / 5.5) < 1e-9,
+    'BB defends at ' + (bbInfo.needEq * 100).toFixed(0) + '% pot odds (posts 1bb already)');
+  assert(Math.abs(coInfo.toCall - 2.5) < 1e-9 && Math.abs(coInfo.pot - 6.5) < 1e-9,
+    'IP cold-caller pays the full open into a ' + coInfo.pot + 'bb pot');
+  assert(Math.abs(Ranges.defStackInfo('bb_vs_sb', 100).openBb - 3) < 1e-9,
+    'SB opens 3bb in bb_vs_sb (openBb read from the spot)');
+  // 3-bet 大小：無位置 4 倍、有位置 3 倍，被籌碼蓋住就是全下
+  assert(Math.abs(bbInfo.threeBetBb - 10) < 1e-9 && !bbInfo.threeBetAllIn,
+    'OOP 3-bets to 4x (' + bbInfo.threeBetBb + 'bb) at 100bb');
+  assert(Math.abs(coInfo.threeBetBb - 7.5) < 1e-9,
+    'IP 3-bets to 3x (' + coInfo.threeBetBb + 'bb) at 100bb');
+  assert(Ranges.defStackInfo('bb_vs_btn', 10).threeBetAllIn,
+    '10bb: the 3-bet is all-in');
+
+  Ranges.DEF_SPOT_KEYS.forEach(function (key) {
+    var spot = Ranges.DEF_SPOTS[key];
+    var tbC = PushFold.rangeComboTotal(PushFold.rangeFromNotation(spot.threeBet));
+    var contC = tbC + PushFold.rangeComboTotal(PushFold.rangeFromNotation(spot.call));
+    var villain = PushFold.topPercentRange(Ranges.openerOpenPct(key));
+    var thr = Ranges.defenseCalibrate(key, villain, tbC, contC);
+
+    var m100 = Ranges.defenseAtDepth(key, villain, thr, 100);
+    assert(Math.abs(contCombos(m100, 'tb') - tbC) <= 40 &&
+      Math.abs(contCombos(m100, 'tb') + contCombos(m100, 'in') - contC) <= 40,
+      key + ' @100bb: calibration round-trips (3bet ' + contCombos(m100, 'tb') + '/' + tbC +
+      ', cont ' + (contCombos(m100, 'tb') + contCombos(m100, 'in')) + '/' + contC + ')');
+
+    var call40 = contCombos(Ranges.defenseAtDepth(key, villain, thr, 40), 'in');
+    var call100 = contCombos(m100, 'in');
+    var call300 = contCombos(Ranges.defenseAtDepth(key, villain, thr, 300), 'in');
+    assert(call40 <= call100 && call100 <= call300,
+      key + ': flat-call range widens with depth (' + call40 + ' <= ' + call100 +
+      ' <= ' + call300 + ')');
+    var tb15 = contCombos(Ranges.defenseAtDepth(key, villain, thr, 15), 'tb');
+    var tb300 = contCombos(Ranges.defenseAtDepth(key, villain, thr, 300), 'tb');
+    assert(tb15 > contCombos(m100, 'tb') && contCombos(m100, 'tb') >= tb300,
+      key + ': 3-bet range tightens with depth (' + tb15 + ' > ' +
+      contCombos(m100, 'tb') + ' >= ' + tb300 + ')');
+
+    [10, 15, 40, 100, 300].forEach(function (bb) {
+      var m = Ranges.defenseAtDepth(key, villain, thr, bb);
+      var info = Ranges.defStackInfo(key, bb);
+      assert(m.AA === 'tb', key + ' @' + bb + 'bb: AA always 3-bets');
+      assert(!m['72o'], key + ' @' + bb + 'bb: 72o folds');
+      if (info.mode !== 'normal') {
+        assert(contCombos(m, 'in') === 0, key + ' @' + bb + 'bb: no flat calls below SPR 0.5');
+      }
+    });
+  });
+})();
+
 // ---------- 5e. RFI range 資料（6-max / 9-max） ----------
 console.log('--- RFI ranges (6-max / 9-max) ---');
 
@@ -783,15 +899,16 @@ Ranges.DEF_SPOT_KEYS.forEach(function (key) {
   var contCombos = tbCombos +
     PushFold.rangeComboTotal(PushFold.rangeFromNotation(spot.call));
   var villain0 = PushFold.topPercentRange(openPct[key]);
-  var thr = Ranges.defenseThresholds(villain0, tbCombos, contCombos);
+  var thr = Ranges.defenseCalibrate(key, villain0, tbCombos, contCombos);
 
-  // 門檻排序：3-bet 需要的 equity ≥ 續玩需要的 equity
-  assert(thr.tb >= thr.cont && thr.tb > 0 && thr.tb < 1,
-    key + ': thresholds ordered tb(' + thr.tb.toFixed(3) + ') >= cont(' +
-    thr.cont.toFixed(3) + ')');
+  // 兩個門檻各自有效：3-bet 門檻量的是 raw equity，續玩門檻量的是「equity + 隱含加成」，
+  // 兩者尺度不同（小對子/同花連張帶加成），所以不能互比大小，只檢查落在合理區間。
+  assert(thr.tb > 0 && thr.tb < 1 && thr.cont > 0 && thr.cont < 1.2 && thr.sprBase > 0,
+    key + ': thresholds in range — tb ' + thr.tb.toFixed(3) + ', cont ' +
+    thr.cont.toFixed(3) + ', 100bb SPR ' + thr.sprBase.toFixed(1));
 
   // 校準：在預設 villain 上重建 → combo 數應貼近建議表（±40 combo，容許同分並列）
-  var map0 = Ranges.dynamicDefense(villain0, thr);
+  var map0 = Ranges.defenseAtDepth(key, villain0, thr, Ranges.VS3B_BASE_BB);
   var tb0 = dynCombos(map0, 'tb'), cont0 = tb0 + dynCombos(map0, 'in');
   assert(Math.abs(tb0 - tbCombos) <= 40,
     key + ': calibrated 3-bet combos ' + tb0 + ' ~ curated ' + tbCombos);
@@ -804,10 +921,10 @@ Ranges.DEF_SPOT_KEYS.forEach(function (key) {
   var spot = Ranges.DEF_SPOTS.co_vs_utg;
   var tbC = PushFold.rangeComboTotal(PushFold.rangeFromNotation(spot.threeBet));
   var contC = tbC + PushFold.rangeComboTotal(PushFold.rangeFromNotation(spot.call));
-  var thr = Ranges.defenseThresholds(
+  var thr = Ranges.defenseCalibrate('co_vs_utg',
     PushFold.topPercentRange(Ranges.openerOpenPct('co_vs_utg')), tbC, contC);
-  var tight = Ranges.dynamicDefense(PushFold.topPercentRange(5), thr);
-  var loose = Ranges.dynamicDefense(PushFold.topPercentRange(20), thr);
+  var tight = Ranges.defenseAtDepth('co_vs_utg', PushFold.topPercentRange(5), thr, 100);
+  var loose = Ranges.defenseAtDepth('co_vs_utg', PushFold.topPercentRange(20), thr, 100);
   var contTight = dynCombos(tight, 'tb') + dynCombos(tight, 'in');
   var contLoose = dynCombos(loose, 'tb') + dynCombos(loose, 'in');
   assert(contTight < contLoose,

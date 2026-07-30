@@ -134,7 +134,7 @@
     },
     bb_vs_sb: {
       name: 'BB vs SB 開牌',
-      hero: 'BB', opener: 'SB', sizeTxt: 'SB 開 3bb（BB 防守）',
+      hero: 'BB', opener: 'SB', openBb: 3, sizeTxt: 'SB 開 3bb（BB 防守）',
       threeBet: '88+ ATs+ A5s-A2s KTs+ QTs+ JTs T9s ATo+ KQo',
       call: '77-22 A9s-A6s K9s-K6s Q9s Q8s J9s J8s T8s 98s 97s 87s 86s 76s 75s ' +
             '65s 54s A9o-A5o KTo K9o QTo JTo T9o'
@@ -351,27 +351,16 @@
     return 0;
   }
 
-  /** 校準門檻：equity ≥ tb 的手牌約湊滿 tbCombos；≥ cont 的約湊滿 contCombos。
-   * contCombos 應為「續玩總量」= 3-bet + 跟注 combo 數。回傳 { tb, cont }。 */
-  function defenseThresholds(villainClasses, tbCombos, contCombos) {
+  /** 防守圖的校準：3-bet 門檻看 raw equity、續玩門檻看 equity + 100bb 的隱含加成。
+   * 回傳 { tb, cont, sprBase }，供 defenseAtDepth 在任何深度重算。 */
+  function defenseCalibrate(spotKey, villainClasses, tbCombos, contCombos) {
     var eq = equityMapVs(villainClasses);
+    var base = defStackInfo(spotKey, VS3B_BASE_BB);
+    var score = new Array(169);
+    for (var i = 0; i < 169; i++) score[i] = eq[i] + IMPLIED_W * impliedIndex(i);
     var tbThr = thresholdAt(eq, tbCombos);
-    var contThr = thresholdAt(eq, contCombos);
-    if (contThr > tbThr) contThr = tbThr; // 保證 tb ≥ cont（3-bet ⊆ 續玩）
-    return { tb: tbThr, cont: contThr };
-  }
-
-  /** 用校準好的門檻對「新的」對手 range 產生 169 map：
-   * { 手牌標籤: 'tb' | 'in' }，未列出 = 棄牌（與 DEF 圖的狀態字串一致）。 */
-  function dynamicDefense(villainClasses, thresholds) {
-    var pf = PF();
-    var eq = equityMapVs(villainClasses);
-    var map = {};
-    for (var i = 0; i < 169; i++) {
-      if (eq[i] >= thresholds.tb) map[pf.classLabel(i)] = 'tb';
-      else if (eq[i] >= thresholds.cont) map[pf.classLabel(i)] = 'in';
-    }
-    return map;
+    var contThr = thresholdAt(score, contCombos);
+    return { tb: tbThr, cont: contThr, sprBase: base ? base.spr : 0 };
   }
 
   /* ---------- 被 3-bet：籌碼深度試算（10–300bb，純函式） ----------
@@ -379,7 +368,9 @@
    *   3-bet 實際大小 = min(表定大小, 有效籌碼)   籌碼不夠時 3-bet 就是全下
    *   底池 = 3-bet 大小 × 2 + 死錢；跟注後 SPR = (有效籌碼 - 3-bet 大小) / 底池
    *   排序分數 = equity(對上對手 3-bet range) + 隱含賠率加成
-   *   隱含賠率加成 = IMPLIED_W × 隱含指數(手牌) × min(SPR, SPR_CAP)/SPR_CAP
+   *   隱含賠率加成 = IMPLIED_W × 隱含指數(手牌) × 深度係數
+   *   深度係數 = √(該深度的 SPR ÷ 同情境 100bb 的 SPR)（上限 DEEP_FACTOR_CAP）
+   *     → 100bb 剛好是 1.0，也就是建議表的校準點
    *     → 深籌碼：小對子/同花連張的加成變大，跟注範圍變寬
    *     → 淺籌碼：加成趨近 0，這些牌自動掉出跟注範圍
    *   4-bet 只看 raw equity（不吃隱含賠率）。門檻在兩種極端間內插：
@@ -393,7 +384,7 @@
   var VS3B_BASE_BB = 100;   // 建議表的基準深度
   var VS3B_MIN_BB = 10, VS3B_MAX_BB = 300;
   var IMPLIED_W = 0.10;     // 隱含賠率最多可抵掉的 equity（10 個百分點）
-  var SPR_CAP = 6;          // SPR 超過此值後隱含賠率不再加成
+  var DEEP_FACTOR_CAP = 1.6; // 深籌碼的隱含賠率加成上限（以 100bb 為 1.0）
   var JAM_SPR = 0.5;        // 跟注後 SPR 低於此值 → 沒有跟注，只剩全下 / 棄
   var COMMIT_SPR = 2;       // SPR 到此值以上，4-bet 才算「不等於全下」
   var JAM_CREDIT = 0.06;    // 4-bet 全下的棄牌權益折抵（6 個百分點）
@@ -435,7 +426,14 @@
     };
   }
 
-  function impliedFactor(spr) { return clamp01(spr / SPR_CAP); }
+  /** 隱含賠率加成係數：以同情境 100bb 為 1.0，開根號表示「深度的邊際效益遞減」，
+   * 深籌碼最多放大到 DEEP_FACTOR_CAP。 */
+  function depthCurve(ratio) {
+    return Math.min(DEEP_FACTOR_CAP, Math.sqrt(Math.max(0, ratio)));
+  }
+  function impliedFactor(spr, sprBase) {
+    return sprBase > 0 ? depthCurve(spr / sprBase) : 0;
+  }
 
   /** 於 100bb 用建議表校準門檻：4-bet 看 raw equity、續玩看 equity + 隱含加成 */
   function vs3bCalibrate(spotKey) {
@@ -444,11 +442,12 @@
     if (!villain) return null;
     var eq = equityMapVs(villain);
     var base = vs3bStackInfo(spotKey, VS3B_BASE_BB);
-    var f = impliedFactor(base.spr), score = new Array(169);
+    var f = 1, score = new Array(169);   // 校準點：100bb 的深度係數定義為 1.0
     for (var i = 0; i < 169; i++) score[i] = eq[i] + IMPLIED_W * impliedIndex(i) * f;
     var fbC = pf.rangeComboTotal(pf.rangeFromNotation(s.fourBet));
     var contC = fbC + pf.rangeComboTotal(pf.rangeFromNotation(s.call));
-    return { eq: eq, fourBet: thresholdAt(eq, fbC), cont: thresholdAt(score, contC) };
+    return { eq: eq, sprBase: base.spr,
+             fourBet: thresholdAt(eq, fbC), cont: thresholdAt(score, contC) };
   }
 
   /** 用校準好的門檻算某深度下的 169 map：{ 手牌: 'tb'（4-bet/全下）| 'in'（跟注） } */
@@ -465,10 +464,8 @@
       return map;
     }
     // 淺籌碼的 4-bet 等於全下 → 門檻往「底池賠率 − 棄牌權益」靠；深籌碼才回到校準值
-    var w = clamp01(info.spr / COMMIT_SPR);
-    var thr4 = w * calib.fourBet + (1 - w) * Math.max(0, info.needEq - JAM_CREDIT)
-      + DEEP_PENALTY * clamp01((info.effBb - 150) / 150); // 深 → 價值範圍收緊
-    var f = impliedFactor(info.spr);
+    var thr4 = aggroThreshold(calib.fourBet, info.spr, info.needEq, info.effBb);
+    var f = impliedFactor(info.spr, calib.sprBase);
     for (i = 0; i < 169; i++) {
       if (calib.eq[i] >= thr4) map[pf.classLabel(i)] = 'tb';
       else if (info.mode === 'normal' &&
@@ -479,17 +476,128 @@
     return map;
   }
 
+  /* ---------- 開牌 RFI 的籌碼深度規則（10–300bb，純函式） ----------
+   * 深度改變的是「組成」，不是寬度 —— 寬度仍由圖上的 % 滑桿（或建議表）決定。
+   *   排序分數 = equity(對上會續玩的範圍 top RFI_VILLAIN_PCT%) + 隱含賠率加成
+   *   加成 = IMPLIED_W × 隱含指數 × 深度係數（= √(籌碼 ÷ 100bb)，上限 DEEP_FACTOR_CAP）
+   *     → 淺籌碼：等於純攤牌 equity 排序，A 高牌與雜色大牌擠進來、同花小連張掉出去
+   *     → 深籌碼：同花連張、小對子（打中就贏一整疊）擠進來，雜色邊緣牌掉出去
+   *   RFI_JAM_BB 以下標成「開牌 = 全下」：那個深度的開牌實務上就是 jam，
+   *   排序邏輯本來就已經退化成攤牌 equity，剛好一致。 */
+
+  var RFI_JAM_BB = 20;        // 20bb 以下：開牌等於全下
+  var RFI_VILLAIN_PCT = 20;   // 參考對手「會續玩」的範圍寬度
+
+  var rfiEqCache = null;
+  function rfiVillainEq() {
+    if (!rfiEqCache) rfiEqCache = equityMapVs(PF().topPercentRange(RFI_VILLAIN_PCT));
+    return rfiEqCache;
+  }
+
+  function clampBb(bb) {
+    return Math.min(VS3B_MAX_BB, Math.max(VS3B_MIN_BB, bb));
+  }
+  function rfiDepthFactor(bb) {
+    return depthCurve(clampBb(bb) / VS3B_BASE_BB);
+  }
+  function rfiStackInfo(bb) {
+    var eff = clampBb(bb);
+    return { effBb: eff, factor: rfiDepthFactor(eff), mode: eff <= RFI_JAM_BB ? 'jam' : 'raise' };
+  }
+
+  /** 某深度下的開牌 range：維持 targetCombos 的寬度，組成依深度重排。
+   * 回傳 { 手牌標籤: 'in' }，未列出 = 不開。 */
+  function rfiAtDepth(targetCombos, bb) {
+    var pf = PF(), eq = rfiVillainEq(), f = rfiDepthFactor(bb);
+    var score = new Array(169), i;
+    for (i = 0; i < 169; i++) score[i] = eq[i] + IMPLIED_W * impliedIndex(i) * f;
+    var thr = thresholdAt(score, targetCombos);
+    var map = {};
+    for (i = 0; i < 169; i++) if (score[i] >= thr) map[pf.classLabel(i)] = 'in';
+    return map;
+  }
+
+  /* ---------- 面對開牌（防守）的籌碼深度規則（10–300bb，純函式） ----------
+   * 與「被 3-bet」同一套規則，只是換成面對 open：
+   *   跟注要補的錢 = 開牌大小 − 自己已投入的盲注；底池 = 開牌大小 × 2 + 死錢
+   *   3-bet 大小 = 開牌 × (無位置 4 倍 / 有位置 3 倍)，被籌碼蓋住就是全下
+   *   跟注門檻吃隱含賠率加成（隨跟注後 SPR）→ 深籌碼跟得寬、淺籌碼先掉小對子與同花連張
+   *   3-bet 門檻在「100bb 校準值」與「底池賠率 − 棄牌權益」之間依 3-bet 後的 SPR 內插
+   *     → 3-bet 等於全下時範圍明顯放寬；深於 150bb 再收緊
+   *   跟注後 SPR < JAM_SPR → 沒有平跟，只剩 3-bet 全下 / 棄牌 */
+
+  var DEF_3BET_MULT_OOP = 4, DEF_3BET_MULT_IP = 3;
+
+  /** 該防守情境的開牌大小（bb）；只有 SB 開牌是 3bb，其餘 2.5bb */
+  function defOpenBb(spot) { return spot.openBb || 2.5; }
+
+  /** hero 位置決定已投入的盲注與桌上的死錢 */
+  function defBlinds(hero) {
+    if (hero === 'BB') return { post: 1, dead: 0.5 };
+    if (hero === 'SB') return { post: 0.5, dead: 1 };
+    return { post: 0, dead: 1.5 };
+  }
+
+  /** 某有效籌碼下的防守局面數字：跟注額、底池、賠率、SPR、3-bet 大小與模式 */
+  function defStackInfo(spotKey, bb) {
+    var spot = DEF_SPOTS[spotKey];
+    if (!spot) return null;
+    var eff = clampBb(bb);
+    var open = Math.min(defOpenBb(spot), eff);
+    var b = defBlinds(spot.hero);
+    var oop = spot.hero === 'SB' || spot.hero === 'BB';
+    var tb = Math.min(open * (oop ? DEF_3BET_MULT_OOP : DEF_3BET_MULT_IP), eff);
+    var pot = open * 2 + b.dead;                  // 跟注後的底池
+    var pot3 = tb * 2 + b.dead;                   // 對手跟你 3-bet 後的底池
+    return {
+      effBb: eff, openBb: open, threeBetBb: tb,
+      toCall: Math.max(0, open - b.post), pot: pot,
+      needEq: Math.max(0, open - b.post) / pot,
+      needEq3: (tb - b.post) / pot3,
+      spr: (eff - open) / pot,
+      spr3: (eff - tb) / pot3,
+      threeBetAllIn: tb >= eff,
+      mode: (eff - open) / pot < JAM_SPR ? 'jamOrFold' : 'normal'
+    };
+  }
+
+  /** 加注門檻：加注越接近全下，門檻越往「底池賠率 − 棄牌權益」靠；深籌碼再收緊 */
+  function aggroThreshold(calibThr, spr, needEq, effBb) {
+    var w = clamp01(spr / COMMIT_SPR);
+    return w * calibThr + (1 - w) * Math.max(0, needEq - JAM_CREDIT)
+      + DEEP_PENALTY * clamp01((effBb - 150) / 150);
+  }
+
+  /** 某深度 + 某對手開牌寬度下的防守 map：{ 手牌: 'tb'（3-bet）| 'in'（跟注） } */
+  function defenseAtDepth(spotKey, villainClasses, thresholds, bb) {
+    var pf = PF(), info = defStackInfo(spotKey, bb);
+    if (!info) return {};
+    var eq = equityMapVs(villainClasses);
+    var thr3 = aggroThreshold(thresholds.tb, info.spr3, info.needEq3, info.effBb);
+    var f = impliedFactor(info.spr, thresholds.sprBase), map = {};
+    for (var i = 0; i < 169; i++) {
+      if (eq[i] >= thr3) map[pf.classLabel(i)] = 'tb';
+      else if (info.mode === 'normal' &&
+               eq[i] + IMPLIED_W * impliedIndex(i) * f >= thresholds.cont) {
+        map[pf.classLabel(i)] = 'in';
+      }
+    }
+    return map;
+  }
+
   var Ranges = {
     DEF_SPOTS: DEF_SPOTS, DEF_SPOT_KEYS: DEF_SPOT_KEYS,
     VS3B_BASE_BB: VS3B_BASE_BB, VS3B_MIN_BB: VS3B_MIN_BB, VS3B_MAX_BB: VS3B_MAX_BB,
+    RFI_JAM_BB: RFI_JAM_BB, rfiStackInfo: rfiStackInfo, rfiAtDepth: rfiAtDepth,
+    defOpenBb: defOpenBb, defStackInfo: defStackInfo, defenseAtDepth: defenseAtDepth,
+    defenseCalibrate: defenseCalibrate,
     impliedIndex: impliedIndex, vs3bVillainRange: vs3bVillainRange,
     vs3bStackInfo: vs3bStackInfo, vs3bCalibrate: vs3bCalibrate, vs3bDefense: vs3bDefense,
     VS3B_SPOTS: VS3B_SPOTS, VS3B_SPOT_KEYS: VS3B_SPOT_KEYS, callPrice: callPrice,
     RFI_RANGES_6: RFI_RANGES_6, RFI_POS_6: RFI_POS_6,
     RFI_RANGES_9: RFI_RANGES_9, RFI_POS_9: RFI_POS_9,
     cycleState: cycleState, mergeOverride: mergeOverride, diffOverride: diffOverride,
-    openerRfiNotation: openerRfiNotation, openerOpenPct: openerOpenPct,
-    defenseThresholds: defenseThresholds, dynamicDefense: dynamicDefense
+    openerRfiNotation: openerRfiNotation, openerOpenPct: openerOpenPct
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = Ranges;
   else global.Ranges = Ranges;
