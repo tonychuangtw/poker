@@ -1223,6 +1223,19 @@
     return defSets[key];
   }
 
+  // 情境下拉：依 6-max / 9-max 分組（情境數多，分組才找得到）
+  (function buildDefSpotOptions() {
+    var six = '', nine = '';
+    Ranges.DEF_SPOT_KEYS.forEach(function (k) {
+      var spot = Ranges.DEF_SPOTS[k];
+      var opt = '<option value="' + k + '">' + spot.name + '</option>';
+      if (spot.table === 9) nine += opt; else six += opt;
+    });
+    $('#defSpot').innerHTML =
+      '<optgroup label="6-max">' + six + '</optgroup>' +
+      '<optgroup label="9-max Full Ring">' + nine + '</optgroup>';
+  })();
+
   var defKeyCur = 'co_vs_utg', defEdit = false;
   // 「對手開牌 %」滑桿：每情境快取 { pct: 預設開牌%, thr: 校準門檻 }
   var defDyn = {}, defPctCur = null, defSliding = false;
@@ -1278,6 +1291,7 @@
         (tbCombos / 1326 * 100).toFixed(1) + '%（' + tbCombos + ' combo）＋跟注 ' +
         (callCombos / 1326 * 100).toFixed(1) + '%（' + callCombos + ' combo）';
     }
+    $('#defSpot').value = defKeyCur;
     $('#defCustomRow').hidden = dynamic || !ov;
     $('#btnDefEdit').disabled = dynamic;
     if (!defSliding) $('#defOpenPct').value = defPctCur;
@@ -1321,6 +1335,78 @@
     renderDef();
   });
   renderDef();
+
+  /* ---------- 被 3-bet（4-bet / 跟注）range ---------- */
+  var v3bKeyCur = Ranges.VS3B_SPOT_KEYS[0], v3bEdit = false;
+
+  (function buildV3bSpotOptions() {
+    $('#v3bSpot').innerHTML = Ranges.VS3B_SPOT_KEYS.map(function (k) {
+      return '<option value="' + k + '">' + Ranges.VS3B_SPOTS[k].name + '</option>';
+    }).join('');
+  })();
+
+  function v3bChartKey() { return 'vs3b:' + v3bKeyCur; }
+  function v3bDefaultMap() {
+    var spot = Ranges.VS3B_SPOTS[v3bKeyCur], map = {};
+    PushFold.rangeFromNotation(spot.call)
+      .forEach(function (i) { map[PushFold.classLabel(i)] = 'in'; });
+    PushFold.rangeFromNotation(spot.fourBet)
+      .forEach(function (i) { map[PushFold.classLabel(i)] = 'tb'; });
+    return map;
+  }
+  function renderV3b() {
+    var spot = Ranges.VS3B_SPOTS[v3bKeyCur];
+    var ov = getRangeOverride(v3bChartKey());
+    var map = Ranges.mergeOverride(v3bDefaultMap(), ov);
+    var html = '', fbCombos = 0, callCombos = 0;
+    for (var i = 0; i < 169; i++) {
+      var lbl = PushFold.classLabel(i);
+      var st = map[lbl] || 'out';
+      if (st === 'tb') fbCombos += PushFold.comboCount(i);
+      else if (st === 'in') callCombos += PushFold.comboCount(i);
+      html += '<div class="nash-cell ' + (st === 'in' || st === 'tb' ? st : 'out') +
+        '" data-i="' + i + '">' + lbl + '</div>';
+    }
+    $('#v3bGrid').innerHTML = html;
+    $('#v3bGrid').classList.toggle('editing', v3bEdit);
+    var p = Ranges.callPrice(v3bKeyCur);
+    $('#v3bTxt').textContent = spot.hero + ' 開 ' + spot.openBb + 'bb → ' + spot.villain +
+      ' 3-bet 到 ' + spot.tbBb + 'bb｜4-bet ' + (fbCombos / 1326 * 100).toFixed(1) + '%（' +
+      fbCombos + ' combo）＋跟注 ' + (callCombos / 1326 * 100).toFixed(1) + '%（' +
+      callCombos + ' combo）';
+    $('#v3bNote').textContent = '跟注要再投 ' + p.toCall + 'bb 進 ' + p.pot + 'bb 底池 → ' +
+      '直接的底池賠率約 ' + (p.needEq * 100).toFixed(0) + '%（有位置＋隱含賠率可放寬，' +
+      '無位置要更嚴）。' + spot.note + '。';
+    $('#v3bCustomRow').hidden = !ov;
+    $('#v3bSpot').value = v3bKeyCur;
+  }
+  $('#v3bSpot').addEventListener('change', function () {
+    v3bKeyCur = this.value;
+    renderV3b();
+  });
+  $('#btnV3bEdit').addEventListener('click', function () {
+    v3bEdit = !v3bEdit;
+    this.classList.toggle('active-role', v3bEdit);
+    this.textContent = v3bEdit ? '✔ 完成編輯' : '✏️ 編輯';
+    renderV3b();
+  });
+  $('#v3bGrid').addEventListener('click', function (e) {
+    if (!v3bEdit) return;
+    var cell = e.target.closest('.nash-cell');
+    if (!cell) return;
+    var lbl = PushFold.classLabel(+cell.dataset.i);
+    var defMap = v3bDefaultMap();
+    var full = Ranges.mergeOverride(defMap, getRangeOverride(v3bChartKey()));
+    full[lbl] = Ranges.cycleState('vs3b', full[lbl] || 'out');
+    setRangeOverride(v3bChartKey(), Ranges.diffOverride(defMap, full));
+    renderV3b();
+  });
+  $('#btnV3bReset').addEventListener('click', function () {
+    if (!confirm('確定捨棄這張圖的自訂內容，還原為建議 range？')) return;
+    setRangeOverride(v3bChartKey(), null);
+    renderV3b();
+  });
+  renderV3b();
 
   /* ---------- Outs / 賠率速查表 ---------- */
   (function () {

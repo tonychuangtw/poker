@@ -369,15 +369,7 @@
       <span class="legend-tb">紅</span> = 3-bet、<span class="legend-call">綠</span> = 跟注、灰 = 蓋牌。
       按「✏️ 編輯」後點格子循環切換 棄牌 → 跟注 → 3-bet。</p>
     <label>情境
-      <select id="defSpot">
-        <option value="co_vs_utg">CO vs UTG 開牌</option>
-        <option value="btn_vs_co">BTN vs CO 開牌</option>
-        <option value="sb_vs_btn">SB vs BTN 開牌</option>
-        <option value="bb_vs_btn">BB vs BTN 開牌（防守）</option>
-        <option value="bb_vs_sb">BB vs SB 開牌（防守）</option>
-        <option value="hj_vs_utg9">HJ vs UTG 開牌（9-max）</option>
-        <option value="bb_vs_utg9">BB vs UTG 開牌（9-max 防守）</option>
-      </select>
+      <select id="defSpot"></select>
     </label>
     <div class="btn-row">
       <button class="btn edit-btn" id="btnDefEdit">✏️ 編輯</button>
@@ -393,6 +385,26 @@
       <button class="btn" id="btnDefReset">還原建議值</button>
     </div>
     <div class="nash-grid-wrap"><div id="defGrid" class="nash-grid"></div></div>
+  </div>
+
+  <div class="card">
+    <h2>被 3-bet（4-bet / 跟注 / 棄牌）</h2>
+    <p class="hint">自己在翻前開牌後被 3-bet 的應對 range（100bb，簡化 GTO 近似）。
+      <span class="legend-tb">紅</span> = 4-bet、<span class="legend-call">綠</span> = 跟注、灰 = 蓋牌。
+      按「✏️ 編輯」後點格子循環切換 棄牌 → 跟注 → 4-bet。</p>
+    <label>情境
+      <select id="v3bSpot"></select>
+    </label>
+    <div class="btn-row">
+      <button class="btn edit-btn" id="btnV3bEdit">✏️ 編輯</button>
+    </div>
+    <p class="hint" id="v3bTxt"></p>
+    <p class="hint" id="v3bNote"></p>
+    <div class="custom-row" id="v3bCustomRow" hidden>
+      <span class="custom-badge">已自訂</span>
+      <button class="btn" id="btnV3bReset">還原建議值</button>
+    </div>
+    <div class="nash-grid-wrap"><div id="v3bGrid" class="nash-grid"></div></div>
   </div>
 
   <div class="card">

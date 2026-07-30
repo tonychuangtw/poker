@@ -445,12 +445,26 @@ assert(badDash === 4, 'invalid dash notations all rejected');
 console.log('--- Defense ranges (vs RFI) ---');
 var Ranges = require('../js/ranges.js');
 
-assert(Array.isArray(Ranges.DEF_SPOT_KEYS) && Ranges.DEF_SPOT_KEYS.length === 7,
-  '7 defense spots defined (5 six-max + 2 nine-max)');
-assert(Ranges.DEF_SPOTS.hj_vs_utg9.table === 9 && Ranges.DEF_SPOTS.bb_vs_utg9.table === 9,
-  '9-max defense spots flagged table=9');
+var nine = Ranges.DEF_SPOT_KEYS.filter(function (k) { return Ranges.DEF_SPOTS[k].table === 9; });
+assert(Array.isArray(Ranges.DEF_SPOT_KEYS) && Ranges.DEF_SPOT_KEYS.length === 21,
+  '21 defense spots defined (' + (21 - nine.length) + ' six-max + ' + nine.length + ' nine-max)');
+assert(nine.length === 6 && nine.every(function (k) { return /9$/.test(k); }),
+  '9-max defense spots flagged table=9 and keyed with a 9 suffix');
 assert(Ranges.DEF_SPOT_KEYS.every(function (k) { return Ranges.DEF_SPOTS[k]; }),
   'every spot key resolves to a spot definition');
+assert(Object.keys(Ranges.DEF_SPOTS).length === Ranges.DEF_SPOT_KEYS.length,
+  'no orphan spot definitions outside DEF_SPOT_KEYS');
+
+// 6-max 完整覆蓋：每個「開牌位置 → 其後每個位置」的組合都要有情境
+var ORDER_6 = ['utg', 'hj', 'co', 'btn', 'sb', 'bb'];
+var missing6 = [];
+ORDER_6.forEach(function (opener, oi) {
+  ORDER_6.slice(oi + 1).forEach(function (hero) {
+    if (!Ranges.DEF_SPOTS[hero + '_vs_' + opener]) missing6.push(hero + '_vs_' + opener);
+  });
+});
+assert(missing6.length === 0, '6-max vs-RFI coverage complete (missing: ' +
+  (missing6.join(',') || 'none') + ')');
 
 Ranges.DEF_SPOT_KEYS.forEach(function (key) {
   var spot = Ranges.DEF_SPOTS[key];
@@ -490,6 +504,75 @@ var bbBtnTot = PushFold.rangeComboTotal(PushFold.rangeFromNotation(Ranges.DEF_SP
 var coUtgTot = PushFold.rangeComboTotal(PushFold.rangeFromNotation(Ranges.DEF_SPOTS.co_vs_utg.call)) +
   PushFold.rangeComboTotal(PushFold.rangeFromNotation(Ranges.DEF_SPOTS.co_vs_utg.threeBet));
 assert(bbBtnTot > coUtgTot * 2, 'BB vs BTN defends much wider than CO vs UTG');
+
+// ---------- 5d-2. 被 3-bet 的 4-bet / 跟注 range ----------
+console.log('--- Facing a 3-bet (4-bet / call) ---');
+
+assert(Array.isArray(Ranges.VS3B_SPOT_KEYS) && Ranges.VS3B_SPOT_KEYS.length === 6 &&
+  Object.keys(Ranges.VS3B_SPOTS).length === 6,
+  '6 vs-3bet spots defined, keys and definitions in sync');
+assert(Ranges.VS3B_SPOT_KEYS.every(function (k) { return Ranges.VS3B_SPOTS[k]; }),
+  'every vs-3bet key resolves to a spot definition');
+// CO / BTN 被 SB、BB 3-bet 這 4 個核心情境都要有
+assert(['co_vs_sb3b', 'co_vs_bb3b', 'btn_vs_sb3b', 'btn_vs_bb3b']
+  .every(function (k) { return Ranges.VS3B_SPOTS[k]; }),
+  'CO/BTN vs SB/BB 3-bet all covered');
+
+var RFI_BY_NAME = {};
+Ranges.RFI_POS_6.forEach(function (k) {
+  RFI_BY_NAME[Ranges.RFI_RANGES_6[k].name] = Ranges.RFI_RANGES_6[k].notation;
+});
+
+Ranges.VS3B_SPOT_KEYS.forEach(function (key) {
+  var spot = Ranges.VS3B_SPOTS[key];
+  var fb, call, parsed = true;
+  try {
+    fb = PushFold.rangeFromNotation(spot.fourBet);
+    call = PushFold.rangeFromNotation(spot.call);
+  } catch (e) { parsed = false; }
+  assert(parsed, key + ': notations parse');
+  if (!parsed) return;
+  var fbC = PushFold.rangeComboTotal(fb), callC = PushFold.rangeComboTotal(call);
+  assert(fbC > 0 && callC > 0, key + ': 4bet & call ranges non-empty');
+  var fbPct = fbC / 1326 * 100;
+  assert(fbPct >= 2 && fbPct <= 6,
+    key + ': 4bet in 2-6% (' + fbPct.toFixed(1) + '%, ' + fbC + ' combos)');
+  var fbSet = {};
+  fb.forEach(function (i) { fbSet[i] = true; });
+  assert(call.every(function (i) { return !fbSet[i]; }), key + ': call/4bet disjoint');
+  assert(fbSet[labelIdx('AA')] && fbSet[labelIdx('KK')], key + ': AA & KK 4-bet');
+  assert(!fbSet[labelIdx('72o')] && call.indexOf(labelIdx('72o')) < 0, key + ': 72o folded');
+  // 被 3-bet 後續玩的量必須明顯小於自己的開牌範圍
+  var openC = PushFold.rangeComboTotal(PushFold.rangeFromNotation(RFI_BY_NAME[spot.hero]));
+  var contRatio = (fbC + callC) / openC;
+  assert(contRatio > 0.2 && contRatio < 0.55,
+    key + ': continues 20-55% of own open range (' + (contRatio * 100).toFixed(0) + '%)');
+  // 底池賠率：跟注額 = 3-bet 額 - 開牌額；底池 = 雙方各 3-bet 額 + 死錢
+  var p = Ranges.callPrice(key);
+  assert(Math.abs(p.toCall - (spot.tbBb - spot.openBb)) < 1e-9 &&
+    Math.abs(p.pot - (spot.tbBb * 2 + spot.deadBb)) < 1e-9 &&
+    Math.abs(p.needEq - p.toCall / p.pot) < 1e-9,
+    key + ': callPrice math (call ' + p.toCall + 'bb into ' + p.pot + 'bb → ' +
+    (p.needEq * 100).toFixed(1) + '%)');
+  assert(p.needEq > 0.25 && p.needEq < 0.45, key + ': needed equity in 25-45%');
+});
+
+// 有位置（BTN vs BB 3-bet）續玩應寬於無位置（SB vs BB 3-bet）
+function v3bCont(k) {
+  var s = Ranges.VS3B_SPOTS[k];
+  return PushFold.rangeComboTotal(PushFold.rangeFromNotation(s.fourBet)) +
+    PushFold.rangeComboTotal(PushFold.rangeFromNotation(s.call));
+}
+assert(v3bCont('btn_vs_bb3b') > v3bCont('sb_vs_bb3b'),
+  'IP (BTN) continues wider vs BB 3-bet than OOP (SB)');
+assert(Ranges.callPrice('co_vs_btn3b').needEq < Ranges.callPrice('co_vs_bb3b').needEq,
+  'smaller IP 3-bet size (BTN 3x) gives a better price than BB 4x');
+// vs3b 圖與防守圖共用三態循環
+assert(Ranges.cycleState('vs3b', 'out') === 'in' &&
+  Ranges.cycleState('vs3b', 'in') === 'tb' &&
+  Ranges.cycleState('vs3b', 'tb') === 'out',
+  'cycleState vs3b: out -> in (call) -> tb (4-bet) -> out');
+assert(Ranges.callPrice('nope') === null, 'callPrice: unknown key -> null');
 
 // ---------- 5e. RFI range 資料（6-max / 9-max） ----------
 console.log('--- RFI ranges (6-max / 9-max) ---');
