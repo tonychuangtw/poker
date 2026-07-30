@@ -1519,6 +1519,27 @@
     return v3bSets[key];
   }
 
+  // 測驗抽的籌碼深度：涵蓋跟全下 / 全下-棄 / 一般三種局面，100bb 多放一份當基準
+  var QUIZ_DEPTHS = [10, 15, 20, 25, 30, 40, 50, 60, 75, 100, 100, 125, 150, 200, 250, 300];
+
+  function v3bAggroLabel(info) {
+    return info.mode === 'callAllin' ? '跟全下'
+      : info.mode === 'jamOrFold' ? '4-bet 全下' : '4-bet';
+  }
+  function v3bActionTxt(info) {
+    return info.mode === 'normal'
+      ? '4-bet、跟注還是蓋牌'
+      : v3bAggroLabel(info) + '還是蓋牌';
+  }
+  /** 該深度下某手牌的正解狀態 — 與圖表顯示一致：100bb 看建議表，其餘看動態試算 */
+  function v3bStateAt(key, bb, idx) {
+    if (bb === Ranges.VS3B_BASE_BB) {
+      var set = v3bSet(key);
+      return set.fbSet[idx] ? 'tb' : set.callSet[idx] ? 'in' : 'out';
+    }
+    return Ranges.vs3bDefense(key, bb, v3bCalib(key))[PushFold.classLabel(idx)] || 'out';
+  }
+
   var QUIZ_MODE_BTN = { pf: '#btnQuizModePf', rfi: '#btnQuizModeRfi',
                         def: '#btnQuizModeDef', v3b: '#btnQuizModeV3b' };
   var QUIZ_AGGRO_TXT = { pf: '全下', rfi: '加注', def: '3-bet', v3b: '4-bet' };
@@ -1559,10 +1580,16 @@
     } else {
       var vKey = Ranges.VS3B_SPOT_KEYS[Math.floor(Math.random() * Ranges.VS3B_SPOT_KEYS.length)];
       var vSpot = Ranges.VS3B_SPOTS[vKey];
-      quizCur = { mode: 'v3b', spot: vKey, idx: randHandIdx() };
-      $('#quizInfo').textContent = '6-max 100bb，你在 ' + vSpot.hero + ' 開 ' +
-        vSpot.openBb + 'bb，' + vSpot.villain + ' 3-bet 到 ' + vSpot.tbBb +
-        'bb。4-bet、跟注還是蓋牌？';
+      var bb = QUIZ_DEPTHS[Math.floor(Math.random() * QUIZ_DEPTHS.length)];
+      var vInfo = Ranges.vs3bStackInfo(vKey, bb);
+      quizCur = { mode: 'v3b', spot: vKey, bb: bb, idx: randHandIdx() };
+      $('#quizInfo').textContent = '6-max，有效籌碼 ' + vInfo.effBb + 'bb，你在 ' +
+        vSpot.hero + ' 開 ' + vInfo.openBb + 'bb，' + vSpot.villain + ' 3-bet 到 ' +
+        vInfo.tbBb + 'bb' + (vInfo.mode === 'callAllin' ? '（等於全下你）' : '') + '。' +
+        v3bActionTxt(vInfo) + '？';
+      // 淺籌碼沒有平跟這個選項 → 該題不給「跟注」按鈕
+      $('#btnQuizCall').hidden = vInfo.mode !== 'normal';
+      $('#btnQuizPush').textContent = v3bAggroLabel(vInfo);
     }
     $('#quizHand').textContent = PushFold.classLabel(quizCur.idx);
     $('#quizFeedback').hidden = true;
@@ -1602,26 +1629,32 @@
       detail = ' ' + Ranges.DEF_SPOTS[quizCur.spot].name + '：' +
         PushFold.classLabel(quizCur.idx) + ' 應該' + bestTxt + '。';
     } else {
-      var vs = v3bSet(quizCur.spot);
-      var vBest = vs.fbSet[quizCur.idx] ? 'aggro' : vs.callSet[quizCur.idx] ? 'call' : 'fold';
+      var vInfo2 = Ranges.vs3bStackInfo(quizCur.spot, quizCur.bb);
+      var st3 = v3bStateAt(quizCur.spot, quizCur.bb, quizCur.idx);
+      var vBest = st3 === 'tb' ? 'aggro' : st3 === 'in' ? 'call' : 'fold';
       ok = action === vBest;
       bestAct = vBest;
-      qKey = 'v3b:' + quizCur.spot + ':' + quizCur.idx;
-      var vBestTxt = vBest === 'aggro' ? '<b>4-bet</b>'
+      qKey = 'v3b:' + quizCur.spot + ':' + quizCur.bb + ':' + quizCur.idx;
+      var vBestTxt = vBest === 'aggro' ? '<b>' + v3bAggroLabel(vInfo2) + '</b>'
         : vBest === 'call' ? '<b>跟注</b>' : '<b>蓋牌</b>';
-      var p3 = Ranges.callPrice(quizCur.spot);
-      detail = ' ' + Ranges.VS3B_SPOTS[quizCur.spot].name + '：' +
+      detail = ' ' + Ranges.VS3B_SPOTS[quizCur.spot].name + '（' + vInfo2.effBb + 'bb）：' +
         PushFold.classLabel(quizCur.idx) + ' 應該' + vBestTxt +
-        '（跟注要投 ' + p3.toCall + 'bb 進 ' + p3.pot + 'bb 底池，需約 ' +
-        Math.round(p3.needEq * 100) + '%）。';
+        '（跟注要投 ' + vInfo2.toCall + 'bb 進 ' + vInfo2.pot + 'bb 底池，需約 ' +
+        Math.round(vInfo2.needEq * 100) + '%' +
+        (vInfo2.mode === 'normal' ? '，跟注後 SPR ' + vInfo2.spr.toFixed(1) : '') + '）。';
     }
     var s = quizScore(quizCur.mode);
     s.total++; if (ok) s.correct++;
     quizSave(quizCur.mode, s);
     // 訓練系統：記錄答題（滾動熟練度 / 錯題本 / 每日任務）
     if (window.TRAINING && window.TRAINING.record) {
-      window.TRAINING.record(quizCur.mode, ok, qKey,
-        { idx: quizCur.idx, best: bestAct, info: $('#quizInfo').textContent });
+      var payload = { idx: quizCur.idx, best: bestAct, info: $('#quizInfo').textContent };
+      if (quizCur.mode === 'v3b') {
+        var pInfo = Ranges.vs3bStackInfo(quizCur.spot, quizCur.bb);
+        payload.aggro = v3bAggroLabel(pInfo);
+        payload.noCall = pInfo.mode !== 'normal';
+      }
+      window.TRAINING.record(quizCur.mode, ok, qKey, payload);
     }
     var fb = $('#quizFeedback');
     fb.hidden = false;

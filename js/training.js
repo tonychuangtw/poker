@@ -207,6 +207,9 @@
         if (typeof payload.idx === 'number') m.idx = payload.idx;
         if (payload.best) m.best = payload.best;
         if (payload.info) m.info = String(payload.info);
+        // 這題當下的按鈕樣貌（例如淺籌碼的「4-bet 全下」且沒有跟注選項）
+        if (payload.aggro) m.aggro = String(payload.aggro);
+        if (payload.noCall) m.noCall = true;
       }
       save(KEYS.mistakes, addMistake(loadMistakes(), m, MISTAKE_CAP));
     }
@@ -285,8 +288,9 @@
   }
   /** 有「跟注」選項的測驗種類（三選一），其餘為二選一 */
   function hasCallOption(kind) { return kind === 'def' || kind === 'v3b'; }
-  function actionTxt(kind, act) {
-    return act === 'aggro' ? aggroLabel(kind) : act === 'call' ? '跟注' : '蓋牌';
+  function actionTxt(m, act) {
+    return act === 'aggro' ? (m.aggro || aggroLabel(m.kind))
+      : act === 'call' ? '跟注' : '蓋牌';
   }
 
   function drillShow() {
@@ -297,8 +301,8 @@
     $('#drillHand').textContent = label;
     $('#drillInfo').textContent = (drillCur.info || '') +
     '（' + KIND_NAMES[drillCur.kind] + '）';
-    $('#btnDrillAggro').textContent = aggroLabel(drillCur.kind);
-    $('#btnDrillCall').hidden = !hasCallOption(drillCur.kind);
+    $('#btnDrillAggro').textContent = drillCur.aggro || aggroLabel(drillCur.kind);
+    $('#btnDrillCall').hidden = drillCur.noCall === true || !hasCallOption(drillCur.kind);
     $('#drillFeedback').hidden = true;
     $('#btnDrillNext').hidden = true;
     $('#btnDrillAggro').disabled = false;
@@ -319,7 +323,7 @@
     fb.innerHTML = (ok
       ? '<span class="pos">✔ 正確！已從錯題本移除。</span>'
       : '<span class="neg">✘ 錯誤，保留在錯題本。</span>') +
-      ' 正解：<b>' + actionTxt(drillCur.kind, drillCur.best || 'fold') + '</b>。';
+      ' 正解：<b>' + actionTxt(drillCur, drillCur.best || 'fold') + '</b>。';
     $('#btnDrillNext').hidden = false;
     $('#btnDrillNext').textContent = drillQueue.length ? '下一題' : '看結果';
     $('#btnDrillAggro').disabled = true;
