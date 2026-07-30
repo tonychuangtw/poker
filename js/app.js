@@ -1338,6 +1338,13 @@
 
   /* ---------- 被 3-bet（4-bet / 跟注）range ---------- */
   var v3bKeyCur = Ranges.VS3B_SPOT_KEYS[0], v3bEdit = false;
+  // 有效籌碼滑桿：100bb = 建議表，其餘深度依 equity + 隱含賠率門檻動態試算
+  var v3bStackCur = Ranges.VS3B_BASE_BB, v3bSliding = false, v3bCalibs = {};
+  function v3bCalib(key) {
+    if (!v3bCalibs[key]) v3bCalibs[key] = Ranges.vs3bCalibrate(key);
+    return v3bCalibs[key];
+  }
+  function v3bDynamicActive() { return v3bStackCur !== Ranges.VS3B_BASE_BB; }
 
   (function buildV3bSpotOptions() {
     $('#v3bSpot').innerHTML = Ranges.VS3B_SPOT_KEYS.map(function (k) {
@@ -1356,8 +1363,12 @@
   }
   function renderV3b() {
     var spot = Ranges.VS3B_SPOTS[v3bKeyCur];
-    var ov = getRangeOverride(v3bChartKey());
-    var map = Ranges.mergeOverride(v3bDefaultMap(), ov);
+    var dynamic = v3bDynamicActive();
+    var info = Ranges.vs3bStackInfo(v3bKeyCur, v3bStackCur);
+    var ov = dynamic ? null : getRangeOverride(v3bChartKey());
+    var map = dynamic
+      ? Ranges.vs3bDefense(v3bKeyCur, v3bStackCur, v3bCalib(v3bKeyCur))
+      : Ranges.mergeOverride(v3bDefaultMap(), ov);
     var html = '', fbCombos = 0, callCombos = 0;
     for (var i = 0; i < 169; i++) {
       var lbl = PushFold.classLabel(i);
@@ -1368,18 +1379,43 @@
         '" data-i="' + i + '">' + lbl + '</div>';
     }
     $('#v3bGrid').innerHTML = html;
-    $('#v3bGrid').classList.toggle('editing', v3bEdit);
-    var p = Ranges.callPrice(v3bKeyCur);
-    $('#v3bTxt').textContent = spot.hero + ' 開 ' + spot.openBb + 'bb → ' + spot.villain +
-      ' 3-bet 到 ' + spot.tbBb + 'bb｜4-bet ' + (fbCombos / 1326 * 100).toFixed(1) + '%（' +
-      fbCombos + ' combo）＋跟注 ' + (callCombos / 1326 * 100).toFixed(1) + '%（' +
-      callCombos + ' combo）';
-    $('#v3bNote').textContent = '跟注要再投 ' + p.toCall + 'bb 進 ' + p.pot + 'bb 底池 → ' +
-      '直接的底池賠率約 ' + (p.needEq * 100).toFixed(0) + '%（有位置＋隱含賠率可放寬，' +
-      '無位置要更嚴）。' + spot.note + '。';
-    $('#v3bCustomRow').hidden = !ov;
+    $('#v3bGrid').classList.toggle('editing', v3bEdit && !dynamic);
+    var aggroTxt = info.mode === 'callAllin' ? '跟全下'
+      : info.mode === 'jamOrFold' ? '4-bet 全下' : '4-bet';
+    $('#v3bTxt').textContent = spot.hero + ' 開 ' + info.openBb + 'bb → ' + spot.villain +
+      ' 3-bet 到 ' + info.tbBb + 'bb（有效籌碼 ' + info.effBb + 'bb）｜' +
+      aggroTxt + ' ' + (fbCombos / 1326 * 100).toFixed(1) + '%（' + fbCombos + ' combo）' +
+      (info.mode === 'normal'
+        ? '＋跟注 ' + (callCombos / 1326 * 100).toFixed(1) + '%（' + callCombos + ' combo）'
+        : '，其餘蓋牌');
+    var modeTxt = info.mode === 'callAllin'
+      ? '籌碼不夠蓋住這個 3-bet → 對手等於直接全下你，只能跟全下或棄。'
+      : info.mode === 'jamOrFold'
+        ? '跟注後 SPR 只剩 ' + info.spr.toFixed(2) + ' → 沒有平跟的空間，只剩 4-bet 全下或棄牌。'
+        : '跟注後 SPR ' + info.spr.toFixed(1) +
+          (info.effBb > Ranges.VS3B_BASE_BB
+            ? '，籌碼深 → 小對子與同花連張的隱含賠率變大，跟注變寬、4-bet 價值範圍收緊。'
+            : info.effBb < Ranges.VS3B_BASE_BB
+              ? '，籌碼淺 → 隱含賠率縮水，小對子與同花連張先掉出跟注範圍。'
+              : '。');
+    $('#v3bNote').textContent = '跟注要再投 ' + info.toCall + 'bb 進 ' + info.pot +
+      'bb 底池 → 直接的底池賠率約 ' + (info.needEq * 100).toFixed(0) + '%。' + modeTxt +
+      (dynamic ? '（動態試算，唯讀）' : spot.note + '。');
+    $('#v3bCustomRow').hidden = dynamic || !ov;
+    $('#btnV3bEdit').disabled = dynamic;
     $('#v3bSpot').value = v3bKeyCur;
+    if (!v3bSliding) $('#v3bStack').value = v3bStackCur;
+    $('#v3bStackVal').textContent = v3bStackCur + 'bb';
   }
+  $('#v3bStack').addEventListener('input', function () {
+    v3bSliding = true;
+    v3bStackCur = +this.value;
+    renderV3b();
+  });
+  $('#v3bStack').addEventListener('change', function () {
+    v3bSliding = false;
+    renderV3b();
+  });
   $('#v3bSpot').addEventListener('change', function () {
     v3bKeyCur = this.value;
     renderV3b();
@@ -1391,7 +1427,7 @@
     renderV3b();
   });
   $('#v3bGrid').addEventListener('click', function (e) {
-    if (!v3bEdit) return;
+    if (!v3bEdit || v3bDynamicActive()) return; // 動態試算為唯讀，不寫入自訂
     var cell = e.target.closest('.nash-cell');
     if (!cell) return;
     var lbl = PushFold.classLabel(+cell.dataset.i);

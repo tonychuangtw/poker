@@ -389,7 +389,7 @@
 
   <div class="card">
     <h2>被 3-bet（4-bet / 跟注 / 棄牌）</h2>
-    <p class="hint">自己在翻前開牌後被 3-bet 的應對 range（100bb，簡化 GTO 近似）。
+    <p class="hint">自己在翻前開牌後被 3-bet 的應對 range（預設 100bb，可拉滑桿試算 10–300bb）。
       <span class="legend-tb">紅</span> = 4-bet、<span class="legend-call">綠</span> = 跟注、灰 = 蓋牌。
       按「✏️ 編輯」後點格子循環切換 棄牌 → 跟注 → 4-bet。</p>
     <label>情境
@@ -397,6 +397,11 @@
     </label>
     <div class="btn-row">
       <button class="btn edit-btn" id="btnV3bEdit">✏️ 編輯</button>
+    </div>
+    <label>有效籌碼（10–300bb，預設 100bb；離開 100bb 即依深度動態試算）</label>
+    <div class="slider-row">
+      <input type="range" id="v3bStack" min="10" max="300" step="5" value="100">
+      <span class="pct-val" id="v3bStackVal">100bb</span>
     </div>
     <p class="hint" id="v3bTxt"></p>
     <p class="hint" id="v3bNote"></p>

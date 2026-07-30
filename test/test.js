@@ -574,6 +574,108 @@ assert(Ranges.cycleState('vs3b', 'out') === 'in' &&
   'cycleState vs3b: out -> in (call) -> tb (4-bet) -> out');
 assert(Ranges.callPrice('nope') === null, 'callPrice: unknown key -> null');
 
+// ---------- 5d-3. 被 3-bet 的籌碼深度試算（10–300bb） ----------
+console.log('--- Facing a 3-bet: stack depth (10-300bb) ---');
+
+function v3bCombos(map, state) {
+  var n = 0;
+  for (var i = 0; i < 169; i++) {
+    if (map[PushFold.classLabel(i)] === state) n += PushFold.comboCount(i);
+  }
+  return n;
+}
+
+// 每個情境都要指到一個真實存在的防守情境，對手 3-bet range 由該處取得（單一資料來源）
+Ranges.VS3B_SPOT_KEYS.forEach(function (key) {
+  var spot = Ranges.VS3B_SPOTS[key];
+  var def = Ranges.DEF_SPOTS[spot.villainSpot];
+  assert(!!def && def.hero === spot.villain,
+    key + ': villainSpot ' + spot.villainSpot + ' 的 hero 就是 3-bet 方 (' + spot.villain + ')');
+  var vr = Ranges.vs3bVillainRange(key);
+  assert(Array.isArray(vr) && vr.length > 0, key + ': villain 3-bet range resolves');
+});
+
+// 隱含賠率指數：小對子最高、雜色最低、全部落在 0..1
+(function () {
+  var idx = {};
+  for (var i = 0; i < 169; i++) idx[PushFold.classLabel(i)] = Ranges.impliedIndex(i);
+  var all = Object.keys(idx).map(function (k) { return idx[k]; });
+  assert(all.every(function (v) { return v >= 0 && v <= 1; }), 'impliedIndex within 0..1');
+  assert(idx['55'] === 1 && idx['22'] === 1, 'small pairs get max implied index');
+  assert(idx['87s'] > idx['87o'] && idx['A5s'] > idx['A5o'],
+    'suited hands out-imply their offsuit twins');
+  assert(idx.AA < idx['55'], 'AA needs depth less than small pairs (already made hand)');
+  assert(idx.KQo <= 0.1, 'offsuit broadways have almost no implied odds');
+})();
+
+Ranges.VS3B_SPOT_KEYS.forEach(function (key) {
+  var spot = Ranges.VS3B_SPOTS[key];
+  var calib = Ranges.vs3bCalibrate(key);
+  assert(!!calib && calib.eq.length === 169, key + ': calibration produces 169 equities');
+
+  // 局面數字：3-bet 大小被籌碼蓋住時就是全下，底池/賠率/SPR 一致
+  var deep = Ranges.vs3bStackInfo(key, 200);
+  assert(deep.tbBb === spot.tbBb && Math.abs(deep.pot - (spot.tbBb * 2 + spot.deadBb)) < 1e-9 &&
+    Math.abs(deep.spr - (200 - spot.tbBb) / deep.pot) < 1e-9,
+    key + ': 200bb stack info (pot ' + deep.pot + ', SPR ' + deep.spr.toFixed(1) + ')');
+  var tiny = Ranges.vs3bStackInfo(key, 10);
+  assert(tiny.tbBb === Math.min(spot.tbBb, 10), key + ': 3-bet size capped by the stack');
+  // 滑桿範圍外會夾回 10–300
+  assert(Ranges.vs3bStackInfo(key, 1).effBb === Ranges.VS3B_MIN_BB &&
+    Ranges.vs3bStackInfo(key, 9999).effBb === Ranges.VS3B_MAX_BB,
+    key + ': effective stack clamped to ' + Ranges.VS3B_MIN_BB + '-' + Ranges.VS3B_MAX_BB + 'bb');
+
+  // 100bb 應回到建議表（校準往返，容許同分並列造成的誤差）
+  var m100 = Ranges.vs3bDefense(key, Ranges.VS3B_BASE_BB, calib);
+  var fb100 = v3bCombos(m100, 'tb'), cont100 = fb100 + v3bCombos(m100, 'in');
+  var curFb = PushFold.rangeComboTotal(PushFold.rangeFromNotation(spot.fourBet));
+  var curCont = curFb + PushFold.rangeComboTotal(PushFold.rangeFromNotation(spot.call));
+  assert(Math.abs(fb100 - curFb) <= 40,
+    key + ': 100bb 4-bet combos ' + fb100 + ' ~ curated ' + curFb);
+  assert(Math.abs(cont100 - curCont) <= 40,
+    key + ': 100bb continue combos ' + cont100 + ' ~ curated ' + curCont);
+
+  // 籌碼越深 → 跟注越寬；籌碼越淺 → 4-bet(全下) 越寬
+  var call60 = v3bCombos(Ranges.vs3bDefense(key, 60, calib), 'in');
+  var call100 = v3bCombos(m100, 'in');
+  var call300 = v3bCombos(Ranges.vs3bDefense(key, 300, calib), 'in');
+  assert(call60 < call100 && call100 < call300,
+    key + ': call range widens with depth (' + call60 + ' < ' + call100 + ' < ' + call300 + ')');
+  var jam25 = v3bCombos(Ranges.vs3bDefense(key, 25, calib), 'tb');
+  var fb300 = v3bCombos(Ranges.vs3bDefense(key, 300, calib), 'tb');
+  assert(jam25 > fb100 && fb100 >= fb300,
+    key + ': 4-bet/jam range tightens with depth (' + jam25 + ' > ' + fb100 + ' >= ' + fb300 + ')');
+
+  // 淺籌碼沒有平跟這個選項；AA 在任何深度都不會蓋牌
+  [10, 15, 20, 60, 100, 300].forEach(function (bb) {
+    var info = Ranges.vs3bStackInfo(key, bb);
+    var m = Ranges.vs3bDefense(key, bb, calib);
+    if (info.mode !== 'normal') {
+      assert(v3bCombos(m, 'in') === 0,
+        key + ' @' + bb + 'bb: mode ' + info.mode + ' has no flat-call cells');
+    }
+    assert(m.AA === 'tb', key + ' @' + bb + 'bb: AA always continues aggressively');
+    assert(!m['72o'], key + ' @' + bb + 'bb: 72o still folds');
+  });
+});
+
+// 10bb：3-bet 蓋住你 → 只能跟全下或棄，門檻就是底池賠率
+(function () {
+  var key = 'btn_vs_sb3b';
+  var info = Ranges.vs3bStackInfo(key, 10);
+  assert(info.mode === 'callAllin' && info.tbBb === 10,
+    '10bb vs SB 3-bet: villain is effectively all-in (mode ' + info.mode + ')');
+  var calib = Ranges.vs3bCalibrate(key);
+  var m = Ranges.vs3bDefense(key, 10, calib);
+  var wrong = 0;
+  for (var i = 0; i < 169; i++) {
+    var want = calib.eq[i] >= info.needEq;
+    if (want !== (m[PushFold.classLabel(i)] === 'tb')) wrong++;
+  }
+  assert(wrong === 0, 'call-all-in range is exactly the hands beating the pot odds (' +
+    (info.needEq * 100).toFixed(1) + '%)');
+})();
+
 // ---------- 5e. RFI range 資料（6-max / 9-max） ----------
 console.log('--- RFI ranges (6-max / 9-max) ---');
 

@@ -196,35 +196,40 @@
   var VS3B_SPOTS = {
     co_vs_bb3b: {
       name: 'CO 開牌 vs BB 3-bet',
-      hero: 'CO', villain: 'BB', openBb: 2.5, tbBb: 12, deadBb: 0.5,
+      hero: 'CO', villain: 'BB', villainSpot: 'bb_vs_co',
+      openBb: 2.5, tbBb: 12, deadBb: 0.5,
       note: 'BB 3-bet 範圍最寬（有 MDF 壓力），CO 有位置 → 跟注為主、4-bet 偏價值',
       fourBet: 'QQ+ AKs AKo A5s',
       call: 'JJ-77 AQs AJs ATs KQs KJs QJs QTs JTs T9s 98s 87s AQo AJo KQo'
     },
     co_vs_sb3b: {
       name: 'CO 開牌 vs SB 3-bet',
-      hero: 'CO', villain: 'SB', openBb: 2.5, tbBb: 11, deadBb: 1,
+      hero: 'CO', villain: 'SB', villainSpot: 'sb_vs_co',
+      openBb: 2.5, tbBb: 11, deadBb: 1,
       note: 'SB 3-bet 比 BB 緊且更兩極化，續玩要再收一點',
       fourBet: 'QQ+ AKs AKo A5s A4s',
       call: 'JJ-88 AQs AJs ATs KQs KJs KTs QJs QTs JTs T9s 98s AQo AJo KQo'
     },
     co_vs_btn3b: {
       name: 'CO 開牌 vs BTN 3-bet',
-      hero: 'CO', villain: 'BTN', openBb: 2.5, tbBb: 8, deadBb: 1.5,
+      hero: 'CO', villain: 'BTN', villainSpot: 'btn_vs_co',
+      openBb: 2.5, tbBb: 8, deadBb: 1.5,
       note: 'BTN 3-bet 較小（約 3x）但有位置；價格好卻整局無位置，冷跟要更嚴',
       fourBet: 'QQ+ AKs AKo A5s A4s',
       call: 'JJ-77 AQs AJs ATs KQs KJs QJs JTs T9s 98s AQo KQo'
     },
     btn_vs_sb3b: {
       name: 'BTN 開牌 vs SB 3-bet',
-      hero: 'BTN', villain: 'SB', openBb: 2.5, tbBb: 11, deadBb: 1,
+      hero: 'BTN', villain: 'SB', villainSpot: 'sb_vs_btn',
+      openBb: 2.5, tbBb: 11, deadBb: 1,
       note: 'BTN 開牌很寬，被 3-bet 必須棄掉大量邊緣牌；有位置 → 小對子/同花連張可跟',
       fourBet: 'JJ+ AQs+ AKo A5s A4s',
       call: 'TT-44 AJs ATs A9s KQs KJs KTs QJs QTs JTs T9s 98s 87s 76s 65s 54s AQo AJo KQo'
     },
     btn_vs_bb3b: {
       name: 'BTN 開牌 vs BB 3-bet',
-      hero: 'BTN', villain: 'BB', openBb: 2.5, tbBb: 12, deadBb: 0.5,
+      hero: 'BTN', villain: 'BB', villainSpot: 'bb_vs_btn',
+      openBb: 2.5, tbBb: 12, deadBb: 0.5,
       note: 'BB 3-bet 最寬，BTN 有位置 → 續玩最寬的一格',
       fourBet: 'JJ+ AQs+ AKo A5s A4s',
       call: 'TT-22 AJs ATs A9s A8s KQs KJs KTs K9s QJs QTs Q9s JTs J9s T9s T8s ' +
@@ -232,7 +237,8 @@
     },
     sb_vs_bb3b: {
       name: 'SB 開牌 vs BB 3-bet',
-      hero: 'SB', villain: 'BB', openBb: 3, tbBb: 12, deadBb: 0,
+      hero: 'SB', villain: 'BB', villainSpot: 'bb_vs_sb',
+      openBb: 3, tbBb: 12, deadBb: 0,
       note: 'SB 開牌寬又整局無位置，被 BB 3-bet 只留能打得舒服的牌，其餘 4-bet 或棄',
       fourBet: 'JJ+ AQs+ AKo A5s A4s',
       call: 'TT-77 AJs ATs KQs KJs QJs JTs T9s 98s AQo AJo'
@@ -330,25 +336,27 @@
     return eq;
   }
 
-  /** 校準門檻：equity ≥ tb 的手牌約湊滿 tbCombos；≥ cont 的約湊滿 contCombos。
-   * contCombos 應為「續玩總量」= 3-bet + 跟注 combo 數。回傳 { tb, cont }。 */
-  function defenseThresholds(villainClasses, tbCombos, contCombos) {
-    var pf = PF();
-    var eq = equityMapVs(villainClasses);
-    var order = [];
-    for (var i = 0; i < 169; i++) order.push(i);
-    order.sort(function (a, b) { return eq[b] - eq[a]; });
-    var tbThr = tbCombos > 0 ? null : 2;   // 2 = 不可能達到 → 空集合
-    var contThr = contCombos > 0 ? null : 2;
+  /** 依 score 由高到低取牌，湊滿 targetCombos 時的 score 即為門檻。
+   * targetCombos <= 0 回傳 2（不可能達到 → 空集合）；湊不滿回傳 0（全取）。 */
+  function thresholdAt(score, targetCombos) {
+    if (targetCombos <= 0) return 2;
+    var pf = PF(), order = [], i;
+    for (i = 0; i < 169; i++) order.push(i);
+    order.sort(function (a, b) { return score[b] - score[a]; });
     var cum = 0;
     for (i = 0; i < order.length; i++) {
       cum += pf.comboCount(order[i]);
-      if (tbThr === null && cum >= tbCombos) tbThr = eq[order[i]];
-      if (contThr === null && cum >= contCombos) contThr = eq[order[i]];
-      if (tbThr !== null && contThr !== null) break;
+      if (cum >= targetCombos) return score[order[i]];
     }
-    if (tbThr === null) tbThr = 0;
-    if (contThr === null) contThr = 0;
+    return 0;
+  }
+
+  /** 校準門檻：equity ≥ tb 的手牌約湊滿 tbCombos；≥ cont 的約湊滿 contCombos。
+   * contCombos 應為「續玩總量」= 3-bet + 跟注 combo 數。回傳 { tb, cont }。 */
+  function defenseThresholds(villainClasses, tbCombos, contCombos) {
+    var eq = equityMapVs(villainClasses);
+    var tbThr = thresholdAt(eq, tbCombos);
+    var contThr = thresholdAt(eq, contCombos);
     if (contThr > tbThr) contThr = tbThr; // 保證 tb ≥ cont（3-bet ⊆ 續玩）
     return { tb: tbThr, cont: contThr };
   }
@@ -366,8 +374,116 @@
     return map;
   }
 
+  /* ---------- 被 3-bet：籌碼深度試算（10–300bb，純函式） ----------
+   * 100bb 的建議表當基準，其餘深度用同一組門檻重算，規則寫明如下：
+   *   3-bet 實際大小 = min(表定大小, 有效籌碼)   籌碼不夠時 3-bet 就是全下
+   *   底池 = 3-bet 大小 × 2 + 死錢；跟注後 SPR = (有效籌碼 - 3-bet 大小) / 底池
+   *   排序分數 = equity(對上對手 3-bet range) + 隱含賠率加成
+   *   隱含賠率加成 = IMPLIED_W × 隱含指數(手牌) × min(SPR, SPR_CAP)/SPR_CAP
+   *     → 深籌碼：小對子/同花連張的加成變大，跟注範圍變寬
+   *     → 淺籌碼：加成趨近 0，這些牌自動掉出跟注範圍
+   *   4-bet 只看 raw equity（不吃隱含賠率）。門檻在兩種極端間內插：
+   *     SPR 夠深（≥ COMMIT_SPR）→ 用 100bb 校準門檻（4-bet 不等於全下，可以被打回棄牌）
+   *     SPR 很淺 → 4-bet 就是全下，門檻 = 底池賠率 − 棄牌權益折抵（JAM_CREDIT）→ range 明顯變寬
+   *     深於 150bb 再上調 DEEP_PENALTY → 不會深籌碼拿 JJ/AQ 就把整疊打光
+   *   模式：有效籌碼 ≤ 3-bet 大小 → 只能跟全下或棄（門檻 = 底池賠率）
+   *         跟注後 SPR < JAM_SPR → 沒有跟注這個選項，只剩 4-bet 全下 / 棄
+   * 同樣是簡化的 equity 排序近似：阻斷牌 bluff（如 A5s）不在模型內。 */
+
+  var VS3B_BASE_BB = 100;   // 建議表的基準深度
+  var VS3B_MIN_BB = 10, VS3B_MAX_BB = 300;
+  var IMPLIED_W = 0.10;     // 隱含賠率最多可抵掉的 equity（10 個百分點）
+  var SPR_CAP = 6;          // SPR 超過此值後隱含賠率不再加成
+  var JAM_SPR = 0.5;        // 跟注後 SPR 低於此值 → 沒有跟注，只剩全下 / 棄
+  var COMMIT_SPR = 2;       // SPR 到此值以上，4-bet 才算「不等於全下」
+  var JAM_CREDIT = 0.06;    // 4-bet 全下的棄牌權益折抵（6 個百分點）
+  var DEEP_PENALTY = 0.02;  // 深籌碼 4-bet 價值門檻上調（最多 2 個百分點）
+
+  function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+
+  /** 隱含賠率指數 0..1：越吃籌碼深度的牌越高（小對子打三條、同花連張打堅果） */
+  function impliedIndex(idx) {
+    var r = Math.floor(idx / 13), c = idx % 13;
+    var hi = 14 - (r < c ? r : c), lo = 14 - (r < c ? c : r);
+    if (r === c) return lo <= 9 ? 1 : 0.5;        // 99 以下的口袋對最吃深度
+    var suited = r < c, gap = hi - lo;
+    if (!suited) return 0.1;                      // 雜色牌幾乎沒有隱含賠率
+    if (hi === 14) return lo <= 5 ? 0.7 : 0.6;    // 同花 A（輪子 / 堅果同花）
+    return gap <= 2 ? 0.8 : 0.45;                 // 同花連張 / 一兩張間隔
+  }
+
+  /** 對手（3-bet 方）的 3-bet range — 直接取對應防守情境的 threeBet，兩張表共用同一份資料 */
+  function vs3bVillainRange(spotKey) {
+    var spot = VS3B_SPOTS[spotKey];
+    if (!spot || !DEF_SPOTS[spot.villainSpot]) return null;
+    return PF().rangeFromNotation(DEF_SPOTS[spot.villainSpot].threeBet);
+  }
+
+  /** 某有效籌碼下的局面數字：3-bet 實際大小、底池、底池賠率、SPR、模式 */
+  function vs3bStackInfo(spotKey, effBb) {
+    var s = VS3B_SPOTS[spotKey];
+    if (!s) return null;
+    var eff = Math.min(VS3B_MAX_BB, Math.max(VS3B_MIN_BB, effBb));
+    var tb = Math.min(s.tbBb, eff);        // 籌碼不夠蓋住 → 3-bet 就是全下
+    var open = Math.min(s.openBb, eff);
+    var pot = tb * 2 + s.deadBb;
+    var spr = (eff - tb) / pot;
+    return {
+      effBb: eff, tbBb: tb, openBb: open, toCall: tb - open, pot: pot,
+      needEq: (tb - open) / pot, spr: spr,
+      mode: eff <= tb ? 'callAllin' : spr < JAM_SPR ? 'jamOrFold' : 'normal'
+    };
+  }
+
+  function impliedFactor(spr) { return clamp01(spr / SPR_CAP); }
+
+  /** 於 100bb 用建議表校準門檻：4-bet 看 raw equity、續玩看 equity + 隱含加成 */
+  function vs3bCalibrate(spotKey) {
+    var pf = PF(), s = VS3B_SPOTS[spotKey];
+    var villain = vs3bVillainRange(spotKey);
+    if (!villain) return null;
+    var eq = equityMapVs(villain);
+    var base = vs3bStackInfo(spotKey, VS3B_BASE_BB);
+    var f = impliedFactor(base.spr), score = new Array(169);
+    for (var i = 0; i < 169; i++) score[i] = eq[i] + IMPLIED_W * impliedIndex(i) * f;
+    var fbC = pf.rangeComboTotal(pf.rangeFromNotation(s.fourBet));
+    var contC = fbC + pf.rangeComboTotal(pf.rangeFromNotation(s.call));
+    return { eq: eq, fourBet: thresholdAt(eq, fbC), cont: thresholdAt(score, contC) };
+  }
+
+  /** 用校準好的門檻算某深度下的 169 map：{ 手牌: 'tb'（4-bet/全下）| 'in'（跟注） } */
+  function vs3bDefense(spotKey, effBb, calib) {
+    var pf = PF();
+    var info = vs3bStackInfo(spotKey, effBb);
+    if (!info || !calib) return {};
+    var map = {}, i;
+    if (info.mode === 'callAllin') {
+      // 對手 3-bet 已把你蓋住 → 只剩跟全下 / 棄，門檻就是底池賠率
+      for (i = 0; i < 169; i++) {
+        if (calib.eq[i] >= info.needEq) map[pf.classLabel(i)] = 'tb';
+      }
+      return map;
+    }
+    // 淺籌碼的 4-bet 等於全下 → 門檻往「底池賠率 − 棄牌權益」靠；深籌碼才回到校準值
+    var w = clamp01(info.spr / COMMIT_SPR);
+    var thr4 = w * calib.fourBet + (1 - w) * Math.max(0, info.needEq - JAM_CREDIT)
+      + DEEP_PENALTY * clamp01((info.effBb - 150) / 150); // 深 → 價值範圍收緊
+    var f = impliedFactor(info.spr);
+    for (i = 0; i < 169; i++) {
+      if (calib.eq[i] >= thr4) map[pf.classLabel(i)] = 'tb';
+      else if (info.mode === 'normal' &&
+               calib.eq[i] + IMPLIED_W * impliedIndex(i) * f >= calib.cont) {
+        map[pf.classLabel(i)] = 'in';
+      }
+    }
+    return map;
+  }
+
   var Ranges = {
     DEF_SPOTS: DEF_SPOTS, DEF_SPOT_KEYS: DEF_SPOT_KEYS,
+    VS3B_BASE_BB: VS3B_BASE_BB, VS3B_MIN_BB: VS3B_MIN_BB, VS3B_MAX_BB: VS3B_MAX_BB,
+    impliedIndex: impliedIndex, vs3bVillainRange: vs3bVillainRange,
+    vs3bStackInfo: vs3bStackInfo, vs3bCalibrate: vs3bCalibrate, vs3bDefense: vs3bDefense,
     VS3B_SPOTS: VS3B_SPOTS, VS3B_SPOT_KEYS: VS3B_SPOT_KEYS, callPrice: callPrice,
     RFI_RANGES_6: RFI_RANGES_6, RFI_POS_6: RFI_POS_6,
     RFI_RANGES_9: RFI_RANGES_9, RFI_POS_9: RFI_POS_9,
