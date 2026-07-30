@@ -5,9 +5,9 @@
  * UI 部分只在瀏覽器環境執行。
  *
  * localStorage：
- *   poker.roll      {pf:[0/1...], rfi:[], def:[]}    每種最近 30 題結果
+ *   poker.roll      {pf:[0/1...], rfi:[], def:[], v3b:[]}  每種最近 30 題結果
  *   poker.mistakes  [{kind,key,ts,idx,best,info}]    錯題本（kind+key 去重、上限 100）
- *   poker.activity  {"YYYY-MM-DD":{pf,rfi,def,drill,c}}  每日答題數（保留 60 天）
+ *   poker.activity  {"YYYY-MM-DD":{pf,rfi,def,v3b,drill,c}}  每日答題數（保留 60 天）
  *   poker.streak    {current,best,lastDone}
  */
 (function (global) {
@@ -123,8 +123,11 @@
     activity: 'poker.activity',
     streak: 'poker.streak'
   };
-  var KIND_NAMES = { pf: 'Push/Fold', rfi: '開牌 RFI', def: '面對開牌' };
-  var KINDS = ['pf', 'rfi', 'def'];
+  var KIND_NAMES = { pf: 'Push/Fold', rfi: '開牌 RFI', def: '面對開牌', v3b: '被 3-bet' };
+  var KINDS = ['pf', 'rfi', 'def', 'v3b'];
+  // 每日任務只看這三種基本測驗（被 3-bet 為進階題，不加重每天的量）
+  var DAILY_KINDS = ['pf', 'rfi', 'def'];
+  var DAILY_TARGET = 10;
 
   function load(key, fallback) {
     try {
@@ -150,16 +153,17 @@
       ? s : { current: 0, best: 0, lastDone: '' };
   }
 
+  var ACTIVITY_FIELDS = KINDS.concat(['drill', 'c']);
   function dayRec(activity, date) {
-    if (!activity[date]) activity[date] = { pf: 0, rfi: 0, def: 0, drill: 0, c: 0 };
+    if (!activity[date]) activity[date] = {};
     var rec = activity[date];
-    ['pf', 'rfi', 'def', 'drill', 'c'].forEach(function (f) {
+    ACTIVITY_FIELDS.forEach(function (f) {
       if (typeof rec[f] !== 'number') rec[f] = 0;
     });
     return rec;
   }
 
-  // field: 'pf'|'rfi'|'def'|'drill'
+  // field: KINDS 之一或 'drill'
   function bumpActivity(field, ok) {
     var today = todayStr();
     var act = pruneActivity(loadActivity(), today, ACTIVITY_DAYS);
@@ -177,7 +181,7 @@
     var rec = dayRec(act, today);
     var mistakes = loadMistakes();
     var t1 = mistakes.length === 0 || rec.drill >= 20;       // 清錯題
-    var t2 = rec.pf >= 10 && rec.rfi >= 10 && rec.def >= 10; // 每種各 10 題
+    var t2 = DAILY_KINDS.every(function (k) { return rec[k] >= DAILY_TARGET; });
     return { today: today, rec: rec, mistakes: mistakes, t1: t1, t2: t2, allDone: t1 && t2 };
   }
 
@@ -190,7 +194,7 @@
   }
 
   /* ---------- 答題記錄（由 app.js 測驗呼叫） ---------- */
-  // kind: 'pf'|'rfi'|'def'；payload: {idx, best, info}（錯題重練用）
+  // kind: KINDS 之一；payload: {idx, best, info}（錯題重練用）
   TRAINING.record = function (kind, isCorrect, questionKey, payload) {
     if (KINDS.indexOf(kind) === -1) return;
     var roll = loadRoll();
@@ -221,8 +225,9 @@
       : '今日已重練 ' + Math.min(st.rec.drill, 20) + ' / 20 題（錯題本剩 ' + st.mistakes.length + ' 題）';
     $('#trainTasks').innerHTML =
       mk(st.t1, '清錯題 — ' + drillTxt) +
-      mk(st.t2, '每種測驗各答 10 題 — Push/Fold ' + Math.min(st.rec.pf, 10) +
-        '/10、RFI ' + Math.min(st.rec.rfi, 10) + '/10、面對開牌 ' + Math.min(st.rec.def, 10) + '/10');
+      mk(st.t2, '基本測驗各答 ' + DAILY_TARGET + ' 題 — ' + DAILY_KINDS.map(function (k) {
+        return KIND_NAMES[k] + ' ' + Math.min(st.rec[k], DAILY_TARGET) + '/' + DAILY_TARGET;
+      }).join('、'));
     var s = loadStreak();
     $('#trainStreak').textContent = '🔥 連續完成 ' + (s.current || 0) + ' 天（最佳 ' +
       (s.best || 0) + ' 天）' + (st.allDone ? '，今日任務全數完成！' : '');
@@ -275,8 +280,11 @@
   }
 
   function aggroLabel(kind) {
-    return kind === 'pf' ? '全下' : kind === 'rfi' ? '加注' : '3-bet';
+    return kind === 'pf' ? '全下' : kind === 'rfi' ? '加注'
+      : kind === 'v3b' ? '4-bet' : '3-bet';
   }
+  /** 有「跟注」選項的測驗種類（三選一），其餘為二選一 */
+  function hasCallOption(kind) { return kind === 'def' || kind === 'v3b'; }
   function actionTxt(kind, act) {
     return act === 'aggro' ? aggroLabel(kind) : act === 'call' ? '跟注' : '蓋牌';
   }
@@ -290,7 +298,7 @@
     $('#drillInfo').textContent = (drillCur.info || '') +
     '（' + KIND_NAMES[drillCur.kind] + '）';
     $('#btnDrillAggro').textContent = aggroLabel(drillCur.kind);
-    $('#btnDrillCall').hidden = drillCur.kind !== 'def';
+    $('#btnDrillCall').hidden = !hasCallOption(drillCur.kind);
     $('#drillFeedback').hidden = true;
     $('#btnDrillNext').hidden = true;
     $('#btnDrillAggro').disabled = false;
@@ -347,7 +355,7 @@
   /* ---------- 渲染：週報 ---------- */
   function dayTotal(rec) {
     if (!rec) return 0;
-    return (rec.pf || 0) + (rec.rfi || 0) + (rec.def || 0) + (rec.drill || 0);
+    return KINDS.concat(['drill']).reduce(function (n, f) { return n + (rec[f] || 0); }, 0);
   }
 
   function renderWeek() {

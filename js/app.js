@@ -1425,9 +1425,10 @@
     $('#oddsTable').innerHTML = html;
   })();
 
-  /* ---------- 訓練測驗（Push/Fold + 開牌 RFI + 面對開牌） ---------- */
-  var QUIZ_KEYS = { pf: 'poker.nash_quiz', rfi: 'poker.rfi_quiz', def: 'poker.def_quiz' };
-  var quizMode = 'pf'; // 'pf' | 'rfi' | 'def'
+  /* ---------- 訓練測驗（Push/Fold + 開牌 RFI + 面對開牌 + 被 3-bet） ---------- */
+  var QUIZ_KEYS = { pf: 'poker.nash_quiz', rfi: 'poker.rfi_quiz', def: 'poker.def_quiz',
+                    v3b: 'poker.v3b_quiz' };
+  var quizMode = 'pf'; // 'pf' | 'rfi' | 'def' | 'v3b'
 
   function quizScore(mode) {
     try {
@@ -1444,7 +1445,7 @@
   function renderQuizScore() {
     $('#quizScoreTxt').textContent =
       [scoreLine('Push/Fold', quizScore('pf')), scoreLine('RFI', quizScore('rfi')),
-       scoreLine('面對開牌', quizScore('def'))]
+       scoreLine('面對開牌', quizScore('def')), scoreLine('被 3-bet', quizScore('v3b'))]
         .filter(Boolean).join(' ｜ ');
   }
 
@@ -1469,18 +1470,37 @@
     return rfiSets[pos];
   }
 
+  // 被 3-bet 情境的 range set 快取（同 defSet，但用 fourBet / call）
+  var v3bSets = {};
+  function v3bSet(key) {
+    if (!v3bSets[key]) {
+      var spot = Ranges.VS3B_SPOTS[key];
+      var fbSet = {}, callSet = {};
+      PushFold.rangeFromNotation(spot.fourBet).forEach(function (i) { fbSet[i] = true; });
+      PushFold.rangeFromNotation(spot.call).forEach(function (i) { callSet[i] = true; });
+      v3bSets[key] = { fbSet: fbSet, callSet: callSet };
+    }
+    return v3bSets[key];
+  }
+
+  var QUIZ_MODE_BTN = { pf: '#btnQuizModePf', rfi: '#btnQuizModeRfi',
+                        def: '#btnQuizModeDef', v3b: '#btnQuizModeV3b' };
+  var QUIZ_AGGRO_TXT = { pf: '全下', rfi: '加注', def: '3-bet', v3b: '4-bet' };
+
   function setQuizMode(mode) {
     quizMode = mode;
-    $('#btnQuizModePf').classList.toggle('active-role', mode === 'pf');
-    $('#btnQuizModeRfi').classList.toggle('active-role', mode === 'rfi');
-    $('#btnQuizModeDef').classList.toggle('active-role', mode === 'def');
-    $('#btnQuizPush').textContent = mode === 'pf' ? '全下' : mode === 'rfi' ? '加注' : '3-bet';
-    $('#btnQuizCall').hidden = mode !== 'def';
+    for (var m in QUIZ_MODE_BTN) {
+      if (QUIZ_MODE_BTN.hasOwnProperty(m)) {
+        $(QUIZ_MODE_BTN[m]).classList.toggle('active-role', mode === m);
+      }
+    }
+    $('#btnQuizPush').textContent = QUIZ_AGGRO_TXT[mode];
+    $('#btnQuizCall').hidden = mode !== 'def' && mode !== 'v3b';
     if (!$('#quizRun').hidden) quizNext();
   }
-  $('#btnQuizModePf').addEventListener('click', function () { setQuizMode('pf'); });
-  $('#btnQuizModeRfi').addEventListener('click', function () { setQuizMode('rfi'); });
-  $('#btnQuizModeDef').addEventListener('click', function () { setQuizMode('def'); });
+  Object.keys(QUIZ_MODE_BTN).forEach(function (m) {
+    $(QUIZ_MODE_BTN[m]).addEventListener('click', function () { setQuizMode(m); });
+  });
 
   var RFI_POS_KEYS = ['utg', 'hj', 'co', 'btn', 'sb'];
   var quizCur = null;
@@ -1494,12 +1514,19 @@
       quizCur = { mode: 'rfi', pos: pos, idx: randHandIdx() };
       $('#quizInfo').textContent = '6-max，你在 ' + RFI_RANGES[pos].name +
         '，前面無人入池。開牌加注還是蓋牌？';
-    } else {
+    } else if (quizMode === 'def') {
       var spotKey = Ranges.DEF_SPOT_KEYS[Math.floor(Math.random() * Ranges.DEF_SPOT_KEYS.length)];
       var spot = Ranges.DEF_SPOTS[spotKey];
       quizCur = { mode: 'def', spot: spotKey, idx: randHandIdx() };
       $('#quizInfo').textContent = (spot.table === 9 ? '9-max' : '6-max') + ' 100bb，' +
         spot.sizeTxt + '，你在 ' + spot.hero + '。3-bet、跟注還是蓋牌？';
+    } else {
+      var vKey = Ranges.VS3B_SPOT_KEYS[Math.floor(Math.random() * Ranges.VS3B_SPOT_KEYS.length)];
+      var vSpot = Ranges.VS3B_SPOTS[vKey];
+      quizCur = { mode: 'v3b', spot: vKey, idx: randHandIdx() };
+      $('#quizInfo').textContent = '6-max 100bb，你在 ' + vSpot.hero + ' 開 ' +
+        vSpot.openBb + 'bb，' + vSpot.villain + ' 3-bet 到 ' + vSpot.tbBb +
+        'bb。4-bet、跟注還是蓋牌？';
     }
     $('#quizHand').textContent = PushFold.classLabel(quizCur.idx);
     $('#quizFeedback').hidden = true;
@@ -1529,7 +1556,7 @@
       detail = ' 標準 RFI：' + PushFold.classLabel(quizCur.idx) + ' 在 ' +
         RFI_RANGES[quizCur.pos].name +
         (inRange ? ' 屬於開牌 range，應該<b>加注</b>。' : ' 不在開牌 range，應該<b>蓋牌</b>。');
-    } else {
+    } else if (quizCur.mode === 'def') {
       var ds = defSet(quizCur.spot);
       var best = ds.tbSet[quizCur.idx] ? 'aggro' : ds.callSet[quizCur.idx] ? 'call' : 'fold';
       ok = action === best;
@@ -1538,6 +1565,19 @@
       var bestTxt = best === 'aggro' ? '<b>3-bet</b>' : best === 'call' ? '<b>跟注</b>' : '<b>蓋牌</b>';
       detail = ' ' + Ranges.DEF_SPOTS[quizCur.spot].name + '：' +
         PushFold.classLabel(quizCur.idx) + ' 應該' + bestTxt + '。';
+    } else {
+      var vs = v3bSet(quizCur.spot);
+      var vBest = vs.fbSet[quizCur.idx] ? 'aggro' : vs.callSet[quizCur.idx] ? 'call' : 'fold';
+      ok = action === vBest;
+      bestAct = vBest;
+      qKey = 'v3b:' + quizCur.spot + ':' + quizCur.idx;
+      var vBestTxt = vBest === 'aggro' ? '<b>4-bet</b>'
+        : vBest === 'call' ? '<b>跟注</b>' : '<b>蓋牌</b>';
+      var p3 = Ranges.callPrice(quizCur.spot);
+      detail = ' ' + Ranges.VS3B_SPOTS[quizCur.spot].name + '：' +
+        PushFold.classLabel(quizCur.idx) + ' 應該' + vBestTxt +
+        '（跟注要投 ' + p3.toCall + 'bb 進 ' + p3.pot + 'bb 底池，需約 ' +
+        Math.round(p3.needEq * 100) + '%）。';
     }
     var s = quizScore(quizCur.mode);
     s.total++; if (ok) s.correct++;
