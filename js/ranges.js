@@ -139,55 +139,283 @@
       call: '77-22 A9s-A6s K9s-K6s Q9s Q8s J9s J8s T8s 98s 97s 87s 86s 76s 75s ' +
             '65s 54s A9o-A5o KTo K9o QTo JTo T9o'
     },
-    /* ===== 9-max Full Ring ===== */
-    hj_vs_utg9: {
-      name: 'HJ vs UTG 開牌（9-max）', table: 9,
-      hero: 'HJ', opener: 'UTG', sizeTxt: '9-max，UTG 開 2.5bb',
-      threeBet: 'JJ+ AKs AKo A5s A4s',
-      call: 'TT-88 AQs AJs ATs KQs KJs QJs JTs T9s 98s AQo'
-    },
-    co_vs_utg9: {
-      name: 'CO vs UTG 開牌（9-max）', table: 9,
-      hero: 'CO', opener: 'UTG', sizeTxt: '9-max，UTG 開 2.5bb（UTG 範圍很緊）',
-      threeBet: 'JJ+ AQs+ AKo A5s A4s',
-      call: 'TT-88 AJs ATs KQs KJs QJs JTs T9s 98s AQo'
-    },
-    btn_vs_utg9: {
-      name: 'BTN vs UTG 開牌（9-max）', table: 9,
-      hero: 'BTN', opener: 'UTG', sizeTxt: '9-max，UTG 開 2.5bb（BTN 有位置，冷跟小對子/同花連張）',
-      threeBet: 'TT+ AQs+ AKo A5s A4s',
-      call: '99-44 AJs ATs A9s KQs KJs KTs QJs QTs JTs T9s 98s 87s AQo AJo KQo'
-    },
-    sb_vs_utg9: {
-      name: 'SB vs UTG 開牌（9-max）', table: 9,
-      hero: 'SB', opener: 'UTG', sizeTxt: '9-max，UTG 開 2.5bb（SB 無位置，3-bet 或棄牌）',
-      threeBet: 'JJ+ AQs+ AKo A5s A4s',
-      call: 'TT-88 AJs KQs KJs QJs JTs'
-    },
-    bb_vs_mp9: {
-      name: 'BB vs MP 開牌（9-max 防守）', table: 9,
-      hero: 'BB', opener: 'MP', sizeTxt: '9-max，MP 開 2.5bb（BB 防守）',
-      threeBet: 'QQ+ AKs AKo A5s A4s',
-      call: 'JJ-22 AQs-A6s A3s A2s KQs-K8s QJs-Q9s JTs J9s T9s T8s 98s 97s ' +
-            '87s 76s 65s 54s AQo-ATo KQo KJo QJo'
-    },
-    bb_vs_utg9: {
-      name: 'BB vs UTG 開牌（9-max）', table: 9,
-      hero: 'BB', opener: 'UTG', sizeTxt: '9-max，UTG 開 2.5bb（BB 防守）',
-      threeBet: 'QQ+ AKs AKo A5s A4s',
-      call: 'JJ-22 AQs-A6s A3s A2s K9s+ Q9s+ J9s+ T8s+ 97s+ 86s+ 75s+ 64s+ ' +
-            '54s 53s 43s AQo-ATo KQo KJo QJo JTo'
-    }
+  /* ===== 9-max Full Ring：面對開牌（現場取向） =====
+   * 由 tools/gen-9max-ranges.js 產生，請改產生器後重跑，不要手改這一段。
+   * 寬度擬合自 15 個 6-max 情境並套現場調整（冷跟 ×1.15、SB ×0.85、BB ×1.05、3-bet ×0.85），
+   * 選牌用 equity + 隱含賠率排序（權重 0.14），3-bet 內含依開牌寬度遞增的 bluff 比例。 */
+  utg1_vs_utg9: {
+    name: 'UTG+1 vs UTG 開牌（9-max）', table: 9,
+    hero: 'UTG+1', opener: 'UTG',
+    sizeTxt: '現場取向，UTG 開 2.5bb（你後面還有 7 家會行動）',
+    threeBet: 'JJ+ A5s',
+    call: 'TT-99 AKs+'
+  },
+  mp_vs_utg9: {
+    name: 'MP vs UTG 開牌（9-max）', table: 9,
+    hero: 'MP', opener: 'UTG',
+    sizeTxt: '現場取向，UTG 開 2.5bb（你後面還有 6 家會行動）',
+    threeBet: 'JJ+ AKs+ A5s',
+    call: 'TT-99'
+  },
+  lj_vs_utg9: {
+    name: 'LJ vs UTG 開牌（9-max）', table: 9,
+    hero: 'LJ', opener: 'UTG',
+    sizeTxt: '現場取向，UTG 開 2.5bb（你後面還有 5 家會行動）',
+    threeBet: 'TT+ AKs+ A5s',
+    call: '99-88 AQs'
+  },
+  hj_vs_utg9: {
+    name: 'HJ vs UTG 開牌（9-max）', table: 9,
+    hero: 'HJ', opener: 'UTG',
+    sizeTxt: '現場取向，UTG 開 2.5bb（你後面還有 4 家會行動）',
+    threeBet: 'JJ+ AKs+ AKo+',
+    call: 'TT-33 AQs-AJs'
+  },
+  co_vs_utg9: {
+    name: 'CO vs UTG 開牌（9-max）', table: 9,
+    hero: 'CO', opener: 'UTG',
+    sizeTxt: '現場取向，UTG 開 2.5bb（你後面還有 3 家會行動）',
+    threeBet: 'JJ+ AKs+ A5s AKo+',
+    call: 'TT-22 AQs-ATs KJs+ QTs+ JTs+ AQo'
+  },
+  btn_vs_utg9: {
+    name: 'BTN vs UTG 開牌（9-max）', table: 9,
+    hero: 'BTN', opener: 'UTG',
+    sizeTxt: '現場取向，UTG 開 2.5bb（你後面還有 2 家會行動）',
+    threeBet: 'TT+ AKs+ A5s AKo+',
+    call: '99-22 AQs-A9s KJs+ QTs+ J9s+ T8s+ 97s+ 87s+ 76s+ AQo-AJo'
+  },
+  sb_vs_utg9: {
+    name: 'SB vs UTG 開牌（9-max）', table: 9,
+    hero: 'SB', opener: 'UTG',
+    sizeTxt: '現場取向，UTG 開 2.5bb（SB 無位置且 BB 還在後面，冷跟最吃虧）',
+    threeBet: 'JJ+ AKs+ A5s AKo+',
+    call: 'TT-66 AQs-AJs'
+  },
+  bb_vs_utg9: {
+    name: 'BB vs UTG 開牌（9-max）', table: 9,
+    hero: 'BB', opener: 'UTG',
+    sizeTxt: '現場取向，UTG 開 2.5bb（BB 收尾行動、價格最好）',
+    threeBet: 'JJ+ AKs+ AKo+',
+    call: 'TT-22 AQs-A2s K2s+ Q3s+ J7s+ T6s+ 95s+ 85s+ 74s+ 64s+ 53s+ 42s+ 32s+ ' +
+      'AQo-ATo KQo+'
+  },
+  mp_vs_utg19: {
+    name: 'MP vs UTG+1 開牌（9-max）', table: 9,
+    hero: 'MP', opener: 'UTG+1',
+    sizeTxt: '現場取向，UTG+1 開 2.5bb（你後面還有 6 家會行動）',
+    threeBet: 'JJ+ AKs+ A5s',
+    call: 'TT-99'
+  },
+  lj_vs_utg19: {
+    name: 'LJ vs UTG+1 開牌（9-max）', table: 9,
+    hero: 'LJ', opener: 'UTG+1',
+    sizeTxt: '現場取向，UTG+1 開 2.5bb（你後面還有 5 家會行動）',
+    threeBet: 'JJ+ AKs+ AKo+',
+    call: 'TT-88 AQs'
+  },
+  hj_vs_utg19: {
+    name: 'HJ vs UTG+1 開牌（9-max）', table: 9,
+    hero: 'HJ', opener: 'UTG+1',
+    sizeTxt: '現場取向，UTG+1 開 2.5bb（你後面還有 4 家會行動）',
+    threeBet: 'JJ+ AKs+ A5s AKo+',
+    call: 'TT-33 AQs-AJs'
+  },
+  co_vs_utg19: {
+    name: 'CO vs UTG+1 開牌（9-max）', table: 9,
+    hero: 'CO', opener: 'UTG+1',
+    sizeTxt: '現場取向，UTG+1 開 2.5bb（你後面還有 3 家會行動）',
+    threeBet: 'JJ+ AKs+ A5s-A4s AKo+',
+    call: 'TT-22 AQs-A9s KJs+ QJs+ JTs+ T9s+ AQo'
+  },
+  btn_vs_utg19: {
+    name: 'BTN vs UTG+1 開牌（9-max）', table: 9,
+    hero: 'BTN', opener: 'UTG+1',
+    sizeTxt: '現場取向，UTG+1 開 2.5bb（你後面還有 2 家會行動）',
+    threeBet: 'TT+ AKs+ A5s AKo+',
+    call: '99-22 AQs-A8s KJs+ QTs+ J9s+ T8s+ 97s+ 87s+ 76s+ AQo-AJo'
+  },
+  sb_vs_utg19: {
+    name: 'SB vs UTG+1 開牌（9-max）', table: 9,
+    hero: 'SB', opener: 'UTG+1',
+    sizeTxt: '現場取向，UTG+1 開 2.5bb（SB 無位置且 BB 還在後面，冷跟最吃虧）',
+    threeBet: 'JJ+ AKs+ A5s-A4s AKo+',
+    call: 'TT-66 AQs-AJs'
+  },
+  bb_vs_utg19: {
+    name: 'BB vs UTG+1 開牌（9-max）', table: 9,
+    hero: 'BB', opener: 'UTG+1',
+    sizeTxt: '現場取向，UTG+1 開 2.5bb（BB 收尾行動、價格最好）',
+    threeBet: 'JJ+ AKs+ AKo+',
+    call: 'TT-22 AQs-A2s K2s+ Q3s+ J7s+ T6s+ 95s+ 85s+ 74s+ 63s+ 53s+ 42s+ 32s+ ' +
+      'AQo-ATo KQo+'
+  },
+  lj_vs_mp9: {
+    name: 'LJ vs MP 開牌（9-max）', table: 9,
+    hero: 'LJ', opener: 'MP',
+    sizeTxt: '現場取向，MP 開 2.5bb（你後面還有 5 家會行動）',
+    threeBet: 'JJ+ AKs+ AKo+',
+    call: 'TT-77 AQs'
+  },
+  hj_vs_mp9: {
+    name: 'HJ vs MP 開牌（9-max）', table: 9,
+    hero: 'HJ', opener: 'MP',
+    sizeTxt: '現場取向，MP 開 2.5bb（你後面還有 4 家會行動）',
+    threeBet: 'JJ+ AKs+ A5s AKo+',
+    call: 'TT-44 AQs-ATs AQo'
+  },
+  co_vs_mp9: {
+    name: 'CO vs MP 開牌（9-max）', table: 9,
+    hero: 'CO', opener: 'MP',
+    sizeTxt: '現場取向，MP 開 2.5bb（你後面還有 3 家會行動）',
+    threeBet: 'JJ+ AKs+ A5s-A4s AKo+',
+    call: 'TT-22 AQs-A9s KJs+ JTs+ AQo-AJo'
+  },
+  btn_vs_mp9: {
+    name: 'BTN vs MP 開牌（9-max）', table: 9,
+    hero: 'BTN', opener: 'MP',
+    sizeTxt: '現場取向，MP 開 2.5bb（你後面還有 2 家會行動）',
+    threeBet: 'TT+ AKs+ A5s-A4s AKo+',
+    call: '99-22 AQs-A8s KJs+ QTs+ J9s+ T9s+ 98s+ 87s+ 76s+ AQo-ATo'
+  },
+  sb_vs_mp9: {
+    name: 'SB vs MP 開牌（9-max）', table: 9,
+    hero: 'SB', opener: 'MP',
+    sizeTxt: '現場取向，MP 開 2.5bb（SB 無位置且 BB 還在後面，冷跟最吃虧）',
+    threeBet: 'TT+ AKs+ A5s-A4s AKo+',
+    call: '99-55 AQs-AJs'
+  },
+  bb_vs_mp9: {
+    name: 'BB vs MP 開牌（9-max）', table: 9,
+    hero: 'BB', opener: 'MP',
+    sizeTxt: '現場取向，MP 開 2.5bb（BB 收尾行動、價格最好）',
+    threeBet: 'TT+ AKs+ A5s AKo+',
+    call: '99-22 AQs-A6s A4s-A2s K3s+ Q3s+ J7s+ T6s+ 95s+ 85s+ 74s+ 63s+ 53s+ ' +
+      '42s+ 32s+ AQo-A9o KQo+'
+  },
+  hj_vs_lj9: {
+    name: 'HJ vs LJ 開牌（9-max）', table: 9,
+    hero: 'HJ', opener: 'LJ',
+    sizeTxt: '現場取向，LJ 開 2.5bb（你後面還有 4 家會行動）',
+    threeBet: 'JJ+ AKs+ A5s-A4s AKo+',
+    call: 'TT-44 AQs-ATs KQs+ AQo'
+  },
+  co_vs_lj9: {
+    name: 'CO vs LJ 開牌（9-max）', table: 9,
+    hero: 'CO', opener: 'LJ',
+    sizeTxt: '現場取向，LJ 開 2.5bb（你後面還有 3 家會行動）',
+    threeBet: 'TT+ AKs+ A5s AKo+',
+    call: '99-22 AQs-A8s KJs+ AQo-ATo'
+  },
+  btn_vs_lj9: {
+    name: 'BTN vs LJ 開牌（9-max）', table: 9,
+    hero: 'BTN', opener: 'LJ',
+    sizeTxt: '現場取向，LJ 開 2.5bb（你後面還有 2 家會行動）',
+    threeBet: 'TT+ AKs+ A5s-A4s AKo+',
+    call: '99-22 AQs-A6s A3s-A2s KJs+ QTs+ JTs+ T9s+ AQo-ATo'
+  },
+  sb_vs_lj9: {
+    name: 'SB vs LJ 開牌（9-max）', table: 9,
+    hero: 'SB', opener: 'LJ',
+    sizeTxt: '現場取向，LJ 開 2.5bb（SB 無位置且 BB 還在後面，冷跟最吃虧）',
+    threeBet: '99+ AQs+ A5s-A4s AKo+',
+    call: '88-55 AJs-ATs KQs+'
+  },
+  bb_vs_lj9: {
+    name: 'BB vs LJ 開牌（9-max）', table: 9,
+    hero: 'BB', opener: 'LJ',
+    sizeTxt: '現場取向，LJ 開 2.5bb（BB 收尾行動、價格最好）',
+    threeBet: 'TT+ AQs+ A5s-A4s AKo+',
+    call: '99-22 AJs-A6s A3s-A2s K4s+ Q4s+ J7s+ T6s+ 96s+ 85s+ 74s+ 64s+ 53s+ ' +
+      '42s+ 32s+ AQo-A8o KJo+'
+  },
+  co_vs_hj9: {
+    name: 'CO vs HJ 開牌（9-max）', table: 9,
+    hero: 'CO', opener: 'HJ',
+    sizeTxt: '現場取向，HJ 開 2.5bb（你後面還有 3 家會行動）',
+    threeBet: 'TT+ AKs+ A5s-A4s AKo+',
+    call: '99-22 AQs-A7s KJs+ AQo-ATo'
+  },
+  btn_vs_hj9: {
+    name: 'BTN vs HJ 開牌（9-max）', table: 9,
+    hero: 'BTN', opener: 'HJ',
+    sizeTxt: '現場取向，HJ 開 2.5bb（你後面還有 2 家會行動）',
+    threeBet: 'TT+ AKs+ A5s-A3s AKo+',
+    call: '99-22 AQs-A6s A2s KJs+ QTs+ JTs+ T9s+ AQo-A9o'
+  },
+  sb_vs_hj9: {
+    name: 'SB vs HJ 開牌（9-max）', table: 9,
+    hero: 'SB', opener: 'HJ',
+    sizeTxt: '現場取向，HJ 開 2.5bb（SB 無位置且 BB 還在後面，冷跟最吃虧）',
+    threeBet: '99+ AQs+ A5s-A3s AQo+',
+    call: '88-55 AJs-ATs'
+  },
+  bb_vs_hj9: {
+    name: 'BB vs HJ 開牌（9-max）', table: 9,
+    hero: 'BB', opener: 'HJ',
+    sizeTxt: '現場取向，HJ 開 2.5bb（BB 收尾行動、價格最好）',
+    threeBet: 'TT+ AQs+ A5s-A3s AQo+',
+    call: '99-22 AJs-A6s A2s K6s+ Q6s+ J7s+ T6s+ 96s+ 86s+ 75s+ 64s+ 53s+ 42s+ ' +
+      '32s+ AJo-A5o KJo+'
+  },
+  btn_vs_co9: {
+    name: 'BTN vs CO 開牌（9-max）', table: 9,
+    hero: 'BTN', opener: 'CO',
+    sizeTxt: '現場取向，CO 開 2.5bb（你後面還有 2 家會行動）',
+    threeBet: 'TT+ AQs+ A5s-A3s AKo+',
+    call: '99-22 AJs-A6s A2s KTs+ QTs+ JTs+ AQo-A9o KQo+'
+  },
+  sb_vs_co9: {
+    name: 'SB vs CO 開牌（9-max）', table: 9,
+    hero: 'SB', opener: 'CO',
+    sizeTxt: '現場取向，CO 開 2.5bb（SB 無位置且 BB 還在後面，冷跟最吃虧）',
+    threeBet: '99+ ATs+ A5s-A2s AQo+',
+    call: '88-44 KQs+'
+  },
+  bb_vs_co9: {
+    name: 'BB vs CO 開牌（9-max）', table: 9,
+    hero: 'BB', opener: 'CO',
+    sizeTxt: '現場取向，CO 開 2.5bb（BB 收尾行動、價格最好）',
+    threeBet: '99+ AJs+ A5s-A2s T9s+ AQo+',
+    call: '88-22 ATs-A6s K2s+ Q8s+ J8s+ T8s-T7s 96s+ 86s+ 75s+ 64s+ 53s+ 42s+ ' +
+      '32s+ AJo-A5o KTo+'
+  },
+  sb_vs_btn9: {
+    name: 'SB vs BTN 開牌（9-max）', table: 9,
+    hero: 'SB', opener: 'BTN',
+    sizeTxt: '現場取向，BTN 開 2.5bb（SB 無位置且 BB 還在後面，冷跟最吃虧）',
+    threeBet: '66+ A8s+ A5s-A2s KJs+ T9s+ 98s+ 87s+ 76s+ 65s+ 54s+ 43s+ 32s+ AJo+',
+    call: '55-33 A7s QJs+'
+  },
+  bb_vs_btn9: {
+    name: 'BB vs BTN 開牌（9-max）', table: 9,
+    hero: 'BB', opener: 'BTN',
+    sizeTxt: '現場取向，BTN 開 2.5bb（BB 收尾行動、價格最好）',
+    threeBet: '77+ A9s+ A5s-A2s KQs+ T9s+ 98s+ 87s+ 76s+ 65s+ 54s+ 43s+ ATo+ KQo+',
+    call: '66-22 A8s-A6s KJs-K2s Q7s+ J9s+ T8s 97s 86s 75s 64s A9o-A2o KJo-K8o ' +
+      'QTo+'
+  },
+  bb_vs_sb9: {
+    name: 'BB vs SB 開牌（9-max）', table: 9,
+    hero: 'BB', opener: 'SB', openBb: 3,
+    sizeTxt: '現場取向，SB 開 3bb（BB 收尾行動、價格最好）',
+    threeBet: '88+ ATs+ A5s-A2s T9s+ 98s+ 87s+ ATo+',
+    call: '77-22 A9s-A6s K2s+ Q8s+ J9s+ T8s 97s 86s 75s+ 64s+ 53s+ 43s+ A9o-A2o ' +
+      'K9o+ QJo+'
+  },
   };
 
   /* 顯示與測驗順序：6-max 依「開牌者位置由前到後、hero 由前到後」，之後才是 9-max */
   var DEF_SPOT_KEYS = [
-    'hj_vs_utg', 'co_vs_utg', 'btn_vs_utg', 'sb_vs_utg', 'bb_vs_utg',
-    'co_vs_hj', 'btn_vs_hj', 'sb_vs_hj', 'bb_vs_hj',
-    'btn_vs_co', 'sb_vs_co', 'bb_vs_co',
-    'sb_vs_btn', 'bb_vs_btn',
-    'bb_vs_sb',
-    'hj_vs_utg9', 'co_vs_utg9', 'btn_vs_utg9', 'sb_vs_utg9', 'bb_vs_utg9', 'bb_vs_mp9'
+    'hj_vs_utg', 'co_vs_utg', 'btn_vs_utg', 'sb_vs_utg', 'bb_vs_utg', 'co_vs_hj',
+    'btn_vs_hj', 'sb_vs_hj', 'bb_vs_hj', 'btn_vs_co', 'sb_vs_co', 'bb_vs_co', 'sb_vs_btn',
+    'bb_vs_btn', 'bb_vs_sb',
+    'utg1_vs_utg9', 'mp_vs_utg9', 'lj_vs_utg9', 'hj_vs_utg9', 'co_vs_utg9', 'btn_vs_utg9',
+    'sb_vs_utg9', 'bb_vs_utg9', 'mp_vs_utg19', 'lj_vs_utg19', 'hj_vs_utg19', 'co_vs_utg19',
+    'btn_vs_utg19', 'sb_vs_utg19', 'bb_vs_utg19', 'lj_vs_mp9', 'hj_vs_mp9', 'co_vs_mp9',
+    'btn_vs_mp9', 'sb_vs_mp9', 'bb_vs_mp9', 'hj_vs_lj9', 'co_vs_lj9', 'btn_vs_lj9',
+    'sb_vs_lj9', 'bb_vs_lj9', 'co_vs_hj9', 'btn_vs_hj9', 'sb_vs_hj9', 'bb_vs_hj9',
+    'btn_vs_co9', 'sb_vs_co9', 'bb_vs_co9', 'sb_vs_btn9', 'bb_vs_btn9', 'bb_vs_sb9'
   ];
 
   /* ---------- 被 3-bet（自己開牌後遭 3-bet）的 4-bet / 跟注 range ----------
@@ -242,11 +470,137 @@
       note: 'SB 開牌寬又整局無位置，被 BB 3-bet 只留能打得舒服的牌，其餘 4-bet 或棄',
       fourBet: 'JJ+ AQs+ AKo A5s A4s',
       call: 'TT-77 AJs ATs KQs KJs QJs JTs T9s 98s AQo AJo'
-    }
+    },
+
+  /* ===== 9-max Full Ring：被 3-bet（同一支產生器） ===== */
+  mp_vs_btn3b9: {
+    name: 'MP 開牌 vs BTN 3-bet（9-max）', table: 9,
+    hero: 'MP', villain: 'BTN', villainSpot: 'btn_vs_mp9',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: '9-max 現場：BTN 在這裡的 3-bet 只有 4.1%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多',
+    fourBet: 'QQ+',
+    call: 'JJ-44 AKs+'
+  },
+  mp_vs_sb3b9: {
+    name: 'MP 開牌 vs SB 3-bet（9-max）', table: 9,
+    hero: 'MP', villain: 'SB', villainSpot: 'sb_vs_mp9',
+    openBb: 2.5, tbBb: 11, deadBb: 1,
+    note: '9-max 現場：SB 在這裡的 3-bet 只有 4.1%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多',
+    fourBet: 'QQ+',
+    call: 'JJ-44 AKs+'
+  },
+  mp_vs_bb3b9: {
+    name: 'MP 開牌 vs BB 3-bet（9-max）', table: 9,
+    hero: 'MP', villain: 'BB', villainSpot: 'bb_vs_mp9',
+    openBb: 2.5, tbBb: 12, deadBb: 0.5,
+    note: '9-max 現場：BB 在這裡的 3-bet 只有 3.8%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多',
+    fourBet: 'QQ+',
+    call: 'JJ-33 AKs+'
+  },
+  lj_vs_btn3b9: {
+    name: 'LJ 開牌 vs BTN 3-bet（9-max）', table: 9,
+    hero: 'LJ', villain: 'BTN', villainSpot: 'btn_vs_lj9',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: '9-max 現場：BTN 在這裡的 3-bet 只有 4.1%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多',
+    fourBet: 'QQ+',
+    call: 'JJ-44 AKs+'
+  },
+  lj_vs_sb3b9: {
+    name: 'LJ 開牌 vs SB 3-bet（9-max）', table: 9,
+    hero: 'LJ', villain: 'SB', villainSpot: 'sb_vs_lj9',
+    openBb: 2.5, tbBb: 11, deadBb: 1,
+    note: '9-max 現場：SB 在這裡的 3-bet 只有 4.8%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多',
+    fourBet: 'QQ+ A5s',
+    call: 'JJ-44 AQs+'
+  },
+  lj_vs_bb3b9: {
+    name: 'LJ 開牌 vs BB 3-bet（9-max）', table: 9,
+    hero: 'LJ', villain: 'BB', villainSpot: 'bb_vs_lj9',
+    openBb: 2.5, tbBb: 12, deadBb: 0.5,
+    note: '9-max 現場：BB 在這裡的 3-bet 只有 4.4%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多',
+    fourBet: 'QQ+',
+    call: 'JJ-33 AKs+'
+  },
+  hj_vs_btn3b9: {
+    name: 'HJ 開牌 vs BTN 3-bet（9-max）', table: 9,
+    hero: 'HJ', villain: 'BTN', villainSpot: 'btn_vs_hj9',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: '9-max 現場：BTN 在這裡的 3-bet 只有 4.4%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多',
+    fourBet: 'QQ+',
+    call: 'JJ-44 AKs+'
+  },
+  hj_vs_sb3b9: {
+    name: 'HJ 開牌 vs SB 3-bet（9-max）', table: 9,
+    hero: 'HJ', villain: 'SB', villainSpot: 'sb_vs_hj9',
+    openBb: 2.5, tbBb: 11, deadBb: 1,
+    note: '9-max 現場：SB 在這裡的 3-bet 只有 6.0%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多',
+    fourBet: 'QQ+ AKs+ A5s',
+    call: 'JJ-33 AKo+'
+  },
+  hj_vs_bb3b9: {
+    name: 'HJ 開牌 vs BB 3-bet（9-max）', table: 9,
+    hero: 'HJ', villain: 'BB', villainSpot: 'bb_vs_hj9',
+    openBb: 2.5, tbBb: 12, deadBb: 0.5,
+    note: '9-max 現場：BB 在這裡的 3-bet 只有 5.6%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多',
+    fourBet: 'QQ+ AKs+ A5s',
+    call: 'JJ-33 AKo+'
+  },
+  co_vs_btn3b9: {
+    name: 'CO 開牌 vs BTN 3-bet（9-max）', table: 9,
+    hero: 'CO', villain: 'BTN', villainSpot: 'btn_vs_co9',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: '9-max 現場：BTN 在這裡的 3-bet 只有 4.7%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多',
+    fourBet: 'QQ+ A5s',
+    call: 'JJ-33 AKs+'
+  },
+  co_vs_sb3b9: {
+    name: 'CO 開牌 vs SB 3-bet（9-max）', table: 9,
+    hero: 'CO', villain: 'SB', villainSpot: 'sb_vs_co9',
+    openBb: 2.5, tbBb: 11, deadBb: 1,
+    note: '9-max 現場：SB 在這裡的 3-bet 只有 6.9%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多',
+    fourBet: 'JJ+ AKs+',
+    call: 'TT-22 AQs AKo+'
+  },
+  co_vs_bb3b9: {
+    name: 'CO 開牌 vs BB 3-bet（9-max）', table: 9,
+    hero: 'CO', villain: 'BB', villainSpot: 'bb_vs_co9',
+    openBb: 2.5, tbBb: 12, deadBb: 0.5,
+    note: '9-max 現場：BB 在這裡的 3-bet 只有 6.9%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多',
+    fourBet: 'JJ+ AKs+',
+    call: 'TT-22 AQs AKo+'
+  },
+  btn_vs_sb3b9: {
+    name: 'BTN 開牌 vs SB 3-bet（9-max）', table: 9,
+    hero: 'BTN', villain: 'SB', villainSpot: 'sb_vs_btn9',
+    openBb: 2.5, tbBb: 11, deadBb: 1,
+    note: '9-max 現場：SB 在這裡的 3-bet 只有 12.8%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多',
+    fourBet: 'TT+ AKs+ A5s-A4s AKo+',
+    call: '99-22 AQs-A6s A3s KJs+ QTs+ J9s+ T8s+ 97s+ 87s+ AQo'
+  },
+  btn_vs_bb3b9: {
+    name: 'BTN 開牌 vs BB 3-bet（9-max）', table: 9,
+    hero: 'BTN', villain: 'BB', villainSpot: 'bb_vs_btn9',
+    openBb: 2.5, tbBb: 12, deadBb: 0.5,
+    note: '9-max 現場：BB 在這裡的 3-bet 只有 13.3%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多',
+    fourBet: 'TT+ AKs+ A5s-A4s AKo+',
+    call: '99-22 AQs-A6s A3s KJs+ QTs+ J9s+ T8s+ 97s+ 87s+ AQo'
+  },
+  sb_vs_bb3b9: {
+    name: 'SB 開牌 vs BB 3-bet（9-max）', table: 9,
+    hero: 'SB', villain: 'BB', villainSpot: 'bb_vs_sb9',
+    openBb: 3, tbBb: 14.5, deadBb: 0.5,
+    note: '9-max 現場：BB 在這裡的 3-bet 只有 10.1%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多',
+    fourBet: 'JJ+ AKs+ A5s AKo+',
+    call: 'TT-22 AQs-ATs KJs+ QTs+ JTs+ T9s+ AQo'
+  },
   };
 
-  var VS3B_SPOT_KEYS = ['co_vs_bb3b', 'co_vs_sb3b', 'co_vs_btn3b',
-                        'btn_vs_sb3b', 'btn_vs_bb3b', 'sb_vs_bb3b'];
+  var VS3B_SPOT_KEYS = [
+    'co_vs_bb3b', 'co_vs_sb3b', 'co_vs_btn3b', 'btn_vs_sb3b', 'btn_vs_bb3b', 'sb_vs_bb3b',
+    'mp_vs_btn3b9', 'mp_vs_sb3b9', 'mp_vs_bb3b9', 'lj_vs_btn3b9', 'lj_vs_sb3b9',
+    'lj_vs_bb3b9', 'hj_vs_btn3b9', 'hj_vs_sb3b9', 'hj_vs_bb3b9', 'co_vs_btn3b9',
+    'co_vs_sb3b9', 'co_vs_bb3b9', 'btn_vs_sb3b9', 'btn_vs_bb3b9', 'sb_vs_bb3b9'
+  ];
 
   /** 被 3-bet 後跟注的底池賠率：需要多少 equity 才能無條件跟注到底 */
   function callPrice(spotKey) {
@@ -568,17 +922,19 @@
       + DEEP_PENALTY * clamp01((effBb - 150) / 150);
   }
 
-  /** 某深度 + 某對手開牌寬度下的防守 map：{ 手牌: 'tb'（3-bet）| 'in'（跟注） } */
-  function defenseAtDepth(spotKey, villainClasses, thresholds, bb) {
+  /** 某深度 + 某對手開牌寬度下的防守 map：{ 手牌: 'tb'（3-bet）| 'in'（跟注） }
+   * impliedW 可覆寫隱含賠率權重（產生器用：現場多人底池 → 同花連張與小對子加成更高）。 */
+  function defenseAtDepth(spotKey, villainClasses, thresholds, bb, impliedW) {
     var pf = PF(), info = defStackInfo(spotKey, bb);
     if (!info) return {};
+    var w = typeof impliedW === 'number' ? impliedW : IMPLIED_W;
     var eq = equityMapVs(villainClasses);
     var thr3 = aggroThreshold(thresholds.tb, info.spr3, info.needEq3, info.effBb);
     var f = impliedFactor(info.spr, thresholds.sprBase), map = {};
     for (var i = 0; i < 169; i++) {
       if (eq[i] >= thr3) map[pf.classLabel(i)] = 'tb';
       else if (info.mode === 'normal' &&
-               eq[i] + IMPLIED_W * impliedIndex(i) * f >= thresholds.cont) {
+               eq[i] + w * impliedIndex(i) * f >= thresholds.cont) {
         map[pf.classLabel(i)] = 'in';
       }
     }
@@ -692,7 +1048,8 @@
     RFI_JAM_BB: RFI_JAM_BB, rfiStackInfo: rfiStackInfo, rfiAtDepth: rfiAtDepth,
     defOpenBb: defOpenBb, defStackInfo: defStackInfo, defenseAtDepth: defenseAtDepth,
     defenseCalibrate: defenseCalibrate,
-    impliedIndex: impliedIndex, vs3bVillainRange: vs3bVillainRange,
+    impliedIndex: impliedIndex, equityMapVs: equityMapVs, thresholdAt: thresholdAt,
+    IMPLIED_W: IMPLIED_W, vs3bVillainRange: vs3bVillainRange,
     vs3bStackInfo: vs3bStackInfo, vs3bCalibrate: vs3bCalibrate, vs3bDefense: vs3bDefense,
     VS3B_SPOTS: VS3B_SPOTS, VS3B_SPOT_KEYS: VS3B_SPOT_KEYS, callPrice: callPrice,
     RFI_RANGES_6: RFI_RANGES_6, RFI_POS_6: RFI_POS_6,

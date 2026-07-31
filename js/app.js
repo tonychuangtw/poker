@@ -1169,7 +1169,6 @@
 
   /* ---------- 開牌 RFI range（6-max / 9-max，可手動編輯） ---------- */
   var RFI_TABLES = { '6': Ranges.RFI_RANGES_6, '9': Ranges.RFI_RANGES_9 };
-  var RFI_RANGES = Ranges.RFI_RANGES_6; // 測驗一律以 6-max 建議值評分
   var rfiTable = '6', rfiPosCur = 'utg', rfiEdit = false, rfiSliding = false, rfiFreq = false;
   // 有效籌碼滑桿：100bb = 建議表（可編輯），其餘深度只換組成、寬度不變（唯讀）
   var rfiStackCur = Ranges.VS3B_BASE_BB, rfiStackSliding = false;
@@ -1514,9 +1513,15 @@
   function v3bDynamicActive() { return v3bStackCur !== Ranges.VS3B_BASE_BB; }
 
   (function buildV3bSpotOptions() {
-    $('#v3bSpot').innerHTML = Ranges.VS3B_SPOT_KEYS.map(function (k) {
-      return '<option value="' + k + '">' + Ranges.VS3B_SPOTS[k].name + '</option>';
-    }).join('');
+    var six = '', nine = '';
+    Ranges.VS3B_SPOT_KEYS.forEach(function (k) {
+      var spot = Ranges.VS3B_SPOTS[k];
+      var opt = '<option value="' + k + '">' + spot.name + '</option>';
+      if (spot.table === 9) nine += opt; else six += opt;
+    });
+    $('#v3bSpot').innerHTML =
+      '<optgroup label="6-max">' + six + '</optgroup>' +
+      '<optgroup label="9-max Full Ring（現場取向）">' + nine + '</optgroup>';
   })();
 
   function v3bChartKey() { return 'vs3b:' + v3bKeyCur; }
@@ -1749,15 +1754,17 @@
     return 168;
   }
 
-  // RFI range set 快取（pos -> {classIdx: true}）
+  // RFI range set 快取（table:pos -> {classIdx: true}）
   var rfiSets = {};
-  function rfiSet(pos) {
-    if (!rfiSets[pos]) {
+  function rfiNotation(table, pos) { return RFI_TABLES[table][pos].notation; }
+  function rfiSet(table, pos) {
+    var ck = table + ':' + pos;
+    if (!rfiSets[ck]) {
       var set = {};
-      PushFold.rangeFromNotation(RFI_RANGES[pos].notation).forEach(function (i) { set[i] = true; });
-      rfiSets[pos] = set;
+      PushFold.rangeFromNotation(rfiNotation(table, pos)).forEach(function (i) { set[i] = true; });
+      rfiSets[ck] = set;
     }
-    return rfiSets[pos];
+    return rfiSets[ck];
   }
 
   // 被 3-bet 情境的 range set 快取（同 defSet，但用 fourBet / call）
@@ -1776,6 +1783,16 @@
   // 測驗抽的籌碼深度：涵蓋跟全下 / 全下-棄 / 一般三種局面，100bb 多放一份當基準
   var QUIZ_DEPTHS = [10, 15, 20, 25, 30, 40, 50, 60, 75, 100, 100, 125, 150, 200, 250, 300];
 
+  function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
+  /* 情境要先抽桌型再抽情境。9-max 的情境數是 6-max 的兩倍多，
+   * 直接從整份 key 陣列均勻抽，7 成題目都會是 9-max。 */
+  function pickSpot(keys, spots) {
+    var six = keys.filter(function (k) { return spots[k].table !== 9; });
+    var nine = keys.filter(function (k) { return spots[k].table === 9; });
+    if (!six.length || !nine.length) return pick(keys);
+    return pick(Math.random() < 0.5 ? six : nine);
+  }
+
   function v3bAggroLabel(info) {
     return info.mode === 'callAllin' ? '跟全下'
       : info.mode === 'jamOrFold' ? '4-bet 全下' : '4-bet';
@@ -1792,9 +1809,9 @@
       : defAggroLabel(info) + '還是蓋牌';
   }
   /** 該深度下的開牌正解 — 與圖表一致：100bb 看建議表，其餘依深度重排（寬度不變） */
-  function rfiStateAt(pos, bb, idx) {
-    if (bb === Ranges.VS3B_BASE_BB) return rfiSet(pos)[idx] ? 'in' : 'out';
-    var target = PushFold.rangeComboTotal(PushFold.rangeFromNotation(RFI_RANGES[pos].notation));
+  function rfiStateAt(table, pos, bb, idx) {
+    if (bb === Ranges.VS3B_BASE_BB) return rfiSet(table, pos)[idx] ? 'in' : 'out';
+    var target = PushFold.rangeComboTotal(PushFold.rangeFromNotation(rfiNotation(table, pos)));
     return Ranges.rfiAtDepth(target, bb)[PushFold.classLabel(idx)] || 'out';
   }
   /** 該深度下的防守正解 — 與圖表一致（對手開牌寬度用該情境預設值） */
@@ -1854,7 +1871,7 @@
     }
     if (cur.mode === 'rfi') {
       var target = PushFold.rangeComboTotal(
-        PushFold.rangeFromNotation(RFI_RANGES[cur.pos].notation));
+        PushFold.rangeFromNotation(rfiNotation(cur.table || '6', cur.pos)));
       return Ranges.rfiFreqMap(target, cur.bb)[lbl];
     }
     if (cur.mode === 'def') {
@@ -1875,7 +1892,6 @@
     $(QUIZ_MODE_BTN[m]).addEventListener('click', function () { setQuizMode(m); });
   });
 
-  var RFI_POS_KEYS = ['utg', 'hj', 'co', 'btn', 'sb'];
   var quizCur = null;
   function quizNext() {
     if (quizMode === 'pf') {
@@ -1883,16 +1899,17 @@
       quizCur = { mode: 'pf', S: S, idx: randHandIdx() };
       $('#quizInfo').textContent = '你在 SB（按鈕位），有效籌碼 ' + S + ' bb。推還是棄？';
     } else if (quizMode === 'rfi') {
-      var pos = RFI_POS_KEYS[Math.floor(Math.random() * RFI_POS_KEYS.length)];
-      var rbb = QUIZ_DEPTHS[Math.floor(Math.random() * QUIZ_DEPTHS.length)];
+      var rtable = Math.random() < 0.5 ? '6' : '9';
+      var pos = pick(rtable === '9' ? Ranges.RFI_POS_9 : Ranges.RFI_POS_6);
+      var rbb = pick(QUIZ_DEPTHS);
       var rInfo = Ranges.rfiStackInfo(rbb);
-      quizCur = { mode: 'rfi', pos: pos, bb: rbb, idx: randHandIdx() };
-      $('#quizInfo').textContent = '6-max，有效籌碼 ' + rInfo.effBb + 'bb，你在 ' +
-        RFI_RANGES[pos].name + '，前面無人入池。' +
+      quizCur = { mode: 'rfi', table: rtable, pos: pos, bb: rbb, idx: randHandIdx() };
+      $('#quizInfo').textContent = rtable + '-max，有效籌碼 ' + rInfo.effBb + 'bb，你在 ' +
+        RFI_TABLES[rtable][pos].name + '，前面無人入池。' +
         (rInfo.mode === 'jam' ? '開牌等於全下 —— 全下還是蓋牌？' : '開牌加注還是蓋牌？');
       $('#btnQuizPush').textContent = rInfo.mode === 'jam' ? '全下' : '加注';
     } else if (quizMode === 'def') {
-      var spotKey = Ranges.DEF_SPOT_KEYS[Math.floor(Math.random() * Ranges.DEF_SPOT_KEYS.length)];
+      var spotKey = pickSpot(Ranges.DEF_SPOT_KEYS, Ranges.DEF_SPOTS);
       var spot = Ranges.DEF_SPOTS[spotKey];
       var dbb = QUIZ_DEPTHS[Math.floor(Math.random() * QUIZ_DEPTHS.length)];
       var dInfo = Ranges.defStackInfo(spotKey, dbb);
@@ -1924,12 +1941,13 @@
         rs.nValue + ' combo（兩對以上）＋詐唬 ' + rs.nBluff +
         ' combo（高牌）。你這手贏光他所有詐唬、輸給所有價值 —— 跟還是棄？';
     } else {
-      var vKey = Ranges.VS3B_SPOT_KEYS[Math.floor(Math.random() * Ranges.VS3B_SPOT_KEYS.length)];
+      var vKey = pickSpot(Ranges.VS3B_SPOT_KEYS, Ranges.VS3B_SPOTS);
       var vSpot = Ranges.VS3B_SPOTS[vKey];
       var bb = QUIZ_DEPTHS[Math.floor(Math.random() * QUIZ_DEPTHS.length)];
       var vInfo = Ranges.vs3bStackInfo(vKey, bb);
       quizCur = { mode: 'v3b', spot: vKey, bb: bb, idx: randHandIdx() };
-      $('#quizInfo').textContent = '6-max，有效籌碼 ' + vInfo.effBb + 'bb，你在 ' +
+      $('#quizInfo').textContent = (vSpot.table === 9 ? '9-max' : '6-max') +
+        '，有效籌碼 ' + vInfo.effBb + 'bb，你在 ' +
         vSpot.hero + ' 開 ' + vInfo.openBb + 'bb，' + vSpot.villain + ' 3-bet 到 ' +
         vInfo.tbBb + 'bb' + (vInfo.mode === 'callAllin' ? '（等於全下你）' : '') + '。' +
         v3bActionTxt(vInfo) + '？';
@@ -1965,12 +1983,13 @@
         '（均衡全下頻率 ' + Math.round(sol.push[quizCur.idx] * 100) + '%）。';
     } else if (quizCur.mode === 'rfi') {
       var rInfo2 = Ranges.rfiStackInfo(quizCur.bb);
-      var inRange = rfiStateAt(quizCur.pos, quizCur.bb, quizCur.idx) === 'in';
+      var inRange = rfiStateAt(quizCur.table, quizCur.pos, quizCur.bb, quizCur.idx) === 'in';
       ok = (action === 'aggro') === inRange;
       bestAct = inRange ? 'aggro' : 'fold';
-      qKey = 'rfi:' + quizCur.pos + ':' + quizCur.bb + ':' + quizCur.idx;
+      qKey = 'rfi:' + quizCur.table + ':' + quizCur.pos + ':' + quizCur.bb + ':' + quizCur.idx;
       var rAggro = rInfo2.mode === 'jam' ? '全下' : '加注';
-      detail = ' ' + RFI_RANGES[quizCur.pos].name + ' 開牌（' + rInfo2.effBb + 'bb）：' +
+      detail = ' ' + quizCur.table + '-max ' + RFI_TABLES[quizCur.table][quizCur.pos].name +
+        ' 開牌（' + rInfo2.effBb + 'bb）：' +
         PushFold.classLabel(quizCur.idx) +
         (inRange ? ' 在開牌 range 內，應該<b>' + rAggro + '</b>。'
                  : ' 不在開牌 range，應該<b>蓋牌</b>。');

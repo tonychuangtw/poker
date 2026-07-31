@@ -390,6 +390,9 @@
   <div class="card">
     <h2>面對開牌（3-bet / 防守）</h2>
     <p class="hint">前面有人開牌時的應對 range（預設 100bb，可拉滑桿試算 10–300bb；簡化 GTO 近似）。
+      6-max 15 個情境為完整覆蓋；9-max Full Ring 36 個情境為<b>現場取向</b>——
+      冷跟放寬（現場少 squeeze、隱含賠率好）、SB 收緊、3-bet 偏價值（對手不夠棄牌），
+      由 tools/gen-9max-ranges.js 依 6-max 實測寬度外推產生。
       <span class="legend-tb">紅</span> = 3-bet、<span class="legend-call">綠</span> = 跟注、灰 = 蓋牌。
       按「✏️ 編輯」後點格子循環切換 棄牌 → 跟注 → 3-bet。</p>
     <label>情境
@@ -420,6 +423,7 @@
   <div class="card">
     <h2>被 3-bet（4-bet / 跟注 / 棄牌）</h2>
     <p class="hint">自己在翻前開牌後被 3-bet 的應對 range（預設 100bb，可拉滑桿試算 10–300bb）。
+      9-max 那組是現場取向：那邊的 3-bet range 很緊很偏價值，所以續玩要比 6-max 收得多。
       <span class="legend-tb">紅</span> = 4-bet、<span class="legend-call">綠</span> = 跟注、灰 = 蓋牌。
       按「✏️ 編輯」後點格子循環切換 棄牌 → 跟注 → 4-bet。</p>
     <label>情境

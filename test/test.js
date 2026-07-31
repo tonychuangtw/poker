@@ -446,9 +446,9 @@ console.log('--- Defense ranges (vs RFI) ---');
 var Ranges = require('../js/ranges.js');
 
 var nine = Ranges.DEF_SPOT_KEYS.filter(function (k) { return Ranges.DEF_SPOTS[k].table === 9; });
-assert(Array.isArray(Ranges.DEF_SPOT_KEYS) && Ranges.DEF_SPOT_KEYS.length === 21,
-  '21 defense spots defined (' + (21 - nine.length) + ' six-max + ' + nine.length + ' nine-max)');
-assert(nine.length === 6 && nine.every(function (k) { return /9$/.test(k); }),
+assert(Array.isArray(Ranges.DEF_SPOT_KEYS) && Ranges.DEF_SPOT_KEYS.length === 51,
+  '51 defense spots defined (' + (51 - nine.length) + ' six-max + ' + nine.length + ' nine-max)');
+assert(nine.length === 36 && nine.every(function (k) { return /9$/.test(k); }),
   '9-max defense spots flagged table=9 and keyed with a 9 suffix');
 assert(Ranges.DEF_SPOT_KEYS.every(function (k) { return Ranges.DEF_SPOTS[k]; }),
   'every spot key resolves to a spot definition');
@@ -466,6 +466,17 @@ ORDER_6.forEach(function (opener, oi) {
 assert(missing6.length === 0, '6-max vs-RFI coverage complete (missing: ' +
   (missing6.join(',') || 'none') + ')');
 
+// 9-max 完整覆蓋：8 個開牌位置 × 其後每個位置 = 36 個情境
+var ORDER_9 = ['utg', 'utg1', 'mp', 'lj', 'hj', 'co', 'btn', 'sb', 'bb'];
+var missing9 = [];
+ORDER_9.forEach(function (opener, oi) {
+  ORDER_9.slice(oi + 1).forEach(function (hero) {
+    if (!Ranges.DEF_SPOTS[hero + '_vs_' + opener + '9']) missing9.push(hero + '_vs_' + opener + '9');
+  });
+});
+assert(missing9.length === 0, '9-max vs-RFI coverage complete (missing: ' +
+  (missing9.join(',') || 'none') + ')');
+
 Ranges.DEF_SPOT_KEYS.forEach(function (key) {
   var spot = Ranges.DEF_SPOTS[key];
   var tb, call, parsed = true;
@@ -478,8 +489,8 @@ Ranges.DEF_SPOT_KEYS.forEach(function (key) {
   assert(tb.length > 0 && call.length > 0, key + ': 3bet & call ranges non-empty');
   var tbC = PushFold.rangeComboTotal(tb), callC = PushFold.rangeComboTotal(call);
   var tbPct = tbC / 1326 * 100, totPct = (tbC + callC) / 1326 * 100;
-  assert(tbPct >= 3 && tbPct <= 15,
-    key + ': 3bet in 3-15% (' + tbPct.toFixed(1) + '%, ' + tbC + ' combos)');
+  assert(tbPct >= 1.2 && tbPct <= 16,
+    key + ': 3bet in 1.2-16% (' + tbPct.toFixed(1) + '%, ' + tbC + ' combos)');
   // call 與 3bet 不可重疊（測驗需要唯一正解）
   var tbSet = {};
   tb.forEach(function (i) { tbSet[i] = true; });
@@ -496,6 +507,17 @@ Ranges.DEF_SPOT_KEYS.forEach(function (key) {
   // 垃圾牌一定蓋：72o 不在 call 也不在 3bet
   var idx72o = labelIdx('72o');
   assert(!tbSet[idx72o] && call.indexOf(idx72o) < 0, key + ': 72o folded');
+  // 對子不可以有破洞：防守的對子必須是「AA 往下連續一段」。
+  // 破洞（例如 JJ+ 3-bet、TT 棄、99 跟注）代表排序被隱含賠率加成翻過去了。
+  var pairIn = [];
+  for (var pr = 0; pr < 13; pr++) {
+    var pi = pr * 13 + pr;
+    if (tbSet[pi] || call.indexOf(pi) >= 0) pairIn.push(pr);
+  }
+  var contiguous = pairIn.length === 0 ||
+    (pairIn[0] === 0 && pairIn[pairIn.length - 1] - pairIn[0] === pairIn.length - 1);
+  assert(contiguous, key + ': defended pairs form a gapless top run (' +
+    pairIn.map(function (r) { return PushFold.classLabel(r * 13 + r); }).join(',') + ')');
 });
 
 // BB 防守寬於中間位置的冷跟 range
@@ -505,12 +527,88 @@ var coUtgTot = PushFold.rangeComboTotal(PushFold.rangeFromNotation(Ranges.DEF_SP
   PushFold.rangeComboTotal(PushFold.rangeFromNotation(Ranges.DEF_SPOTS.co_vs_utg.threeBet));
 assert(bbBtnTot > coUtgTot * 2, 'BB vs BTN defends much wider than CO vs UTG');
 
+/* 產生出來的 9-max 表要滿足的關係（這些才是「表有沒有寫歪」的真正檢查）：
+ * 位置越好防守越寬、對手開得越寬防守越寬、BB 最寬、SB 冷跟最窄。 */
+function defTot(key) {
+  var s = Ranges.DEF_SPOTS[key];
+  return PushFold.rangeComboTotal(PushFold.rangeFromNotation(s.threeBet)) +
+    PushFold.rangeComboTotal(PushFold.rangeFromNotation(s.call));
+}
+function defCall(key) {
+  return PushFold.rangeComboTotal(PushFold.rangeFromNotation(Ranges.DEF_SPOTS[key].call));
+}
+var COLD_9 = ['utg1', 'mp', 'lj', 'hj', 'co', 'btn'];   // 冷跟位置，由差到好
+var badOrder = [];
+['utg', 'utg1', 'mp', 'lj', 'hj'].forEach(function (opener) {
+  var oi = ORDER_9.indexOf(opener);
+  var seats = COLD_9.filter(function (h) { return ORDER_9.indexOf(h) > oi; });
+  for (var i = 1; i < seats.length; i++) {
+    var prev = seats[i - 1] + '_vs_' + opener + '9', cur = seats[i] + '_vs_' + opener + '9';
+    if (defTot(cur) < defTot(prev)) badOrder.push(cur + '<' + prev);
+  }
+});
+assert(badOrder.length === 0,
+  '9-max: closer to the button always defends wider (' + (badOrder.join(',') || 'ok') + ')');
+
+var badWide = [];
+['bb', 'sb', 'btn'].forEach(function (hero) {
+  var openers = ['utg', 'utg1', 'mp', 'lj', 'hj', 'co'].filter(function (o) {
+    return Ranges.DEF_SPOTS[hero + '_vs_' + o + '9'];
+  });
+  for (var i = 1; i < openers.length; i++) {
+    var prev = hero + '_vs_' + openers[i - 1] + '9', cur = hero + '_vs_' + openers[i] + '9';
+    if (defTot(cur) < defTot(prev)) badWide.push(cur + '<' + prev);
+  }
+});
+assert(badWide.length === 0,
+  '9-max: a wider opener is always defended wider (' + (badWide.join(',') || 'ok') + ')');
+
+var badBb = [], badSb = [];
+['utg', 'utg1', 'mp', 'lj', 'hj', 'co', 'btn'].forEach(function (opener) {
+  var bbKey = 'bb_vs_' + opener + '9', sbKey = 'sb_vs_' + opener + '9';
+  if (!Ranges.DEF_SPOTS[bbKey]) return;
+  COLD_9.concat(['sb']).forEach(function (hero) {
+    var k = hero + '_vs_' + opener + '9';
+    if (Ranges.DEF_SPOTS[k] && defTot(k) >= defTot(bbKey)) badBb.push(k);
+  });
+  if (Ranges.DEF_SPOTS[sbKey] && defCall(sbKey) >= defCall(bbKey)) badSb.push(sbKey);
+});
+assert(badBb.length === 0, '9-max: BB defends widest at every opener (' +
+  (badBb.join(',') || 'ok') + ')');
+assert(badSb.length === 0, '9-max: SB cold-calls tighter than BB everywhere (' +
+  (badSb.join(',') || 'ok') + ')');
+
+// 被 3-bet：對手 3-bet 越寬，續玩越寬
+var v3b9 = Ranges.VS3B_SPOT_KEYS.filter(function (k) { return Ranges.VS3B_SPOTS[k].table === 9; });
+assert(v3b9.length === 15, '15 nine-max facing-3-bet spots');
+var pairsChecked = 0, badCont = [];
+v3b9.forEach(function (a) {
+  v3b9.forEach(function (b) {
+    var sa = Ranges.VS3B_SPOTS[a], sb = Ranges.VS3B_SPOTS[b];
+    if (sa.hero !== sb.hero) return;
+    var wa = PushFold.rangeComboTotal(Ranges.vs3bVillainRange(a));
+    var wb = PushFold.rangeComboTotal(Ranges.vs3bVillainRange(b));
+    // 只比「明顯不同寬」的組合：差 15% 以內時，range 只差一兩個 combo，
+    // 誰寬誰窄是取整雜訊決定的，拿來當不變量會抓到假問題
+    if (wb < wa * 1.15) return;
+    pairsChecked++;
+    var ca = PushFold.rangeComboTotal(PushFold.rangeFromNotation(sa.fourBet)) +
+      PushFold.rangeComboTotal(PushFold.rangeFromNotation(sa.call));
+    var cb = PushFold.rangeComboTotal(PushFold.rangeFromNotation(sb.fourBet)) +
+      PushFold.rangeComboTotal(PushFold.rangeFromNotation(sb.call));
+    if (ca > cb) badCont.push(a + '>' + b);
+  });
+});
+assert(pairsChecked > 0 && badCont.length === 0,
+  'facing a wider 3-bet always continues wider (' + pairsChecked + ' pairs, ' +
+  (badCont.join(',') || 'ok') + ')');
+
 // ---------- 5d-2. 被 3-bet 的 4-bet / 跟注 range ----------
 console.log('--- Facing a 3-bet (4-bet / call) ---');
 
-assert(Array.isArray(Ranges.VS3B_SPOT_KEYS) && Ranges.VS3B_SPOT_KEYS.length === 6 &&
-  Object.keys(Ranges.VS3B_SPOTS).length === 6,
-  '6 vs-3bet spots defined, keys and definitions in sync');
+assert(Array.isArray(Ranges.VS3B_SPOT_KEYS) && Ranges.VS3B_SPOT_KEYS.length === 21 &&
+  Object.keys(Ranges.VS3B_SPOTS).length === 21,
+  '21 vs-3bet spots defined, keys and definitions in sync');
 assert(Ranges.VS3B_SPOT_KEYS.every(function (k) { return Ranges.VS3B_SPOTS[k]; }),
   'every vs-3bet key resolves to a spot definition');
 // CO / BTN 被 SB、BB 3-bet 這 4 個核心情境都要有
@@ -518,9 +616,12 @@ assert(['co_vs_sb3b', 'co_vs_bb3b', 'btn_vs_sb3b', 'btn_vs_bb3b']
   .every(function (k) { return Ranges.VS3B_SPOTS[k]; }),
   'CO/BTN vs SB/BB 3-bet all covered');
 
-var RFI_BY_NAME = {};
+var RFI_BY_NAME = { 6: {}, 9: {} };
 Ranges.RFI_POS_6.forEach(function (k) {
-  RFI_BY_NAME[Ranges.RFI_RANGES_6[k].name] = Ranges.RFI_RANGES_6[k].notation;
+  RFI_BY_NAME[6][Ranges.RFI_RANGES_6[k].name] = Ranges.RFI_RANGES_6[k].notation;
+});
+Ranges.RFI_POS_9.forEach(function (k) {
+  RFI_BY_NAME[9][Ranges.RFI_RANGES_9[k].name] = Ranges.RFI_RANGES_9[k].notation;
 });
 
 Ranges.VS3B_SPOT_KEYS.forEach(function (key) {
@@ -535,18 +636,19 @@ Ranges.VS3B_SPOT_KEYS.forEach(function (key) {
   var fbC = PushFold.rangeComboTotal(fb), callC = PushFold.rangeComboTotal(call);
   assert(fbC > 0 && callC > 0, key + ': 4bet & call ranges non-empty');
   var fbPct = fbC / 1326 * 100;
-  assert(fbPct >= 2 && fbPct <= 6,
-    key + ': 4bet in 2-6% (' + fbPct.toFixed(1) + '%, ' + fbC + ' combos)');
+  assert(fbPct >= 1.2 && fbPct <= 6,
+    key + ': 4bet in 1.2-6% (' + fbPct.toFixed(1) + '%, ' + fbC + ' combos)');
   var fbSet = {};
   fb.forEach(function (i) { fbSet[i] = true; });
   assert(call.every(function (i) { return !fbSet[i]; }), key + ': call/4bet disjoint');
   assert(fbSet[labelIdx('AA')] && fbSet[labelIdx('KK')], key + ': AA & KK 4-bet');
   assert(!fbSet[labelIdx('72o')] && call.indexOf(labelIdx('72o')) < 0, key + ': 72o folded');
   // 被 3-bet 後續玩的量必須明顯小於自己的開牌範圍
-  var openC = PushFold.rangeComboTotal(PushFold.rangeFromNotation(RFI_BY_NAME[spot.hero]));
+  var openC = PushFold.rangeComboTotal(PushFold.rangeFromNotation(
+    RFI_BY_NAME[spot.table === 9 ? 9 : 6][spot.hero]));
   var contRatio = (fbC + callC) / openC;
-  assert(contRatio > 0.2 && contRatio < 0.55,
-    key + ': continues 20-55% of own open range (' + (contRatio * 100).toFixed(0) + '%)');
+  assert(contRatio > 0.15 && contRatio < 0.55,
+    key + ': continues 15-55% of own open range (' + (contRatio * 100).toFixed(0) + '%)');
   // 底池賠率：跟注額 = 3-bet 額 - 開牌額；底池 = 雙方各 3-bet 額 + 死錢
   var p = Ranges.callPrice(key);
   assert(Math.abs(p.toCall - (spot.tbBb - spot.openBb)) < 1e-9 &&

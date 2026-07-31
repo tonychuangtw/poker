@@ -328,6 +328,50 @@
     return Object.keys(out).map(Number).sort(function (a, b) { return a - b; });
   }
 
+  /* ---------- 類別 index 陣列 → range 記號（rangeFromNotation 的反向） ----------
+   * 產生器用：把演算法算出來的 169 格集合壓回人看得懂、也存得進資料表的字串。
+   * RANK_CHARS 是由大到小（index 0 = A），所以「連續的 index」＝「連續的牌力」。 */
+  function notationFromClasses(classes) {
+    var set = {};
+    classes.forEach(function (i) { set[i] = true; });
+
+    // 把一串遞增 index 切成連續區段 [[start,end], ...]
+    function runs(list) {
+      var out = [], i;
+      for (i = 0; i < list.length; i++) {
+        if (out.length && list[i] === out[out.length - 1][1] + 1) out[out.length - 1][1] = list[i];
+        else out.push([list[i], list[i]]);
+      }
+      return out;
+    }
+    var toks = [], r, c, list;
+
+    // 對子：連到 AA 就用 "+"
+    list = [];
+    for (r = 0; r < 13; r++) if (set[r * 13 + r]) list.push(r);
+    runs(list).forEach(function (g) {
+      var hi = RANK_CHARS[g[0]] + RANK_CHARS[g[0]], lo = RANK_CHARS[g[1]] + RANK_CHARS[g[1]];
+      toks.push(g[0] === 0 ? lo + '+' : g[0] === g[1] ? hi : hi + '-' + lo);
+    });
+
+    // 同花 / 雜色：固定高牌，kicker 連續就合併；kicker 一路到高牌下一張就用 "+"
+    [true, false].forEach(function (suited) {
+      for (var h = 0; h < 12; h++) {
+        list = [];
+        for (var k = h + 1; k < 13; k++) {
+          if (set[suited ? h * 13 + k : k * 13 + h]) list.push(k);
+        }
+        runs(list).forEach(function (g) {
+          var suf = suited ? 's' : 'o';
+          var hiTok = RANK_CHARS[h] + RANK_CHARS[g[0]] + suf;
+          var loTok = RANK_CHARS[h] + RANK_CHARS[g[1]] + suf;
+          toks.push(g[0] === h + 1 ? loTok + '+' : g[0] === g[1] ? hiTok : hiTok + '-' + loTok);
+        });
+      }
+    });
+    return toks.join(' ');
+  }
+
   function rangeComboTotal(classes) {
     return classes.reduce(function (s, i) { return s + comboCount(i); }, 0);
   }
@@ -336,6 +380,7 @@
     classLabel: classLabel,
     rangeVsRange: rangeVsRange,
     rangeFromNotation: rangeFromNotation,
+    notationFromClasses: notationFromClasses,
     rangeComboTotal: rangeComboTotal,
     comboCount: comboCount,
     rangeVsRangeClasses: rangeVsRangeClasses,
