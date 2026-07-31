@@ -1,6 +1,6 @@
 /* 撲克工具箱 service worker — app shell 快取 */
 'use strict';
-var CACHE = 'poker-v16';
+var CACHE = 'poker-v17';
 var ASSETS = [
   './index.html',
   './css/style.css',
@@ -11,6 +11,7 @@ var ASSETS = [
   './js/preflop-table.js',
   './js/pushfold.js',
   './js/ranges.js',
+  './js/postflop.js',
   './js/hands.js',
   './js/nash.js',
   './js/app.js',

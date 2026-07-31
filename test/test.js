@@ -1205,6 +1205,220 @@ for (var mi = 0; mi < 105; mi++) {
 assert(big.length === 100 && big[0].key === 'pf:2:5' && big[99].key === 'pf:2:104',
   'addMistake caps at 100, drops oldest');
 
+// SRS（Leitner 間隔重複）
+var srsBase = { kind: 'pf', key: 'pf:10:5', ts: 1 };
+var srsNew = TRAINING.normalizeMistake(srsBase, '2026-07-16');
+assert(srsNew.box === 1 && srsNew.due === '2026-07-16',
+  'normalizeMistake defaults to box 1 due today');
+var b2 = TRAINING.srsNext(srsNew, true, '2026-07-16');
+assert(b2.box === 2 && b2.due === '2026-07-17', 'correct: box 1 -> 2, due +1 day');
+var b3 = TRAINING.srsNext(b2, true, '2026-07-17');
+assert(b3.box === 3 && b3.due === '2026-07-20', 'correct: box 2 -> 3, due +3 days');
+var b4 = TRAINING.srsNext(b3, true, '2026-07-20');
+assert(b4.box === 4 && b4.due === '2026-07-27', 'correct: box 3 -> 4, due +7 days');
+var b5 = TRAINING.srsNext(b4, true, '2026-07-27');
+assert(b5.box === 5 && b5.due === '2026-08-10', 'correct: box 4 -> 5, due +14 days');
+assert(TRAINING.srsNext(b5, true, '2026-08-10') === null,
+  'correct at box 5 graduates out of the book');
+var demoted = TRAINING.srsNext(b4, false, '2026-07-27');
+assert(demoted.box === 1 && demoted.due === '2026-07-27',
+  'wrong answer resets to box 1, due today');
+assert(TRAINING.srsNext(b4, false, '2026-07-27').kind === 'pf',
+  'srsNext keeps the payload fields');
+
+// srsDue：只拿今天（含）之前到期的，盒號小的先考
+var dueList = [
+  { kind: 'pf', key: 'a', box: 3, due: '2026-07-20' },
+  { kind: 'pf', key: 'b', box: 1, due: '2026-07-16' },
+  { kind: 'pf', key: 'c', box: 2, due: '2026-07-16' },
+  { kind: 'pf', key: 'd' }                                   // 舊資料，無 box/due
+];
+var due = TRAINING.srsDue(dueList, '2026-07-16');
+assert(due.length === 3, 'srsDue drops entries not due yet');
+assert(due[0].key === 'b' && due[1].key === 'd' && due[2].key === 'c',
+  'srsDue sorts by box then due date');
+assert(TRAINING.srsDue(dueList, '2026-07-20').length === 4, 'srsDue includes items due today');
+// 再答錯一次 → 不管升到第幾盒都打回第 1 盒
+var relapse = TRAINING.addMistake([b5], { kind: 'pf', key: 'pf:10:5', ts: 9 }, 100, '2026-08-01');
+assert(relapse.length === 1 && relapse[0].box === 1 && relapse[0].due === '2026-08-01',
+  'addMistake on an existing entry resets it to box 1');
+
+// ---------- 6b. Postflop ----------
+console.log('--- Postflop ---');
+var Postflop = require('../js/postflop.js');
+
+// bestScore 支援 5 / 6 / 7 張
+assert(Postflop.bestScore(cards('Ah Kh Qh Jh Th'))[0] === 8, 'bestScore 5 cards: straight flush');
+assert(Postflop.bestScore(cards('Ah Kh Qh Jh Th 2c'))[0] === 8, 'bestScore 6 cards: straight flush');
+assert(Postflop.bestScore(cards('Ah Kh Qh Jh Th 2c 3d'))[0] === 8, 'bestScore 7 cards: straight flush');
+
+// 牌面質地
+var texDry = Postflop.classifyBoard(cards('Kd 7c 2h'));
+assert(texDry.wetness === 0 && texDry.rainbow && !texDry.paired,
+  'K72 rainbow is fully dry (wetness 0)');
+var texWet = Postflop.classifyBoard(cards('9s Ts Jh'));
+assert(texWet.wetness === 0.75 && texWet.twoTone && texWet.straightSpan === 3,
+  '9TJ two-tone connected is wet (0.75)');
+var texMono = Postflop.classifyBoard(cards('2h 7h Jh'));
+assert(texMono.monotone && texMono.suitMax === 3, 'monotone board detected');
+var texPair = Postflop.classifyBoard(cards('8d 8c 3h'));
+assert(texPair.paired && !texPair.trips, 'paired board detected');
+assert(Postflop.classifyBoard(cards('8d 8c 8h')).trips, 'trips board detected');
+assert(texDry.highCard === 13 && texWet.highCard === 11, 'highCard is the top board rank');
+
+// 順子窗 / 聽牌
+assert(Postflop.maxStraightWindow([14, 5, 4]) === 3, 'A54 counts A as low (3 in one window)');
+var oesd = Postflop.straightDrawInfo(cards('8h 7d'), cards('9c Tc 2s'));
+assert(oesd.type === 'oesd' && oesd.outs === 8, '87 on 9T2 is an open-ended draw (8 outs)');
+var gut = Postflop.straightDrawInfo(cards('Ah Kd'), cards('Qc Jc 2s'));
+assert(gut.type === 'gutshot' && gut.outs === 4, 'AK on QJ2 is a gutshot (4 outs)');
+assert(Postflop.straightDrawInfo(cards('Ah 2d'), cards('3c 4c 5s')).type === '',
+  'a made straight is not counted as a draw');
+assert(Postflop.straightDrawInfo(cards('Ah Kd'), cards('9c 4c 2s')).type === '',
+  'no straight draw when nothing connects');
+var fd = Postflop.flushDrawInfo(cards('Ac 5c'), cards('Kc 8c 2s'));
+assert(fd.draw && fd.nut, 'A5 with two board clubs is a nut flush draw');
+assert(!Postflop.flushDrawInfo(cards('Ac 5c'), cards('Kc 8c 2s 9h Ts')).draw,
+  'no flush draw once the river is out');
+
+// 手牌分級
+assert(Postflop.handClass(cards('Ah Kd'), cards('Kc 7c 2s')).bucket === 'topPair', 'AK on K72 = top pair');
+assert(Postflop.handClass(cards('Qh Qd'), cards('9c 7c 2s')).bucket === 'topPair', 'QQ on 972 = overpair');
+assert(Postflop.handClass(cards('Qh Qd'), cards('Kc 7c 2s')).bucket === 'weakPair',
+  'QQ under a king is only a weak pair');
+assert(Postflop.handClass(cards('7h 2d'), cards('7c 5c 2s')).bucket === 'twoPair', '72 on 752 = two pair');
+assert(Postflop.handClass(cards('5h 5d'), cards('5c 9c 2s')).bucket === 'nut', 'set = nut bucket');
+assert(Postflop.handClass(cards('Ah Kd'), cards('8c 8d 2s')).bucket === 'air',
+  'board pair alone is not your pair');
+assert(Postflop.handClass(cards('Tc 9c'), cards('8c 7d 2s')).bucket === 'draw',
+  'open-ender + backdoor flush = draw bucket');
+assert(Postflop.handClass(cards('Ah 3d'), cards('Kc 9c 2s')).bucket === 'air', 'A3 on K92 = air');
+
+// MDF / 底池賠率 / 平衡詐唬比
+assert(Math.abs(Postflop.mdf(1, 1) - 0.5) < 1e-9, 'pot-size bet: MDF = 50%');
+assert(Math.abs(Postflop.mdf(0.5, 1) - 2 / 3) < 1e-9, 'half-pot bet: MDF = 66.7%');
+assert(Math.abs(Postflop.alpha(1, 1) - 0.5) < 1e-9, 'pot-size bet: alpha = 50%');
+assert(Math.abs(Postflop.callPotOdds(1, 1) - 1 / 3) < 1e-9, 'pot-size bet: caller needs 33%');
+assert(Math.abs(Postflop.balancedBluffCount(2, 1, 1) - 1) < 1e-9,
+  'pot-size bet: 2 value hands support 1 bluff');
+// 平衡點上，詐唬占比恰好等於跟注方的底池賠率 → 跟注無差異
+var nV = 60, betX = 0.75, potX = 1;
+var nB = Postflop.balancedBluffCount(nV, betX, potX);
+assert(Math.abs(nB / (nB + nV) - Postflop.callPotOdds(betX, potX)) < 1e-9,
+  'balanced bluff share equals the caller pot odds (indifference)');
+
+// c-bet 策略
+var polDry = Postflop.cbetHandPolicy(cards('Ah Kd'), cards('Kc 7c 2s'), { role: 'ip', potType: 'srp' });
+assert(polDry.action === 'small', 'top pair on a dry board: small c-bet');
+var polWet = Postflop.cbetHandPolicy(cards('Js Jd'), cards('9s Ts 8h'), { role: 'ip', potType: 'srp' });
+assert(polWet.action === 'big', 'overpair on a wet connected board: big c-bet');
+var polAir = Postflop.cbetHandPolicy(cards('2c 3d'), cards('9s Ts 8h'), { role: 'oop', potType: 'srp' });
+assert(polAir.action === 'check', 'air out of position on a wet board: check');
+var polSemi = Postflop.cbetHandPolicy(cards('7h 4d'), cards('9s Ts 8h'), { role: 'ip', potType: 'srp' });
+assert(polSemi.action === 'big', 'open-ended draw on a wet board: big semi-bluff');
+var polRange = Postflop.cbetRangePolicy(Postflop.classifyBoard(cards('Ad 7c 2h')), { role: 'ip', potType: 'srp' });
+var polRangeWet = Postflop.cbetRangePolicy(Postflop.classifyBoard(cards('9s Ts Jh')), { role: 'ip', potType: 'srp' });
+assert(polRange.freq > polRangeWet.freq, 'dry ace-high board is c-bet more often than a wet one');
+assert(polRange.size === 'small' && polRangeWet.size === 'big', 'wet boards use the bigger size');
+assert(Postflop.cbetRangePolicy(Postflop.classifyBoard(cards('Ad 7c 2h')), { role: 'oop' }).freq <
+  polRange.freq, 'out of position lowers the c-bet frequency');
+
+// range on board
+var rngA = PushFold.rangeFromNotation('QQ+ AKs AKo');
+var profA = Postflop.rangeBoardProfile(rngA, cards('Ad 7c 2h'));
+assert(profA.combos === 27, 'rangeBoardProfile drops combos blocked by the board (27 left)');
+assert(profA.buckets.nut === 3, 'AA makes a set on an ace-high board (3 combos left)');
+assert(profA.airPct === 0, 'QQ+/AK has no air on A72');
+var rvrBoard = Postflop.rangeVsRangeBoard(PushFold.rangeFromNotation('AA'),
+  PushFold.rangeFromNotation('KK'), cards('Ad 7c 2h 5s 9d'));
+assert(rvrBoard.method === 'exact' && rvrBoard.a === 1, 'AA with a set beats KK 100% on A72-5-9');
+var rvrFlop = Postflop.rangeVsRangeBoard(PushFold.rangeFromNotation('AA'),
+  PushFold.rangeFromNotation('22'), cards('Ad 7c 2h'), 3000);
+assert(rvrFlop.a > 0.9 && rvrFlop.a < 1, 'top set over bottom set: ahead but not drawing dead');
+
+// 題目產生器（注入固定亂數 → 可重現）
+function lcg(seed) {
+  var s = seed >>> 0;
+  return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+}
+var rngQ = lcg(2026);
+for (var qi = 0; qi < 25; qi++) {
+  var spot = Postflop.buildRiverSpot({ rand: rngQ, pot: 10 });
+  var heroScore = Postflop.bestScore(spot.hero.concat(spot.board));
+  var loseToValue = spot.value.every(function (c) {
+    return Evaluator.compareScore(Postflop.bestScore(c.concat(spot.board)), heroScore) > 0;
+  });
+  var beatBluffs = spot.bluff.every(function (c) {
+    return Evaluator.compareScore(Postflop.bestScore(c.concat(spot.board)), heroScore) < 0;
+  });
+  if (!loseToValue || !beatBluffs) { assert(false, 'river spot #' + qi + ' is not a clean bluff-catcher'); break; }
+  if (Math.abs(spot.equity - spot.nBluff / (spot.nBluff + spot.nValue)) > 1e-12) {
+    assert(false, 'river spot #' + qi + ' equity mismatch'); break;
+  }
+  if (spot.best !== (spot.equity >= spot.needEq ? 'call' : 'fold')) {
+    assert(false, 'river spot #' + qi + ' verdict mismatch'); break;
+  }
+  if (qi === 24) {
+    assert(true, 'buildRiverSpot: hero always beats every bluff and loses to every value hand (25 spots)');
+    assert(true, 'buildRiverSpot: equity = bluff share and the verdict follows pot odds (25 spots)');
+  }
+}
+var cbSpot = Postflop.buildCbetSpot({ rand: lcg(7) });
+assert(cbSpot.board.length === 3 && cbSpot.hero.length === 2, 'buildCbetSpot deals a flop and a hand');
+assert(['big', 'small', 'check'].indexOf(cbSpot.policy.action) >= 0, 'buildCbetSpot returns a valid action');
+var cbCards = cbSpot.board.concat(cbSpot.hero).map(Evaluator.cardToString);
+assert(cbCards.length === new Set(cbCards).size, 'buildCbetSpot never deals a duplicate card');
+
+// ---------- 6c. 混合頻率 ----------
+console.log('--- Mixed frequencies ---');
+assert(Math.abs(Ranges.mixRamp(0.5, 0.5) - 0.5) < 1e-9, 'score at the threshold = 50/50');
+assert(Ranges.mixRamp(0.5 + Ranges.MIX_BAND, 0.5) === 1, 'a full band above the threshold is pure');
+assert(Ranges.mixRamp(0.5 - Ranges.MIX_BAND, 0.5) === 0, 'a full band below the threshold is pure fold');
+var fs = Ranges.freqSplit(0.3, 0.8);
+assert(Math.abs(fs.aggro - 0.3) < 1e-9 && Math.abs(fs.call - 0.5) < 1e-9 &&
+  Math.abs(fs.fold - 0.2) < 1e-9, 'freqSplit turns aggro/continue into three frequencies');
+assert(Math.abs(fs.aggro + fs.call + fs.fold - 1) < 1e-9, 'the three frequencies sum to 1');
+var fsClamp = Ranges.freqSplit(0.9, 0.4);
+assert(fsClamp.call === 0 && Math.abs(fsClamp.fold - 0.1) < 1e-9,
+  'continue can never be below aggro');
+assert(Ranges.mixBest({ aggro: 0.1, call: 0.6, fold: 0.3 }) === 'call', 'mixBest picks the top frequency');
+assert(Ranges.mixAccept({ aggro: 0.3, call: 0.5, fold: 0.2 }, 'aggro'), 'a 30% action is accepted');
+assert(!Ranges.mixAccept({ aggro: 0.1, call: 0.7, fold: 0.2 }, 'aggro'), 'a 10% action is not accepted');
+// 放寬判定：兩邊都要有頻率
+var frBoth = { aggro: 0.5, call: 0.5, fold: 0 };
+assert(Ranges.mixTolerates(frBoth, 'aggro', 'call'), 'both actions above 25% -> either is accepted');
+var frOneSided = { aggro: 0, call: 1, fold: 0 };
+assert(!Ranges.mixTolerates(frOneSided, 'call', 'aggro'),
+  'model gives the chart answer 0% -> grade strictly by the chart, no leniency');
+assert(!Ranges.mixTolerates(frBoth, 'fold', 'call'), 'a 0% action is never accepted');
+assert(!Ranges.mixTolerates(frBoth, 'call', 'call'), 'same action is not a leniency case');
+assert(!Ranges.mixTolerates(null, 'call', 'fold'), 'mixTolerates handles a missing frequency map');
+assert(Ranges.isMixed({ aggro: 0.4, call: 0.4, fold: 0.2 }), 'no action >= 90% means mixed');
+assert(!Ranges.isMixed({ aggro: 0.95, call: 0.05, fold: 0 }), '95% aggro is a pure strategy');
+
+var rfiTarget = PushFold.rangeComboTotal(PushFold.rangeFromNotation(Ranges.RFI_RANGES_6.co.notation));
+var rfiFreq = Ranges.rfiFreqMap(rfiTarget, 100);
+assert(Object.keys(rfiFreq).length === 169, 'rfiFreqMap covers all 169 hands');
+assert(rfiFreq.AA.aggro === 1 && rfiFreq['32o'].aggro === 0, 'RFI: AA always opens, 32o never does');
+assert(rfiFreq.AA.call === 0, 'RFI has no call option');
+var v3bFreq = Ranges.vs3bFreqMap('btn_vs_bb3b', 100, Ranges.vs3bCalibrate('btn_vs_bb3b'));
+assert(v3bFreq.AA.aggro === 1 && v3bFreq['72o'].fold === 1, 'vs 3-bet: AA 4-bets, 72o folds');
+var mixedHands = Object.keys(v3bFreq).filter(function (k) { return Ranges.isMixed(v3bFreq[k]); });
+assert(mixedHands.length > 0 && mixedHands.length < 60,
+  'vs 3-bet has a sane number of mixed hands (' + mixedHands.length + ')');
+var v3bSum = v3bFreq.ATo.aggro + v3bFreq.ATo.call + v3bFreq.ATo.fold;
+assert(Math.abs(v3bSum - 1) < 1e-9, 'vs 3-bet frequencies sum to 1');
+var defDynPct = Ranges.openerOpenPct('bb_vs_btn');
+var defCal = Ranges.defenseCalibrate('bb_vs_btn', PushFold.topPercentRange(defDynPct), 100, 400);
+var defFreq = Ranges.defFreqMap('bb_vs_btn', PushFold.topPercentRange(defDynPct), defCal, 100);
+assert(Object.keys(defFreq).length === 169, 'defFreqMap covers all 169 hands');
+assert(defFreq.AA.aggro === 1, 'defence: AA always 3-bets');
+// 淺籌碼沒有平跟這個選項 → 跟注頻率一律 0
+var defShallow = Ranges.defFreqMap('bb_vs_btn', PushFold.topPercentRange(defDynPct), defCal, 12);
+var anyCall = Object.keys(defShallow).some(function (k) { return defShallow[k].call > 0; });
+assert(Ranges.defStackInfo('bb_vs_btn', 12).mode !== 'normal' ? !anyCall : true,
+  'no flat-call frequency when the SPR is too low to flat');
+
 // ---------- 7. 賽事資料 ----------
 console.log('--- Tournaments data ---');
 var tourneys = JSON.parse(require('fs').readFileSync(__dirname + '/../data/tournaments.json', 'utf8'));

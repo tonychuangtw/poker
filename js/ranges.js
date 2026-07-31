@@ -585,7 +585,108 @@
     return map;
   }
 
+  /* ---------- 混合頻率（純函式） ----------
+   * 上面幾張圖都是「排序分數 ≥ 門檻就做這個動作」的硬切，實際 GTO 解在門檻附近是混合的。
+   * 這裡把硬切換成一段線性斜坡：分數剛好等於門檻 = 50%，往上 MIX_BAND 到 100%、往下到 0%。
+   *   加注頻率  = ramp(加注用分數, 加注門檻)
+   *   續玩頻率  = ramp(續玩用分數, 續玩門檻)   （＝ 1 − 棄牌頻率）
+   *   跟注頻率  = 續玩 − 加注
+   * 測驗評分用 MIX_ACCEPT：只要你選的動作在模型裡有 ≥25% 的頻率就算對，
+   * 因為那本來就是該手牌的混合策略之一，不該判錯。
+   * 這是「門檻附近本來就模糊」的表述，不是逐 combo 的 solver 頻率。 */
+
+  var MIX_BAND = 0.03;     // 門檻上下各 3 個 equity 百分點內視為混合區
+  var MIX_ACCEPT = 0.25;   // 測驗：頻率 ≥ 此值的動作都算對
+  var MIX_PURE = 0.9;      // 頻率 ≥ 此值視為純策略（顯示用）
+
+  function mixRamp(score, thr) {
+    return clamp01(0.5 + (score - thr) / (2 * MIX_BAND));
+  }
+  /** 由「加注頻率」與「續玩頻率」拆成三個動作的頻率（和為 1） */
+  function freqSplit(pAggro, pCont) {
+    var a = clamp01(pAggro), c = clamp01(pCont);
+    if (c < a) c = a;
+    return { aggro: a, call: c - a, fold: 1 - c };
+  }
+  /** 頻率最高的動作（唯一正解、錯題本用） */
+  function mixBest(fr) {
+    return (fr.aggro >= fr.call && fr.aggro >= fr.fold) ? 'aggro'
+      : (fr.call >= fr.fold) ? 'call' : 'fold';
+  }
+  /** 某個動作在模型裡有足夠頻率 */
+  function mixAccept(fr, action) { return (fr[action] || 0) >= MIX_ACCEPT; }
+  /**
+   * 測驗放寬判定：你選的動作與圖表正解「在模型裡都有 ≥25% 頻率」才算兩者皆可。
+   * 兩邊都要檢查是關鍵 —— 圖表正解在模型裡頻率是 0 時（例如 A5s 這種
+   * 靠阻斷牌的 4-bet bluff，equity 排序模型抓不到），代表模型跟圖表根本不同調，
+   * 這時要以圖表為準嚴格評分，不能讓模型把錯的說成對的。
+   */
+  function mixTolerates(fr, chosen, best) {
+    if (!fr || chosen === best) return false;
+    return mixAccept(fr, chosen) && mixAccept(fr, best);
+  }
+  /** 是否為混合手牌（沒有任何動作接近純策略） */
+  function isMixed(fr) {
+    return Math.max(fr.aggro, fr.call, fr.fold) < MIX_PURE;
+  }
+
+  /** 開牌 RFI 的頻率表：{ 手牌: {aggro, call:0, fold} } */
+  function rfiFreqMap(targetCombos, bb) {
+    var pf = PF(), eq = rfiVillainEq(), f = rfiDepthFactor(bb);
+    var score = new Array(169), i;
+    for (i = 0; i < 169; i++) score[i] = eq[i] + IMPLIED_W * impliedIndex(i) * f;
+    var thr = thresholdAt(score, targetCombos);
+    var map = {};
+    for (i = 0; i < 169; i++) {
+      map[pf.classLabel(i)] = freqSplit(mixRamp(score[i], thr), mixRamp(score[i], thr));
+    }
+    return map;
+  }
+
+  /** 面對開牌的頻率表：{ 手牌: {aggro（3-bet）, call, fold} } */
+  function defFreqMap(spotKey, villainClasses, thresholds, bb) {
+    var pf = PF(), info = defStackInfo(spotKey, bb);
+    if (!info) return {};
+    var eq = equityMapVs(villainClasses);
+    var thr3 = aggroThreshold(thresholds.tb, info.spr3, info.needEq3, info.effBb);
+    var f = impliedFactor(info.spr, thresholds.sprBase), map = {};
+    for (var i = 0; i < 169; i++) {
+      var a = mixRamp(eq[i], thr3);
+      var cont = info.mode === 'normal'
+        ? mixRamp(eq[i] + IMPLIED_W * impliedIndex(i) * f, thresholds.cont) : a;
+      map[pf.classLabel(i)] = freqSplit(a, cont);
+    }
+    return map;
+  }
+
+  /** 被 3-bet 的頻率表：{ 手牌: {aggro（4-bet）, call, fold} } */
+  function vs3bFreqMap(spotKey, bb, calib) {
+    var pf = PF(), info = vs3bStackInfo(spotKey, bb);
+    if (!info || !calib) return {};
+    var map = {}, i, a, cont;
+    if (info.mode === 'callAllin') {
+      for (i = 0; i < 169; i++) {
+        a = mixRamp(calib.eq[i], info.needEq);
+        map[pf.classLabel(i)] = freqSplit(a, a);
+      }
+      return map;
+    }
+    var thr4 = aggroThreshold(calib.fourBet, info.spr, info.needEq, info.effBb);
+    var f = impliedFactor(info.spr, calib.sprBase);
+    for (i = 0; i < 169; i++) {
+      a = mixRamp(calib.eq[i], thr4);
+      cont = info.mode === 'normal'
+        ? mixRamp(calib.eq[i] + IMPLIED_W * impliedIndex(i) * f, calib.cont) : a;
+      map[pf.classLabel(i)] = freqSplit(a, cont);
+    }
+    return map;
+  }
+
   var Ranges = {
+    MIX_BAND: MIX_BAND, MIX_ACCEPT: MIX_ACCEPT, MIX_PURE: MIX_PURE,
+    mixRamp: mixRamp, freqSplit: freqSplit, mixBest: mixBest,
+    mixAccept: mixAccept, mixTolerates: mixTolerates, isMixed: isMixed,
+    rfiFreqMap: rfiFreqMap, defFreqMap: defFreqMap, vs3bFreqMap: vs3bFreqMap,
     DEF_SPOTS: DEF_SPOTS, DEF_SPOT_KEYS: DEF_SPOT_KEYS,
     VS3B_BASE_BB: VS3B_BASE_BB, VS3B_MIN_BB: VS3B_MIN_BB, VS3B_MAX_BB: VS3B_MAX_BB,
     RFI_JAM_BB: RFI_JAM_BB, rfiStackInfo: rfiStackInfo, rfiAtDepth: rfiAtDepth,

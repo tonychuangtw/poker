@@ -212,9 +212,19 @@
   </div>
 
   <div class="card">
-    <h2>Range vs Range（翻前）</h2>
-    <p class="hint">兩邊各取「對隨機手牌勝率」前 X% 的 range，用 169×169 翻前勝率表加權計算
-      （忽略 blocker 效應，近似值）。</p>
+    <h2>Range vs Range（翻前 / 翻後）</h2>
+    <p class="hint">兩邊 range 可用記號（例：QQ+ AKs）或「前 X%」。
+      公牌留空 = 翻前，用 169×169 翻前勝率表加權（忽略 blocker，近似值）；
+      填 3 / 4 / 5 張公牌 = 翻後，逐 combo 發牌模擬，並算出雙方在這個牌面上的
+      <b>range 優勢</b>（平均勝率差）與<b>堅果優勢</b>（三條以上的占比差）。</p>
+    <div class="grid-2">
+      <label>Range A 記號（留空則用前 X%）
+        <input type="text" id="rvrANot" placeholder="例：QQ+ AKs AKo" autocapitalize="off" autocomplete="off">
+      </label>
+      <label>Range B 記號（留空則用前 X%）
+        <input type="text" id="rvrBNot" placeholder="例：22+ A2s+ KTo+" autocapitalize="off" autocomplete="off">
+      </label>
+    </div>
     <div class="grid-2">
       <label>Range A（前 X%）
         <input type="number" id="rvrA" inputmode="decimal" step="any" min="0.1" max="100" value="20">
@@ -223,6 +233,9 @@
         <input type="number" id="rvrB" inputmode="decimal" step="any" min="0.1" max="100" value="40">
       </label>
     </div>
+    <label>公牌（選填，3 / 4 / 5 張，例：Kd 7c 2h）
+      <input type="text" id="rvrBoard" placeholder="留空 = 翻前" autocapitalize="off" autocomplete="off">
+    </label>
     <button class="btn primary full" id="btnCalcRvr">計算 range 勝率</button>
     <div id="rvrResult" hidden>
       <div class="eqp-row">
@@ -230,6 +243,9 @@
         <div class="equity-bar eqp-bar"><div class="eq-hero" id="rvrBarA"></div><div class="eq-villain" id="rvrBarB"></div></div>
       </div>
       <p class="hint" id="rvrDetail"></p>
+      <div class="stats-table-wrap" id="rvrProfileWrap" hidden>
+        <table class="stats-table" id="rvrProfileTable"></table>
+      </div>
     </div>
   </div>
 </section>
@@ -336,6 +352,7 @@
     <div class="btn-row">
       <button class="btn active-role" id="nashRolePush">SB 全下 range</button>
       <button class="btn" id="nashRoleCall">BB 跟注 range</button>
+      <button class="btn" id="btnNashFreq">🎚 混合頻率</button>
     </div>
     <p class="hint" id="nashRangeTxt"></p>
     <div class="nash-grid-wrap"><div id="nashGrid" class="nash-grid"></div></div>
@@ -350,6 +367,7 @@
       <button class="btn active-role" data-table="6">6-max</button>
       <button class="btn" data-table="9">9-max</button>
       <button class="btn edit-btn" id="btnRfiEdit">✏️ 編輯</button>
+      <button class="btn" id="btnRfiFreq">🎚 混合頻率</button>
     </div>
     <div class="btn-row" id="rfiPosRow"></div>
     <div class="slider-row">
@@ -379,6 +397,7 @@
     </label>
     <div class="btn-row">
       <button class="btn edit-btn" id="btnDefEdit">✏️ 編輯</button>
+      <button class="btn" id="btnDefFreq">🎚 混合頻率</button>
     </div>
     <label>對手開牌 %（預設 = 建議 RFI 寬度；拉動後依 equity 門檻動態試算）</label>
     <div class="slider-row">
@@ -408,6 +427,7 @@
     </label>
     <div class="btn-row">
       <button class="btn edit-btn" id="btnV3bEdit">✏️ 編輯</button>
+      <button class="btn" id="btnV3bFreq">🎚 混合頻率</button>
     </div>
     <label>有效籌碼（10–300bb，預設 100bb；離開 100bb 即依深度動態試算）</label>
     <div class="slider-row">
@@ -424,6 +444,51 @@
   </div>
 
   <div class="card">
+    <h2>翻後 c-bet 速查</h2>
+    <p class="hint">輸入翻牌，看牌面質地、建議的持續下注頻率與尺度，以及你手上這手牌該怎麼打。
+      濕度 = 同花成分與順子成分各半（0 = 全乾、1 = 全濕）。建議為公認啟發式，非 solver 輸出。</p>
+    <div class="grid-2">
+      <label>翻牌（3 張，例：Kd 7c 2h）
+        <input type="text" id="cbBoard" placeholder="Kd 7c 2h" autocapitalize="off" autocomplete="off">
+      </label>
+      <label>我的手牌（選填，例：As Kd）
+        <input type="text" id="cbHero" placeholder="As Kd" autocapitalize="off" autocomplete="off">
+      </label>
+    </div>
+    <div class="grid-2">
+      <label>位置
+        <select id="cbRole">
+          <option value="ip">有位置（IP）</option>
+          <option value="oop">無位置（OOP）</option>
+        </select>
+      </label>
+      <label>底池類型
+        <select id="cbPot">
+          <option value="srp">單次加注底池（SRP）</option>
+          <option value="3bp">3-bet 底池</option>
+        </select>
+      </label>
+    </div>
+    <button class="btn primary full" id="btnCbCalc">看建議</button>
+    <div id="cbResult" hidden>
+      <div class="ev-result" id="cbSummary"></div>
+      <div class="stats-table-wrap">
+        <table class="stats-table" id="cbTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>MDF / 詐唬比速查</h2>
+    <p class="hint">MDF（最低防守頻率）= 底池 ÷（底池＋下注）：棄牌多過這個數，對手隨便詐唬都賺。
+      跟注賠率 = 下注 ÷（底池＋2×下注），同時也是「對手下注 range 裡 bluff 該占的比例」——
+      對手 bluff 比這個多就跟，比這個少就棄。</p>
+    <div class="stats-table-wrap">
+      <table class="stats-table" id="mdfTable"></table>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>Outs / 賠率速查</h2>
     <p class="hint">「4-2 法則」：翻牌後兩張約 outs×4%，只剩一張約 outs×2%。下表為精確值。</p>
     <div class="stats-table-wrap">
@@ -437,13 +502,18 @@
       開牌 RFI：隨機位置、手牌與有效籌碼，判斷開牌或蓋牌（≤20bb 的開牌等於全下）。
       面對開牌：隨機防守情境與有效籌碼，判斷 3-bet、跟注或蓋牌。
       被 3-bet：隨機情境與有效籌碼（10–300bb），判斷 4-bet、跟注或蓋牌；
-      淺籌碼時 4-bet 等於全下，該題就沒有跟注選項。</p>
-    <p class="hint">📌 測驗以建議 range 為準，圖表的自訂編輯不影響評分。</p>
+      淺籌碼時 4-bet 等於全下，該題就沒有跟注選項。
+      翻後 c-bet：隨機翻牌、手牌、位置與底池類型，判斷下注 75%、下注 33% 還是過牌。
+      河牌接 bluff：對手在河牌下注，依他 range 裡的 bluff 比例與你的底池賠率決定跟或棄。</p>
+    <p class="hint">📌 測驗以建議 range 為準，圖表的自訂編輯不影響評分。
+      翻前四種題型在門檻附近是混合策略，只要你選的動作在模型裡有 ≥25% 頻率就算對。</p>
     <div class="btn-row">
       <button class="btn active-role" id="btnQuizModePf">Push/Fold</button>
       <button class="btn" id="btnQuizModeRfi">開牌 RFI</button>
       <button class="btn" id="btnQuizModeDef">面對開牌</button>
       <button class="btn" id="btnQuizModeV3b">被 3-bet</button>
+      <button class="btn" id="btnQuizModeCb">翻後 c-bet</button>
+      <button class="btn" id="btnQuizModeBc">河牌接 bluff</button>
     </div>
     <div id="quizIdle">
       <button class="btn primary full big" id="btnQuizStart">開始測驗</button>
@@ -452,6 +522,7 @@
     <div id="quizRun" hidden>
       <div class="quiz-q">
         <div class="quiz-hand" id="quizHand"></div>
+        <div class="quiz-board" id="quizBoard" hidden></div>
         <div class="quiz-info" id="quizInfo"></div>
       </div>
       <div class="btn-row">
@@ -478,17 +549,19 @@
 
   <div class="card">
     <h2>熟練度（滾動 30 題）</h2>
-    <p class="hint">在「圖表」分頁作答測驗即可累積；最近 30 題正確率 ≥ 90% 獲得 🏆。</p>
+    <p class="hint">在「圖表」分頁作答測驗即可累積；最近 30 題正確率 ≥ 90% 獲得 🏆。
+      六種題型各自獨立計算。</p>
     <div id="masteryBars" class="bar-chart"></div>
   </div>
 
   <div class="card">
-    <h2>錯題本</h2>
+    <h2>錯題本（間隔重複）</h2>
     <p class="hint" id="mistakeCountTxt"></p>
     <button class="btn primary full" id="btnDrillStart">錯題重練</button>
     <div id="drillRun" hidden>
       <div class="quiz-q">
         <div class="quiz-hand" id="drillHand"></div>
+        <div class="quiz-board" id="drillBoard" hidden></div>
         <div class="quiz-info" id="drillInfo"></div>
       </div>
       <div class="btn-row">
@@ -604,6 +677,7 @@
 <script src="js/preflop-table.js"></script>
 <script src="js/pushfold.js"></script>
 <script src="js/ranges.js"></script>
+<script src="js/postflop.js"></script>
 <script src="js/hands.js"></script>
 <script src="js/nash.js"></script>
 <script src="js/app.js"></script>

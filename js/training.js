@@ -1,13 +1,17 @@
-/* 訓練系統：滾動 30 題熟練度、錯題本、每日任務 + 連續天數、週報
+/* 訓練系統：滾動 30 題熟練度、錯題本（Leitner 間隔重複）、每日任務 + 連續天數、週報
  *
  * 純函式（rollPush / isMastered / accuracy / addMistake / updateStreak /
- * dateAdd / pruneActivity / lastNDays）雙輸出：Node（測試）與 window.TRAINING。
- * UI 部分只在瀏覽器環境執行。
+ * dateAdd / pruneActivity / lastNDays / srsNext / srsDue / normalizeMistake）
+ * 雙輸出：Node（測試）與 window.TRAINING。UI 部分只在瀏覽器環境執行。
+ *
+ * 錯題本用 Leitner box：答對往上升一盒、下次到期日往後推（1 → 3 → 7 → 14 天），
+ * 升過第 5 盒才算真的記住並移出錯題本；答錯一律打回第 1 盒、當天再考。
+ * 「答對就刪掉」留不住東西 —— 隔幾天再問一次才知道是不是真的會。
  *
  * localStorage：
- *   poker.roll      {pf:[0/1...], rfi:[], def:[], v3b:[]}  每種最近 30 題結果
- *   poker.mistakes  [{kind,key,ts,idx,best,info}]    錯題本（kind+key 去重、上限 100）
- *   poker.activity  {"YYYY-MM-DD":{pf,rfi,def,v3b,drill,c}}  每日答題數（保留 60 天）
+ *   poker.roll      {pf:[0/1...], rfi:[], def:[], v3b:[], cb:[], bc:[]}  每種最近 30 題結果
+ *   poker.mistakes  [{kind,key,ts,box,due,idx,best,info,...}]  錯題本（kind+key 去重、上限 100）
+ *   poker.activity  {"YYYY-MM-DD":{pf,rfi,def,v3b,cb,bc,drill,c}}  每日答題數（保留 60 天）
  *   poker.streak    {current,best,lastDone}
  */
 (function (global) {
@@ -74,13 +78,58 @@
     return out;
   }
 
-  // 加入錯題：kind+key 去重（舊的移除、新的排最後），上限 cap 筆（丟最舊）
-  function addMistake(list, m, cap) {
+  /* ---------- 錯題本：Leitner 間隔重複 ---------- */
+
+  // 升到第 n 盒之後，隔幾天才會再出現（第 1 盒 = 當天就再考）
+  var SRS_DAYS = { 1: 0, 2: 1, 3: 3, 4: 7, 5: 14 };
+  var SRS_MAX_BOX = 5;
+
+  // 補齊舊資料沒有的 box / due（一律當作第 1 盒、今天到期）
+  function normalizeMistake(m, today) {
+    var box = (typeof m.box === 'number' && m.box >= 1) ? Math.min(m.box, SRS_MAX_BOX) : 1;
+    var out = {}, k;
+    for (k in m) if (Object.prototype.hasOwnProperty.call(m, k)) out[k] = m[k];
+    out.box = box;
+    out.due = m.due || today;
+    return out;
+  }
+
+  /**
+   * 重練一題之後這題該怎麼辦。
+   * 答對：升一盒、到期日往後推；已經在第 5 盒答對 → 回傳 null（畢業、移出錯題本）。
+   * 答錯：打回第 1 盒，當天再考。
+   */
+  function srsNext(m, isCorrect, today) {
+    var cur = normalizeMistake(m, today);
+    if (!isCorrect) {
+      cur.box = 1;
+      cur.due = today;
+      return cur;
+    }
+    if (cur.box >= SRS_MAX_BOX) return null;
+    cur.box = cur.box + 1;
+    cur.due = dateAdd(today, SRS_DAYS[cur.box]);
+    return cur;
+  }
+
+  // 今天（含）之前到期的錯題，先考盒號小的（＝最不熟的）
+  function srsDue(list, today) {
+    return (list || []).map(function (m) { return normalizeMistake(m, today); })
+      .filter(function (m) { return m.due <= today; })
+      .sort(function (a, b) { return a.box - b.box || (a.due < b.due ? -1 : a.due > b.due ? 1 : 0); });
+  }
+
+  // 加入錯題：kind+key 去重（舊的移除、新的排最後、盒號歸 1），上限 cap 筆（丟最舊）
+  function addMistake(list, m, cap, today) {
     cap = cap || MISTAKE_CAP;
+    today = today || todayStr();
     var out = (list || []).filter(function (x) {
       return !(x.kind === m.kind && x.key === m.key);
     });
-    out.push(m);
+    var entry = normalizeMistake(m, today);
+    entry.box = 1;          // 又錯一次 → 不管之前升到第幾盒，重頭來
+    entry.due = today;
+    out.push(entry);
     while (out.length > cap) out.shift();
     return out;
   }
@@ -106,7 +155,12 @@
     lastNDays: lastNDays,
     pruneActivity: pruneActivity,
     addMistake: addMistake,
-    updateStreak: updateStreak
+    updateStreak: updateStreak,
+    SRS_DAYS: SRS_DAYS,
+    SRS_MAX_BOX: SRS_MAX_BOX,
+    normalizeMistake: normalizeMistake,
+    srsNext: srsNext,
+    srsDue: srsDue
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = TRAINING;
@@ -123,9 +177,10 @@
     activity: 'poker.activity',
     streak: 'poker.streak'
   };
-  var KIND_NAMES = { pf: 'Push/Fold', rfi: '開牌 RFI', def: '面對開牌', v3b: '被 3-bet' };
-  var KINDS = ['pf', 'rfi', 'def', 'v3b'];
-  // 每日任務只看這三種基本測驗（被 3-bet 為進階題，不加重每天的量）
+  var KIND_NAMES = { pf: 'Push/Fold', rfi: '開牌 RFI', def: '面對開牌', v3b: '被 3-bet',
+                     cb: '翻後 c-bet', bc: '河牌接 bluff' };
+  var KINDS = ['pf', 'rfi', 'def', 'v3b', 'cb', 'bc'];
+  // 每日任務只看這三種基本測驗（其餘為進階題，不加重每天的量）
   var DAILY_KINDS = ['pf', 'rfi', 'def'];
   var DAILY_TARGET = 10;
 
@@ -180,9 +235,12 @@
     var act = loadActivity();
     var rec = dayRec(act, today);
     var mistakes = loadMistakes();
-    var t1 = mistakes.length === 0 || rec.drill >= 20;       // 清錯題
+    var due = srsDue(mistakes, today);
+    // 清錯題：把「今天到期」的清完（沒到期的排在後面幾天，今天不用碰）
+    var t1 = due.length === 0 || rec.drill >= Math.min(due.length, 20);
     var t2 = DAILY_KINDS.every(function (k) { return rec[k] >= DAILY_TARGET; });
-    return { today: today, rec: rec, mistakes: mistakes, t1: t1, t2: t2, allDone: t1 && t2 };
+    return { today: today, rec: rec, mistakes: mistakes, due: due,
+             t1: t1, t2: t2, allDone: t1 && t2 };
   }
 
   function checkStreak() {
@@ -209,9 +267,15 @@
         if (payload.info) m.info = String(payload.info);
         // 這題當下的按鈕樣貌（例如淺籌碼的「4-bet 全下」且沒有跟注選項）
         if (payload.aggro) m.aggro = String(payload.aggro);
+        if (payload.call) m.call = String(payload.call);
+        if (payload.fold) m.fold = String(payload.fold);
         if (payload.noCall) m.noCall = true;
+        if (payload.noAggro) m.noAggro = true;
+        // 翻後題型：手牌與公牌用文字存，重練時直接顯示
+        if (payload.hand) m.hand = String(payload.hand);
+        if (payload.board) m.board = String(payload.board);
       }
-      save(KEYS.mistakes, addMistake(loadMistakes(), m, MISTAKE_CAP));
+      save(KEYS.mistakes, addMistake(loadMistakes(), m, MISTAKE_CAP, todayStr()));
     }
     checkStreak();
     renderAll();
@@ -223,9 +287,13 @@
     var mk = function (done, txt) {
       return '<div class="train-task">' + (done ? '✅' : '⬜') + ' ' + txt + '</div>';
     };
+    var target = Math.min(st.due.length, 20);
     var drillTxt = st.mistakes.length === 0
       ? '錯題本已清空'
-      : '今日已重練 ' + Math.min(st.rec.drill, 20) + ' / 20 題（錯題本剩 ' + st.mistakes.length + ' 題）';
+      : st.due.length === 0
+        ? '今天沒有到期的錯題（' + st.mistakes.length + ' 題排在後面幾天複習）'
+        : '今日已重練 ' + Math.min(st.rec.drill, target) + ' / ' + target +
+          ' 題（今天到期 ' + st.due.length + ' 題，錯題本共 ' + st.mistakes.length + ' 題）';
     $('#trainTasks').innerHTML =
       mk(st.t1, '清錯題 — ' + drillTxt) +
       mk(st.t2, '基本測驗各答 ' + DAILY_TARGET + ' 題 — ' + DAILY_KINDS.map(function (k) {
@@ -267,42 +335,59 @@
       return x.kind === m.kind && x.key === m.key;
     });
   }
-  function removeMistake(m) {
+  /** 把重練結果寫回錯題本：升盒 / 打回第 1 盒 / 畢業移除。回傳 srsNext 的結果 */
+  function applySrs(m, ok) {
     var list = loadMistakes();
     var i = mistakeById(m);
-    if (i >= 0) { list.splice(i, 1); save(KEYS.mistakes, list); }
+    if (i < 0) return null;
+    var next = srsNext(list[i], ok, todayStr());
+    if (next) list[i] = next; else list.splice(i, 1);
+    save(KEYS.mistakes, list);
+    return next;
   }
 
   function renderMistakeCount() {
-    var n = loadMistakes().length;
-    $('#mistakeCountTxt').textContent = n
-      ? '錯題本共 ' + n + ' 題。答對即從錯題本移除，答錯保留。'
+    var list = loadMistakes();
+    var due = srsDue(list, todayStr());
+    $('#mistakeCountTxt').textContent = list.length
+      ? '錯題本共 ' + list.length + ' 題，今天到期 ' + due.length + ' 題。' +
+        '答對往上升一盒（隔 1 → 3 → 7 → 14 天再考），連過 5 盒才移出錯題本；答錯打回第 1 盒。'
       : '錯題本是空的，太強了！去「圖表」分頁做測驗累積題目。';
-    $('#btnDrillStart').disabled = n === 0;
-    $('#btnDrillStart').textContent = n ? '錯題重練（' + n + ' 題）' : '錯題重練';
+    $('#btnDrillStart').disabled = due.length === 0;
+    $('#btnDrillStart').textContent = due.length
+      ? '錯題重練（今天到期 ' + due.length + ' 題）'
+      : list.length ? '今天沒有到期的錯題' : '錯題重練';
   }
 
   function aggroLabel(kind) {
     return kind === 'pf' ? '全下' : kind === 'rfi' ? '加注'
-      : kind === 'v3b' ? '4-bet' : '3-bet';
+      : kind === 'v3b' ? '4-bet' : kind === 'cb' ? '下注 75%' : '3-bet';
   }
-  /** 有「跟注」選項的測驗種類（三選一），其餘為二選一 */
-  function hasCallOption(kind) { return kind === 'def' || kind === 'v3b'; }
+  /** 有「中間選項」的測驗種類（三選一），其餘為二選一 */
+  function hasCallOption(kind) {
+    return kind === 'def' || kind === 'v3b' || kind === 'cb' || kind === 'bc';
+  }
   function actionTxt(m, act) {
     return act === 'aggro' ? (m.aggro || aggroLabel(m.kind))
-      : act === 'call' ? '跟注' : '蓋牌';
+      : act === 'call' ? (m.call || '跟注') : (m.fold || '蓋牌');
   }
 
   function drillShow() {
     if (!drillQueue.length) { drillFinish(); return; }
     drillCur = drillQueue[0];
-    var label = (typeof drillCur.idx === 'number' && global.PushFold)
-      ? global.PushFold.classLabel(drillCur.idx) : drillCur.key;
+    var label = drillCur.hand ||
+      ((typeof drillCur.idx === 'number' && global.PushFold)
+        ? global.PushFold.classLabel(drillCur.idx) : drillCur.key);
     $('#drillHand').textContent = label;
+    $('#drillBoard').hidden = !drillCur.board;
+    $('#drillBoard').textContent = drillCur.board || '';
     $('#drillInfo').textContent = (drillCur.info || '') +
-    '（' + KIND_NAMES[drillCur.kind] + '）';
+    '（' + KIND_NAMES[drillCur.kind] + '｜第 ' + (drillCur.box || 1) + ' 盒）';
     $('#btnDrillAggro').textContent = drillCur.aggro || aggroLabel(drillCur.kind);
+    $('#btnDrillAggro').hidden = drillCur.noAggro === true;
+    $('#btnDrillCall').textContent = drillCur.call || '跟注';
     $('#btnDrillCall').hidden = drillCur.noCall === true || !hasCallOption(drillCur.kind);
+    $('#btnDrillFold').textContent = drillCur.fold || '蓋牌';
     $('#drillFeedback').hidden = true;
     $('#btnDrillNext').hidden = true;
     $('#btnDrillAggro').disabled = false;
@@ -314,15 +399,19 @@
     if (!drillCur) return;
     var ok = action === (drillCur.best || 'fold');
     drillDone++;
-    if (ok) { drillFixed++; removeMistake(drillCur); }
+    var next = applySrs(drillCur, ok);
+    if (ok) drillFixed++;
     drillQueue.shift();
     bumpActivity('drill', ok);
     checkStreak();
+    var srsTxt = !ok ? '打回第 1 盒，今天會再考一次。'
+      : next ? '升到第 ' + next.box + ' 盒，' + next.due + ' 再考一次。'
+        : '連過 5 盒 —— 從錯題本畢業了！';
     var fb = $('#drillFeedback');
     fb.hidden = false;
     fb.innerHTML = (ok
-      ? '<span class="pos">✔ 正確！已從錯題本移除。</span>'
-      : '<span class="neg">✘ 錯誤，保留在錯題本。</span>') +
+      ? '<span class="pos">✔ 正確！</span>'
+      : '<span class="neg">✘ 錯誤。</span>') + srsTxt +
       ' 正解：<b>' + actionTxt(drillCur, drillCur.best || 'fold') + '</b>。';
     $('#btnDrillNext').hidden = false;
     $('#btnDrillNext').textContent = drillQueue.length ? '下一題' : '看結果';
@@ -338,9 +427,12 @@
   function drillFinish() {
     var fb = $('#drillFeedback');
     fb.hidden = false;
-    fb.innerHTML = '<span class="pos">完成！</span>本輪重練 ' + drillDone + ' 題，修正 ' +
-      drillFixed + ' 題，錯題本剩 ' + loadMistakes().length + ' 題。';
+    fb.innerHTML = '<span class="pos">完成！</span>本輪重練 ' + drillDone + ' 題，答對 ' +
+      drillFixed + ' 題。錯題本共 ' + loadMistakes().length + ' 題，今天到期 ' +
+      srsDue(loadMistakes(), todayStr()).length + ' 題。';
+    $('#btnDrillAggro').hidden = false;
     $('#btnDrillAggro').disabled = true;
+    $('#drillBoard').hidden = true;
     $('#btnDrillCall').disabled = true;
     $('#btnDrillFold').disabled = true;
     $('#btnDrillNext').hidden = true;
@@ -399,7 +491,7 @@
   /* ---------- 事件 ---------- */
   function init() {
     $('#btnDrillStart').addEventListener('click', function () {
-      drillQueue = loadMistakes().slice();
+      drillQueue = srsDue(loadMistakes(), todayStr());
       if (!drillQueue.length) return;
       drillDone = 0; drillFixed = 0;
       $('#btnDrillStart').hidden = true;

@@ -354,6 +354,16 @@ canvas { width: 100%; display: block; border-radius: 8px; }
 .nash-cell.tb { background: linear-gradient(160deg, #ef7a70, #bc4038); color: #2e0e0c; font-weight: 700; }
 .legend-tb { color: #ef7a70; font-weight: 600; }
 .legend-call { color: #4bdc8b; font-weight: 600; }
+/* 混合頻率檢視：格子橫向依 加注 / 跟注 / 棄牌 的頻率分段上色 */
+.nash-cell.freq {
+  color: #eef3ec; font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .75);
+  line-height: 1.15;
+}
+.nash-cell.freq i {
+  display: block; font-style: normal;
+  font-size: .55rem; font-weight: 600; opacity: .95;
+}
 .nash-grid.editing {
   outline: 2px dashed var(--accent);
   outline-offset: 4px; border-radius: 6px;
@@ -385,6 +395,16 @@ canvas { width: 100%; display: block; border-radius: 8px; }
   text-shadow: 0 2px 20px rgba(212, 175, 106, .15);
 }
 .quiz-info { color: var(--muted); font-size: .9rem; margin-top: 6px; }
+/* 翻後題型的公牌列 */
+.quiz-board {
+  margin-top: 8px; font-size: 1.5rem; font-weight: 700;
+  letter-spacing: .06em; color: #eef3ec;
+}
+.quiz-board .red { color: #ef7a70; }
+.quiz-board .board-tag {
+  display: block; margin-top: 2px;
+  font-size: .8rem; font-weight: 600; letter-spacing: 0; color: var(--muted);
+}
 
 /* ===== 複盤 tab ===== */
 .street-block {

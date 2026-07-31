@@ -250,8 +250,12 @@
 
   /* ---------- Range vs range 翻前勝率（combo 加權、忽略 blocker） ---------- */
   function rangeVsRange(pctA, pctB) {
-    var A = topPercentRange(pctA), B = topPercentRange(pctB);
-    if (!A.length || !B.length) throw new Error('range 百分比需大於 0');
+    return rangeVsRangeClasses(topPercentRange(pctA), topPercentRange(pctB));
+  }
+
+  /** 兩組類別 index 的翻前 range vs range（169×169 表加權，忽略 blocker） */
+  function rangeVsRangeClasses(A, B) {
+    if (!A.length || !B.length) throw new Error('range 是空的');
     var wSum = 0, eqSum = 0;
     for (var i = 0; i < A.length; i++) {
       var a = A[i], ca = comboCount(a);
@@ -334,6 +338,7 @@
     rangeFromNotation: rangeFromNotation,
     rangeComboTotal: rangeComboTotal,
     comboCount: comboCount,
+    rangeVsRangeClasses: rangeVsRangeClasses,
     classIndexFromCards: classIndexFromCards,
     expandCombos: expandCombos,
     combosAvailable: combosAvailable,
