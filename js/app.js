@@ -1638,6 +1638,119 @@
   });
   renderV3b();
 
+  /* ---------- 冷 4-bet / 冷跟（前面開牌 + 有人 3-bet） ----------
+   * 唯讀圖：沒有手打的建議表可以覆寫，整張圖都是依「對手 3-bet 寬度 + 籌碼深度」算出來的。
+   * 滑桿停在該情境的預設寬度時用真正的 3-bet range 記號，拉動後才改用「最強 X%」近似。 */
+  var coldKeyCur = Ranges.COLD_SPOT_KEYS[0], coldFreq = false;
+  var coldPctCur = null, coldSliding = false;
+  var coldStackCur = Ranges.VS3B_BASE_BB, coldStackSliding = false;
+
+  (function buildColdSpotOptions() {
+    var six = '', nine = '';
+    Ranges.COLD_SPOT_KEYS.forEach(function (k) {
+      var spot = Ranges.COLD_SPOTS[k];
+      var opt = '<option value="' + k + '">' + spot.name + '</option>';
+      if (spot.table === 9) nine += opt; else six += opt;
+    });
+    $('#coldSpot').innerHTML =
+      '<optgroup label="9-max Full Ring（現場取向）">' + nine + '</optgroup>' +
+      '<optgroup label="6-max">' + six + '</optgroup>';
+  })();
+
+  function coldDefaultPct(key) { return Ranges.coldVillainPct(key); }
+  function coldPctChanged() {
+    return coldPctCur !== null && Math.abs(coldPctCur - coldDefaultPct(coldKeyCur)) > 0.25;
+  }
+  /** 滑桿沒動就用真正的 3-bet range，動了才用「最強 X%」近似 */
+  function coldVillain() {
+    return coldPctChanged() ? PushFold.topPercentRange(coldPctCur)
+      : Ranges.coldVillainRange(coldKeyCur);
+  }
+
+  function renderCold() {
+    // 下拉選單值對不上（快取到舊版 HTML 之類）時退回第一個情境，不要整張圖掛掉
+    if (!Ranges.COLD_SPOTS[coldKeyCur]) coldKeyCur = Ranges.COLD_SPOT_KEYS[0];
+    var spot = Ranges.COLD_SPOTS[coldKeyCur];
+    if (coldPctCur === null) coldPctCur = coldDefaultPct(coldKeyCur);
+    var info = Ranges.coldStackInfo(coldKeyCur, coldStackCur);
+    var villain = coldVillain();
+    var html = '', tbCombos = 0, callCombos = 0, i, lbl;
+
+    if (coldFreq) {
+      var fmap = Ranges.coldFreqMap(coldKeyCur, villain, coldStackCur);
+      for (i = 0; i < 169; i++) html += freqCellHtml(i, fmap[PushFold.classLabel(i)], true);
+      $('#coldGrid').innerHTML = html;
+      $('#coldTxt').textContent = spot.name + '（對手 3-bet ' + coldPctCur.toFixed(1) + '%，' +
+        info.effBb + 'bb）｜' + freqSummary(fmap, info.mode === 'normal');
+      $('#coldNote').textContent = spot.note;
+      $('#coldSpot').value = coldKeyCur;
+      if (!coldSliding) $('#coldPct').value = coldPctCur;
+      $('#coldPctVal').textContent = coldPctCur.toFixed(1) + '%';
+      if (!coldStackSliding) $('#coldStack').value = coldStackCur;
+      $('#coldStackVal').textContent = coldStackCur + 'bb';
+      return;
+    }
+
+    var map = Ranges.coldDefense(coldKeyCur, villain, coldStackCur);
+    for (i = 0; i < 169; i++) {
+      lbl = PushFold.classLabel(i);
+      var st = map[lbl] || 'out';
+      if (st === 'tb') tbCombos += PushFold.comboCount(i);
+      else if (st === 'in') callCombos += PushFold.comboCount(i);
+      html += '<div class="nash-cell ' + (st === 'in' || st === 'tb' ? st : 'out') +
+        '" data-i="' + i + '">' + lbl + '</div>';
+    }
+    $('#coldGrid').innerHTML = html;
+
+    var aggroTxt = info.mode === 'normal'
+      ? '冷 4-bet 到 ' + info.fourBetBb.toFixed(1) + 'bb' + (info.fourBetAllIn ? '＝全下' : '')
+      : '全下';
+    $('#coldTxt').textContent = spot.opener + ' 開 ' + info.openBb + 'bb → ' + spot.tbettor +
+      ' 3-bet 到 ' + info.tbBb + 'bb（' + coldPctCur.toFixed(1) + '% 的手牌），你在 ' +
+      spot.hero + '，有效籌碼 ' + info.effBb + 'bb｜' +
+      aggroTxt + ' ' + (tbCombos / 1326 * 100).toFixed(1) + '%（' + tbCombos + ' combo）' +
+      (info.mode === 'normal'
+        ? '＋冷跟 ' + (callCombos / 1326 * 100).toFixed(1) + '%（' + callCombos + ' combo）'
+        : '，其餘蓋牌');
+    $('#coldNote').textContent = '你要補 ' + info.toCall + 'bb 進 ' + info.pot +
+      'bb 底池 → 需要 ' + (info.needEq * 100).toFixed(1) + '% 勝率' +
+      (spot.oopPenalty ? '，再加 ' + (spot.oopPenalty * 100).toFixed(1) +
+        ' 點的無位置代價（接下來三條街都要無位置面對兩家）' : '（你有位置，沒有額外代價）') +
+      '。' + (info.mode === 'normal'
+        ? '跟注後 SPR ' + info.spr.toFixed(1) +
+          (info.effBb > Ranges.VS3B_BASE_BB ? '，籌碼深 → 小對子的 set mining 價值變大。'
+            : info.effBb < Ranges.VS3B_BASE_BB ? '，籌碼淺 → 小對子先掉出冷跟範圍。' : '。')
+        : 'SPR 太低 → 沒有冷跟這個選項，只剩全下或棄牌。') + spot.note;
+    $('#coldSpot').value = coldKeyCur;
+    if (!coldSliding) $('#coldPct').value = coldPctCur;
+    $('#coldPctVal').textContent = coldPctCur.toFixed(1) + '%' +
+      (coldPctChanged() ? '' : '（該情境建議值）');
+    if (!coldStackSliding) $('#coldStack').value = coldStackCur;
+    $('#coldStackVal').textContent = coldStackCur + 'bb';
+  }
+  $('#coldSpot').addEventListener('change', function () {
+    if (!Ranges.COLD_SPOTS[this.value]) return;   // 值對不上就不要動狀態
+    coldKeyCur = this.value;
+    coldPctCur = coldDefaultPct(coldKeyCur);      // 換情境 → 滑桿回到該情境的建議寬度
+    renderCold();
+  });
+  $('#coldPct').addEventListener('input', function () {
+    coldSliding = true;
+    coldPctCur = +this.value;
+    renderCold();
+  });
+  $('#coldPct').addEventListener('change', function () { coldSliding = false; renderCold(); });
+  $('#coldStack').addEventListener('input', function () {
+    coldStackSliding = true;
+    coldStackCur = +this.value;
+    renderCold();
+  });
+  $('#coldStack').addEventListener('change', function () { coldStackSliding = false; renderCold(); });
+  bindFreqToggle('#btnColdFreq',
+    function () { return coldFreq; },
+    function (v) { coldFreq = v; }, renderCold);
+  renderCold();
+
   /* ---------- 翻後 c-bet 速查 ---------- */
   function cardsHtml(cards) {
     return cards.map(cardLabel).join(' ');
@@ -1721,7 +1834,8 @@
 
   /* ---------- 訓練測驗（Push/Fold + 開牌 RFI + 面對開牌 + 被 3-bet） ---------- */
   var QUIZ_KEYS = { pf: 'poker.nash_quiz', rfi: 'poker.rfi_quiz', def: 'poker.def_quiz',
-                    v3b: 'poker.v3b_quiz', cb: 'poker.cb_quiz', bc: 'poker.bc_quiz' };
+                    v3b: 'poker.v3b_quiz', cold: 'poker.cold_quiz',
+                    cb: 'poker.cb_quiz', bc: 'poker.bc_quiz' };
   var quizMode = 'pf'; // 'pf' | 'rfi' | 'def' | 'v3b' | 'cb' | 'bc'
 
   function quizScore(mode) {
@@ -1740,6 +1854,7 @@
     $('#quizScoreTxt').textContent =
       [scoreLine('Push/Fold', quizScore('pf')), scoreLine('RFI', quizScore('rfi')),
        scoreLine('面對開牌', quizScore('def')), scoreLine('被 3-bet', quizScore('v3b')),
+       scoreLine('冷 4-bet', quizScore('cold')),
        scoreLine('翻後 c-bet', quizScore('cb')), scoreLine('河牌接 bluff', quizScore('bc'))]
         .filter(Boolean).join(' ｜ ');
   }
@@ -1835,10 +1950,11 @@
 
   var QUIZ_MODE_BTN = { pf: '#btnQuizModePf', rfi: '#btnQuizModeRfi',
                         def: '#btnQuizModeDef', v3b: '#btnQuizModeV3b',
+                        cold: '#btnQuizModeCold',
                         cb: '#btnQuizModeCb', bc: '#btnQuizModeBc' };
   var QUIZ_AGGRO_TXT = { pf: '全下', rfi: '加注', def: '3-bet', v3b: '4-bet',
-                         cb: '下注 75%', bc: '' };
-  var QUIZ_CALL_TXT = { def: '跟注', v3b: '跟注', cb: '下注 33%', bc: '跟注' };
+                         cold: '冷 4-bet', cb: '下注 75%', bc: '' };
+  var QUIZ_CALL_TXT = { def: '跟注', v3b: '跟注', cold: '冷跟', cb: '下注 33%', bc: '跟注' };
   var QUIZ_FOLD_TXT = { cb: '過牌' };
   // 有「中間選項」的題型（三選一）；bc 的中間選項就是跟注（沒有加注）
   function quizHasCall(mode) { return !!QUIZ_CALL_TXT[mode]; }
@@ -1881,6 +1997,9 @@
     if (cur.mode === 'v3b') {
       return Ranges.vs3bFreqMap(cur.spot, cur.bb, v3bCalib(cur.spot))[lbl];
     }
+    if (cur.mode === 'cold') {
+      return Ranges.coldFreqMap(cur.spot, cur.villain, cur.bb)[lbl];
+    }
     return null;
   }
   function freqTxt(mode, fr, hasCall) {
@@ -1920,6 +2039,25 @@
       // SPR 太低就沒有平跟這個選項
       $('#btnQuizCall').hidden = dInfo.mode !== 'normal';
       $('#btnQuizPush').textContent = defAggroLabel(dInfo);
+    } else if (quizMode === 'cold') {
+      var cKey = pickSpot(Ranges.COLD_SPOT_KEYS, Ranges.COLD_SPOTS);
+      var cSpot = Ranges.COLD_SPOTS[cKey];
+      var cbb = pick(QUIZ_DEPTHS);
+      // 一半用該情境真正的 3-bet range，一半隨機抽寬度 —— 練「先判斷對手多寬」
+      var defPct = Ranges.coldVillainPct(cKey);
+      var wide = Math.random() < 0.5;
+      var cPct = wide ? pick([3, 4, 5, 6, 8, 10, 12, 15, 20]) : defPct;
+      var cVillain = wide ? PushFold.topPercentRange(cPct) : Ranges.coldVillainRange(cKey);
+      var cInfo = Ranges.coldStackInfo(cKey, cbb);
+      quizCur = { mode: 'cold', spot: cKey, villain: cVillain, pct: cPct,
+                  bb: cbb, idx: randHandIdx() };
+      $('#quizInfo').textContent = (cSpot.table === 9 ? '9-max' : '6-max') +
+        '，有效籌碼 ' + cInfo.effBb + 'bb。' + cSpot.opener + ' 開 ' + cInfo.openBb +
+        'bb，' + cSpot.tbettor + ' 3-bet 到 ' + cInfo.tbBb + 'bb（他這條線 3-bet 約 ' +
+        cPct.toFixed(1) + '% 的手牌），你在 ' + cSpot.hero + '，還沒投錢。' +
+        (cInfo.mode === 'normal' ? '冷 4-bet、冷跟還是蓋牌？' : '全下還是蓋牌？');
+      $('#btnQuizCall').hidden = cInfo.mode !== 'normal';
+      $('#btnQuizPush').textContent = cInfo.mode === 'normal' ? '冷 4-bet' : '全下';
     } else if (quizMode === 'cb') {
       var cs = Postflop.buildCbetSpot({});
       quizCur = { mode: 'cb', spot: cs };
@@ -2006,6 +2144,25 @@
         PushFold.classLabel(quizCur.idx) + ' 應該' + bestTxt +
         '（跟注要投 ' + dInfo2.toCall + 'bb 進 ' + dInfo2.pot + 'bb 底池，需約 ' +
         Math.round(dInfo2.needEq * 100) + '%）。';
+    } else if (quizCur.mode === 'cold') {
+      var cInfo2 = Ranges.coldStackInfo(quizCur.spot, quizCur.bb);
+      var cSpot2 = Ranges.COLD_SPOTS[quizCur.spot];
+      var cst = Ranges.coldDefense(quizCur.spot, quizCur.villain,
+        quizCur.bb)[PushFold.classLabel(quizCur.idx)] || 'out';
+      var cBest = cst === 'tb' ? 'aggro' : cst === 'in' ? 'call' : 'fold';
+      ok = action === cBest;
+      bestAct = cBest;
+      qKey = 'cold:' + quizCur.spot + ':' + quizCur.pct.toFixed(1) + ':' +
+        quizCur.bb + ':' + quizCur.idx;
+      var cEq = PushFold.equityVsRange(quizCur.idx, [], quizCur.villain).equity;
+      detail = ' ' + PushFold.classLabel(quizCur.idx) + ' 對上 ' + cSpot2.tbettor +
+        ' 的 3-bet range（' + quizCur.pct.toFixed(1) + '%）只有 <b>' +
+        (cEq * 100).toFixed(1) + '%</b> 勝率，你要補 ' + cInfo2.toCall + 'bb 進 ' +
+        cInfo2.pot + 'bb 底池 → 需要 ' + (cInfo2.needEq * 100).toFixed(1) + '%' +
+        (cSpot2.oopPenalty ? '（再加 ' + (cSpot2.oopPenalty * 100).toFixed(1) +
+          ' 點的無位置代價）' : '') + ' → 應該<b>' +
+        (cBest === 'aggro' ? (cInfo2.mode === 'normal' ? '冷 4-bet' : '全下')
+          : cBest === 'call' ? '冷跟' : '蓋牌') + '</b>。';
     } else if (quizCur.mode === 'cb') {
       var cs2 = quizCur.spot, cp = cs2.policy;
       var cBest = cp.action === 'big' ? 'aggro' : cp.action === 'small' ? 'call' : 'fold';
@@ -2069,6 +2226,11 @@
         payload.fold = QUIZ_FOLD_TXT[quizCur.mode] || '蓋牌';
         payload.noAggro = quizCur.mode === 'bc';
         delete payload.idx;
+      } else if (quizCur.mode === 'cold') {
+        var pcInfo = Ranges.coldStackInfo(quizCur.spot, quizCur.bb);
+        payload.aggro = pcInfo.mode === 'normal' ? '冷 4-bet' : '全下';
+        payload.call = '冷跟';
+        payload.noCall = pcInfo.mode !== 'normal';
       } else if (quizCur.mode === 'v3b') {
         var pInfo = Ranges.vs3bStackInfo(quizCur.spot, quizCur.bb);
         payload.aggro = v3bAggroLabel(pInfo);

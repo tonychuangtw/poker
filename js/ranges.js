@@ -690,6 +690,48 @@
     return eq;
   }
 
+  /* ---------- 家族單調化 ----------
+   * 「對子」「同高牌的同花」「同高牌的雜色」各自是一個家族，家族內由強到弱排。
+   * 直接拿分數切門檻會切出破洞：impliedIndex 在 99 以下跳一階（1.0 vs 0.5），
+   * 99 的加成比 TT 大，排序就翻過來，圖上會出現「JJ 跟注、TT 蓋牌、99 跟注」。
+   * 這裡把每個家族的分數由強到弱取累進最小值，任何門檻切下去都保證是連續一段。 */
+  var FAMILIES = (function () {
+    var fams = [], h, k, fam = [];
+    for (h = 0; h < 13; h++) fam.push(h * 13 + h);
+    fams.push(fam);
+    for (h = 0; h < 12; h++) {
+      fam = [];
+      for (k = h + 1; k < 13; k++) fam.push(h * 13 + k);   // 同花
+      fams.push(fam);
+      fam = [];
+      for (k = h + 1; k < 13; k++) fam.push(k * 13 + h);   // 雜色
+      fams.push(fam);
+    }
+    return fams;
+  })();
+
+  function monotoneFamilies(arr) {
+    var out = arr.slice();
+    for (var f = 0; f < FAMILIES.length; f++) {
+      var fam = FAMILIES[f];
+      for (var i = 1; i < fam.length; i++) {
+        if (out[fam[i]] > out[fam[i - 1]]) out[fam[i]] = out[fam[i - 1]];
+      }
+    }
+    return out;
+  }
+
+  /** 選 range 用的 equity（已單調化） */
+  function selectionEq(villainClasses) {
+    return monotoneFamilies(equityMapVs(villainClasses));
+  }
+  /** 選 range 用的「equity + 隱含賠率加成」（已單調化） */
+  function selectionScore(eq, w, f) {
+    var s = new Array(169);
+    for (var i = 0; i < 169; i++) s[i] = eq[i] + w * impliedIndex(i) * f;
+    return monotoneFamilies(s);
+  }
+
   /** 依 score 由高到低取牌，湊滿 targetCombos 時的 score 即為門檻。
    * targetCombos <= 0 回傳 2（不可能達到 → 空集合）；湊不滿回傳 0（全取）。 */
   function thresholdAt(score, targetCombos) {
@@ -708,10 +750,9 @@
   /** 防守圖的校準：3-bet 門檻看 raw equity、續玩門檻看 equity + 100bb 的隱含加成。
    * 回傳 { tb, cont, sprBase }，供 defenseAtDepth 在任何深度重算。 */
   function defenseCalibrate(spotKey, villainClasses, tbCombos, contCombos) {
-    var eq = equityMapVs(villainClasses);
+    var eq = selectionEq(villainClasses);
     var base = defStackInfo(spotKey, VS3B_BASE_BB);
-    var score = new Array(169);
-    for (var i = 0; i < 169; i++) score[i] = eq[i] + IMPLIED_W * impliedIndex(i);
+    var score = selectionScore(eq, IMPLIED_W, 1);
     var tbThr = thresholdAt(eq, tbCombos);
     var contThr = thresholdAt(score, contCombos);
     return { tb: tbThr, cont: contThr, sprBase: base ? base.spr : 0 };
@@ -794,10 +835,9 @@
     var pf = PF(), s = VS3B_SPOTS[spotKey];
     var villain = vs3bVillainRange(spotKey);
     if (!villain) return null;
-    var eq = equityMapVs(villain);
+    var eq = selectionEq(villain);
     var base = vs3bStackInfo(spotKey, VS3B_BASE_BB);
-    var f = 1, score = new Array(169);   // 校準點：100bb 的深度係數定義為 1.0
-    for (var i = 0; i < 169; i++) score[i] = eq[i] + IMPLIED_W * impliedIndex(i) * f;
+    var score = selectionScore(eq, IMPLIED_W, 1);   // 校準點：100bb 的深度係數定義為 1.0
     var fbC = pf.rangeComboTotal(pf.rangeFromNotation(s.fourBet));
     var contC = fbC + pf.rangeComboTotal(pf.rangeFromNotation(s.call));
     return { eq: eq, sprBase: base.spr,
@@ -820,10 +860,10 @@
     // 淺籌碼的 4-bet 等於全下 → 門檻往「底池賠率 − 棄牌權益」靠；深籌碼才回到校準值
     var thr4 = aggroThreshold(calib.fourBet, info.spr, info.needEq, info.effBb);
     var f = impliedFactor(info.spr, calib.sprBase);
+    var score = selectionScore(calib.eq, IMPLIED_W, f);
     for (i = 0; i < 169; i++) {
       if (calib.eq[i] >= thr4) map[pf.classLabel(i)] = 'tb';
-      else if (info.mode === 'normal' &&
-               calib.eq[i] + IMPLIED_W * impliedIndex(i) * f >= calib.cont) {
+      else if (info.mode === 'normal' && score[i] >= calib.cont) {
         map[pf.classLabel(i)] = 'in';
       }
     }
@@ -844,7 +884,7 @@
 
   var rfiEqCache = null;
   function rfiVillainEq() {
-    if (!rfiEqCache) rfiEqCache = equityMapVs(PF().topPercentRange(RFI_VILLAIN_PCT));
+    if (!rfiEqCache) rfiEqCache = selectionEq(PF().topPercentRange(RFI_VILLAIN_PCT));
     return rfiEqCache;
   }
 
@@ -862,9 +902,8 @@
   /** 某深度下的開牌 range：維持 targetCombos 的寬度，組成依深度重排。
    * 回傳 { 手牌標籤: 'in' }，未列出 = 不開。 */
   function rfiAtDepth(targetCombos, bb) {
-    var pf = PF(), eq = rfiVillainEq(), f = rfiDepthFactor(bb);
-    var score = new Array(169), i;
-    for (i = 0; i < 169; i++) score[i] = eq[i] + IMPLIED_W * impliedIndex(i) * f;
+    var pf = PF(), f = rfiDepthFactor(bb);
+    var score = selectionScore(rfiVillainEq(), IMPLIED_W, f), i;
     var thr = thresholdAt(score, targetCombos);
     var map = {};
     for (i = 0; i < 169; i++) if (score[i] >= thr) map[pf.classLabel(i)] = 'in';
@@ -928,15 +967,156 @@
     var pf = PF(), info = defStackInfo(spotKey, bb);
     if (!info) return {};
     var w = typeof impliedW === 'number' ? impliedW : IMPLIED_W;
-    var eq = equityMapVs(villainClasses);
+    var eq = selectionEq(villainClasses);
     var thr3 = aggroThreshold(thresholds.tb, info.spr3, info.needEq3, info.effBb);
     var f = impliedFactor(info.spr, thresholds.sprBase), map = {};
+    var score = selectionScore(eq, w, f);
     for (var i = 0; i < 169; i++) {
       if (eq[i] >= thr3) map[pf.classLabel(i)] = 'tb';
-      else if (info.mode === 'normal' &&
-               eq[i] + w * impliedIndex(i) * f >= thresholds.cont) {
+      else if (info.mode === 'normal' && score[i] >= thresholds.cont) {
         map[pf.classLabel(i)] = 'in';
       }
+    }
+    return map;
+  }
+
+  /* ---------- 冷 4-bet / 冷跟（前面有人開牌、又有人 3-bet，而你還沒行動） ----------
+   * 這是第四種翻前局面，跟另外三張圖都不一樣：
+   *   RFI = 沒人入池／面對開牌 = 一個開牌者／被 3-bet = 你自己開的
+   *   這裡 = 別人開牌、第三家 3-bet，你完全還沒投錢（或只投了盲注）
+   *
+   * 模型刻意只算「對上 3-bet 者」的勝率，理由與代價都寫在這裡：
+   *   開牌者多半會棄牌或被 4-bet 擠掉，而且他的 range 比 3-bet 者弱得多，
+   *   所以主導這個決定的是 3-bet 者。但如果開牌者也跟進變成三人底池，
+   *   你的實際勝率會比這裡算的更低 —— 也就是說這張圖給的是偏樂觀的上限。
+   *
+   * 另外一個重點（也是這張圖一定要有「對手 3-bet 寬度」滑桿的原因）：
+   *   這個決定對「他 3-bet 多寬」極度敏感。例如 BTN 拿 AQo，
+   *   對手 3-bet 3.6% 時你只有 33.5% 勝率、要 40% 才跟得起 → 蓋牌；
+   *   同一手牌對手若 3-bet 到 9%，勝率就變成 47.6% → 變成跟。
+   *   把對手寬度寫死成單一數字，只會讓人在錯的對手身上照抄。
+   */
+
+  var COLD_4BET_EQ = 0.50;      // 冷 4-bet 的價值門檻（現場幾乎不做 bluff 冷 4-bet）
+  var COLD_CALL_PENALTY = 0.03; // 冷跟要比純底池賠率再嚴一點：開牌者還沒表態、後面還可能被再擠
+  /* 每個情境另外有 oopPenalty：翻後位置的代價（equity 點）。
+   * 只看底池賠率的話 SB 反而比 BTN 便宜（少投 0.5bb），會得出「SB 跟得比 BTN 寬」這種
+   * 明顯錯誤的結論 —— 冷跟最重要的成本是「接下來三條街都要無位置面對兩家」，
+   * 所以位置的代價要明寫成資料，不能只靠賠率。 */
+
+  var COLD_SPOTS = {
+    btn_cold9: {
+      name: 'BTN：中位開牌 → 後位 3-bet（9-max）', table: 9,
+      hero: 'BTN', opener: 'MP', tbettor: 'CO',
+      openBb: 2.5, tbBb: 8, heroPost: 0, deadBb: 1.5,
+      villainSpot: 'co_vs_mp9', oopPenalty: 0,
+      note: '你有位置、也還沒投錢，但對手冷 3-bet 一個中位開牌的範圍很窄。位置救不了被壓制的牌。'
+    },
+    sb_cold9: {
+      name: 'SB：中位開牌 → 後位 3-bet（9-max）', table: 9,
+      hero: 'SB', opener: 'MP', tbettor: 'CO',
+      openBb: 2.5, tbBb: 8, heroPost: 0.5, deadBb: 1,
+      villainSpot: 'co_vs_mp9', oopPenalty: 0.06,
+      note: '整局無位置、還有 BB 在後面 —— 這裡是三個位置裡最該直接蓋牌的。'
+    },
+    bb_cold9: {
+      name: 'BB：中位開牌 → 後位 3-bet（9-max）', table: 9,
+      hero: 'BB', opener: 'MP', tbettor: 'CO',
+      openBb: 2.5, tbBb: 8, heroPost: 1, deadBb: 0.5,
+      villainSpot: 'co_vs_mp9', oopPenalty: 0.045,
+      note: '已經投了 1bb 所以價格最好，但翻後整局無位置，而且是對上兩個 range。'
+    },
+    bb_vs_sb_squeeze9: {
+      name: 'BB：中位開牌 → SB squeeze（9-max）', table: 9,
+      hero: 'BB', opener: 'MP', tbettor: 'SB',
+      openBb: 2.5, tbBb: 11, heroPost: 1, deadBb: 0,
+      villainSpot: 'sb_vs_mp9', oopPenalty: 0.045,
+      note: 'SB squeeze 的尺度更大（無位置要收費），但範圍通常也比冷 3-bet 寬一點。'
+    },
+    btn_cold6: {
+      name: 'BTN：前位開牌 → CO 3-bet（6-max）',
+      hero: 'BTN', opener: 'UTG', tbettor: 'CO',
+      openBb: 2.5, tbBb: 8, heroPost: 0, deadBb: 1.5,
+      villainSpot: 'co_vs_utg', oopPenalty: 0,
+      note: '6-max 的 3-bet range 比 9-max 寬，所以續玩範圍也明顯寬一些。'
+    },
+    sb_cold6: {
+      name: 'SB：前位開牌 → CO 3-bet（6-max）',
+      hero: 'SB', opener: 'UTG', tbettor: 'CO',
+      openBb: 2.5, tbBb: 8, heroPost: 0.5, deadBb: 1,
+      villainSpot: 'co_vs_utg', oopPenalty: 0.06,
+      note: '無位置又夾在中間，續玩要比 BTN 收一大截。'
+    },
+    bb_cold6: {
+      name: 'BB：前位開牌 → CO 3-bet（6-max）',
+      hero: 'BB', opener: 'UTG', tbettor: 'CO',
+      openBb: 2.5, tbBb: 8, heroPost: 1, deadBb: 0.5,
+      villainSpot: 'co_vs_utg', oopPenalty: 0.045,
+      note: '價格最好的冷跟位置，但翻後要無位置面對兩家。'
+    },
+    bb_vs_sb_squeeze6: {
+      name: 'BB：前位開牌 → SB squeeze（6-max）',
+      hero: 'BB', opener: 'UTG', tbettor: 'SB',
+      openBb: 2.5, tbBb: 11, heroPost: 1, deadBb: 0,
+      villainSpot: 'sb_vs_utg', oopPenalty: 0.045,
+      note: 'SB squeeze 尺度大，你要用很強的範圍才跟得起。'
+    }
+  };
+  var COLD_SPOT_KEYS = ['btn_cold9', 'sb_cold9', 'bb_cold9', 'bb_vs_sb_squeeze9',
+                        'btn_cold6', 'sb_cold6', 'bb_cold6', 'bb_vs_sb_squeeze6'];
+
+  /** 該情境裡 3-bet 者的預設 3-bet range（沿用防守表，兩張表共用同一份資料） */
+  function coldVillainRange(spotKey) {
+    var s = COLD_SPOTS[spotKey];
+    if (!s || !DEF_SPOTS[s.villainSpot]) return null;
+    return PF().rangeFromNotation(DEF_SPOTS[s.villainSpot].threeBet);
+  }
+  /** 該情境 3-bet 者的預設寬度（% of 1326） */
+  function coldVillainPct(spotKey) {
+    var r = coldVillainRange(spotKey);
+    return r ? PF().rangeComboTotal(r) / 1326 * 100 : 0;
+  }
+
+  /** 某有效籌碼下的局面數字：要補多少、底池、賠率、SPR、模式 */
+  function coldStackInfo(spotKey, bb) {
+    var s = COLD_SPOTS[spotKey];
+    if (!s) return null;
+    var eff = clampBb(bb);
+    var open = Math.min(s.openBb, eff);
+    var tb = Math.min(s.tbBb, eff);
+    var toCall = Math.max(0, tb - s.heroPost);
+    var pot = open + tb + s.deadBb + s.heroPost;   // 你行動前的底池（含你已投的盲注）
+    var spr = (eff - tb) / (pot + toCall);
+    return {
+      effBb: eff, openBb: open, tbBb: tb, toCall: toCall, pot: pot,
+      needEq: toCall > 0 ? toCall / (pot + toCall) : 0,
+      spr: spr,
+      fourBetBb: Math.min(tb * 2.3, eff),
+      fourBetAllIn: tb * 2.3 >= eff,
+      mode: eff <= tb ? 'callAllin' : spr < JAM_SPR ? 'jamOrFold' : 'normal'
+    };
+  }
+
+  /** 某深度 + 某對手 3-bet 寬度下的 map：{ 手牌: 'tb'（冷 4-bet）| 'in'（冷跟） } */
+  function coldDefense(spotKey, villainClasses, bb) {
+    var pf = PF(), info = coldStackInfo(spotKey, bb);
+    if (!info) return {};
+    var eq = selectionEq(villainClasses);
+    var base = coldStackInfo(spotKey, VS3B_BASE_BB);
+    var f = impliedFactor(info.spr, base ? base.spr : 0);
+    var map = {}, i;
+    if (info.mode !== 'normal') {
+      // 籌碼太淺 → 沒有冷跟這個選項，只剩全下或棄
+      for (i = 0; i < 169; i++) {
+        if (eq[i] >= info.needEq) map[pf.classLabel(i)] = 'tb';
+      }
+      return map;
+    }
+    var contThr = info.needEq + COLD_CALL_PENALTY + (COLD_SPOTS[spotKey].oopPenalty || 0);
+    var score = selectionScore(eq, IMPLIED_W, f);
+    for (i = 0; i < 169; i++) {
+      if (eq[i] >= COLD_4BET_EQ) map[pf.classLabel(i)] = 'tb';
+      else if (score[i] >= contThr) map[pf.classLabel(i)] = 'in';
     }
     return map;
   }
@@ -988,9 +1168,8 @@
 
   /** 開牌 RFI 的頻率表：{ 手牌: {aggro, call:0, fold} } */
   function rfiFreqMap(targetCombos, bb) {
-    var pf = PF(), eq = rfiVillainEq(), f = rfiDepthFactor(bb);
-    var score = new Array(169), i;
-    for (i = 0; i < 169; i++) score[i] = eq[i] + IMPLIED_W * impliedIndex(i) * f;
+    var pf = PF(), f = rfiDepthFactor(bb);
+    var score = selectionScore(rfiVillainEq(), IMPLIED_W, f), i;
     var thr = thresholdAt(score, targetCombos);
     var map = {};
     for (i = 0; i < 169; i++) {
@@ -1003,13 +1182,38 @@
   function defFreqMap(spotKey, villainClasses, thresholds, bb) {
     var pf = PF(), info = defStackInfo(spotKey, bb);
     if (!info) return {};
-    var eq = equityMapVs(villainClasses);
+    var eq = selectionEq(villainClasses);
     var thr3 = aggroThreshold(thresholds.tb, info.spr3, info.needEq3, info.effBb);
     var f = impliedFactor(info.spr, thresholds.sprBase), map = {};
+    var score = selectionScore(eq, IMPLIED_W, f);
     for (var i = 0; i < 169; i++) {
       var a = mixRamp(eq[i], thr3);
-      var cont = info.mode === 'normal'
-        ? mixRamp(eq[i] + IMPLIED_W * impliedIndex(i) * f, thresholds.cont) : a;
+      var cont = info.mode === 'normal' ? mixRamp(score[i], thresholds.cont) : a;
+      map[pf.classLabel(i)] = freqSplit(a, cont);
+    }
+    return map;
+  }
+
+  /** 冷 4-bet 的頻率表：{ 手牌: {aggro（冷 4-bet）, call, fold} } */
+  function coldFreqMap(spotKey, villainClasses, bb) {
+    var pf = PF(), info = coldStackInfo(spotKey, bb);
+    if (!info) return {};
+    var eq = selectionEq(villainClasses);
+    var base = coldStackInfo(spotKey, VS3B_BASE_BB);
+    var f = impliedFactor(info.spr, base ? base.spr : 0);
+    var map = {}, i, a, cont;
+    if (info.mode !== 'normal') {
+      for (i = 0; i < 169; i++) {
+        a = mixRamp(eq[i], info.needEq);
+        map[pf.classLabel(i)] = freqSplit(a, a);
+      }
+      return map;
+    }
+    var contThr = info.needEq + COLD_CALL_PENALTY + (COLD_SPOTS[spotKey].oopPenalty || 0);
+    var cscore = selectionScore(eq, IMPLIED_W, f);
+    for (i = 0; i < 169; i++) {
+      a = mixRamp(eq[i], COLD_4BET_EQ);
+      cont = mixRamp(cscore[i], contThr);
       map[pf.classLabel(i)] = freqSplit(a, cont);
     }
     return map;
@@ -1029,10 +1233,10 @@
     }
     var thr4 = aggroThreshold(calib.fourBet, info.spr, info.needEq, info.effBb);
     var f = impliedFactor(info.spr, calib.sprBase);
+    var vscore = selectionScore(calib.eq, IMPLIED_W, f);
     for (i = 0; i < 169; i++) {
       a = mixRamp(calib.eq[i], thr4);
-      cont = info.mode === 'normal'
-        ? mixRamp(calib.eq[i] + IMPLIED_W * impliedIndex(i) * f, calib.cont) : a;
+      cont = info.mode === 'normal' ? mixRamp(vscore[i], calib.cont) : a;
       map[pf.classLabel(i)] = freqSplit(a, cont);
     }
     return map;
@@ -1043,6 +1247,10 @@
     mixRamp: mixRamp, freqSplit: freqSplit, mixBest: mixBest,
     mixAccept: mixAccept, mixTolerates: mixTolerates, isMixed: isMixed,
     rfiFreqMap: rfiFreqMap, defFreqMap: defFreqMap, vs3bFreqMap: vs3bFreqMap,
+    COLD_SPOTS: COLD_SPOTS, COLD_SPOT_KEYS: COLD_SPOT_KEYS,
+    COLD_4BET_EQ: COLD_4BET_EQ, COLD_CALL_PENALTY: COLD_CALL_PENALTY,
+    coldVillainRange: coldVillainRange, coldVillainPct: coldVillainPct,
+    coldStackInfo: coldStackInfo, coldDefense: coldDefense, coldFreqMap: coldFreqMap,
     DEF_SPOTS: DEF_SPOTS, DEF_SPOT_KEYS: DEF_SPOT_KEYS,
     VS3B_BASE_BB: VS3B_BASE_BB, VS3B_MIN_BB: VS3B_MIN_BB, VS3B_MAX_BB: VS3B_MAX_BB,
     RFI_JAM_BB: RFI_JAM_BB, rfiStackInfo: rfiStackInfo, rfiAtDepth: rfiAtDepth,

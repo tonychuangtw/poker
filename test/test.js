@@ -1345,6 +1345,117 @@ var relapse = TRAINING.addMistake([b5], { kind: 'pf', key: 'pf:10:5', ts: 9 }, 1
 assert(relapse.length === 1 && relapse[0].box === 1 && relapse[0].due === '2026-08-01',
   'addMistake on an existing entry resets it to box 1');
 
+// ---------- 5d-3. 冷 4-bet / 冷跟（前面開牌 + 有人 3-bet） ----------
+console.log('--- Cold 4-bet / cold call ---');
+
+assert(Ranges.COLD_SPOT_KEYS.length === 8 &&
+  Object.keys(Ranges.COLD_SPOTS).length === 8, '8 cold-4bet spots, keys in sync');
+assert(Ranges.COLD_SPOT_KEYS.every(function (k) {
+  var s = Ranges.COLD_SPOTS[k];
+  return s && Ranges.DEF_SPOTS[s.villainSpot];
+}), 'every cold spot points at a real 3-bettor defence spot');
+
+// 底池賠率算式：補的錢 = 3-bet 額 − 自己已投的盲注；底池含自己的盲注
+Ranges.COLD_SPOT_KEYS.forEach(function (key) {
+  var s = Ranges.COLD_SPOTS[key];
+  var info = Ranges.coldStackInfo(key, 100);
+  assert(Math.abs(info.toCall - (s.tbBb - s.heroPost)) < 1e-9 &&
+    Math.abs(info.pot - (s.openBb + s.tbBb + s.deadBb + s.heroPost)) < 1e-9 &&
+    Math.abs(info.needEq - info.toCall / (info.pot + info.toCall)) < 1e-9,
+    key + ': pot odds arithmetic');
+});
+
+function coldSets(key, villain, bb) {
+  var map = Ranges.coldDefense(key, villain, bb);
+  var tb = [], call = [];
+  for (var i = 0; i < 169; i++) {
+    var st = map[PushFold.classLabel(i)];
+    if (st === 'tb') tb.push(i);
+    else if (st === 'in') call.push(i);
+  }
+  return { tb: tb, call: call,
+           total: PushFold.rangeComboTotal(tb) + PushFold.rangeComboTotal(call) };
+}
+
+// Tony 問的那一手：BTN 拿 AQo，MP 開牌、CO 3-bet
+var AQO = labelIdx('AQo');
+var btnDefault = coldSets('btn_cold9', Ranges.coldVillainRange('btn_cold9'), 100);
+assert(btnDefault.tb.indexOf(AQO) < 0 && btnDefault.call.indexOf(AQO) < 0,
+  'AQo folds to a 3.6% cold 3-bet on the BTN');
+assert(btnDefault.tb.indexOf(labelIdx('AA')) >= 0 && btnDefault.tb.indexOf(labelIdx('QQ')) >= 0,
+  'AA/QQ cold 4-bet at the default width');
+assert(btnDefault.call.indexOf(labelIdx('22')) >= 0,
+  'small pairs cold-call at 100bb (set mining)');
+// 對手寬到一定程度 AQo 才續玩 —— 這就是滑桿存在的理由
+var aqoWide = coldSets('btn_cold9', PushFold.topPercentRange(12), 100);
+assert(aqoWide.tb.indexOf(AQO) >= 0 || aqoWide.call.indexOf(AQO) >= 0,
+  'AQo continues once the 3-bettor is wide (12%)');
+
+// 對手越寬 → 續玩越寬（單調）
+var lastTot = -1, monoOk = true;
+[3, 5, 7, 9, 12, 15, 20].forEach(function (w) {
+  var t = coldSets('btn_cold9', PushFold.topPercentRange(w), 100).total;
+  if (t < lastTot) monoOk = false;
+  lastTot = t;
+});
+assert(monoOk, 'a wider 3-bettor is always continued against wider');
+
+// 籌碼越淺 → 冷跟越窄（小對子的 set mining 價值消失）
+var deep = coldSets('btn_cold9', Ranges.coldVillainRange('btn_cold9'), 100);
+var mid = coldSets('btn_cold9', Ranges.coldVillainRange('btn_cold9'), 40);
+assert(PushFold.rangeComboTotal(mid.call) < PushFold.rangeComboTotal(deep.call),
+  'shallower stacks cold-call tighter');
+assert(Ranges.coldStackInfo('btn_cold9', 15).mode !== 'normal' &&
+  coldSets('btn_cold9', Ranges.coldVillainRange('btn_cold9'), 15).call.length === 0,
+  'at 15bb there is no cold-call option, only jam or fold');
+
+// 位置：BTN 續玩最寬、SB 最窄（純看底池賠率會得出相反結論，所以 oopPenalty 是必要的）
+var vil9 = Ranges.coldVillainRange('btn_cold9');
+var btnTot = coldSets('btn_cold9', vil9, 100).total;
+var bbTot = coldSets('bb_cold9', vil9, 100).total;
+var sbTot = coldSets('sb_cold9', vil9, 100).total;
+assert(btnTot > bbTot && bbTot >= sbTot,
+  'in position continues widest, SB tightest (BTN ' + btnTot + ' > BB ' + bbTot +
+  ' >= SB ' + sbTot + ')');
+assert(Ranges.coldStackInfo('sb_cold9', 100).needEq <
+  Ranges.coldStackInfo('btn_cold9', 100).needEq,
+  'SB gets a better raw price than BTN — so position cannot come from pot odds alone');
+
+// 對子不可有破洞（家族單調化）
+Ranges.COLD_SPOT_KEYS.forEach(function (key) {
+  [100, 60, 40].forEach(function (bb) {
+    var r = coldSets(key, Ranges.coldVillainRange(key), bb);
+    var inSet = {};
+    r.tb.concat(r.call).forEach(function (i) { inSet[i] = true; });
+    var pairs = [];
+    for (var p = 0; p < 13; p++) if (inSet[p * 13 + p]) pairs.push(p);
+    var ok2 = pairs.length === 0 ||
+      (pairs[0] === 0 && pairs[pairs.length - 1] - pairs[0] === pairs.length - 1);
+    assert(ok2, key + '@' + bb + 'bb: defended pairs are a gapless top run');
+  });
+});
+
+// 頻率表
+var coldFreq = Ranges.coldFreqMap('btn_cold9', Ranges.coldVillainRange('btn_cold9'), 100);
+assert(Object.keys(coldFreq).length === 169, 'coldFreqMap covers all 169 hands');
+assert(coldFreq.AA.aggro === 1 && coldFreq['72o'].fold === 1, 'AA cold 4-bets, 72o folds');
+assert(Math.abs(coldFreq.AQo.aggro + coldFreq.AQo.call + coldFreq.AQo.fold - 1) < 1e-9,
+  'cold frequencies sum to 1');
+
+// 家族單調化不是只用在冷 4-bet：另外三張圖的動態試算也要沒有破洞
+var defHoleCheck = Ranges.defenseAtDepth('bb_vs_btn',
+  PushFold.topPercentRange(Ranges.openerOpenPct('bb_vs_btn')),
+  Ranges.defenseCalibrate('bb_vs_btn',
+    PushFold.topPercentRange(Ranges.openerOpenPct('bb_vs_btn')), 150, 550), 45);
+var dPairs = [];
+for (var dp = 0; dp < 13; dp++) {
+  if (defHoleCheck[PushFold.classLabel(dp * 13 + dp)]) dPairs.push(dp);
+}
+assert(dPairs.length === 0 ||
+  (dPairs[0] === 0 && dPairs[dPairs.length - 1] - dPairs[0] === dPairs.length - 1),
+  'defenceAtDepth also produces gapless pairs (' +
+  dPairs.map(function (r) { return PushFold.classLabel(r * 13 + r); }).join(',') + ')');
+
 // ---------- 6b. Postflop ----------
 console.log('--- Postflop ---');
 var Postflop = require('../js/postflop.js');

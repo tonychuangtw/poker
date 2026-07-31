@@ -178,8 +178,8 @@
     streak: 'poker.streak'
   };
   var KIND_NAMES = { pf: 'Push/Fold', rfi: '開牌 RFI', def: '面對開牌', v3b: '被 3-bet',
-                     cb: '翻後 c-bet', bc: '河牌接 bluff' };
-  var KINDS = ['pf', 'rfi', 'def', 'v3b', 'cb', 'bc'];
+                     cold: '冷 4-bet', cb: '翻後 c-bet', bc: '河牌接 bluff' };
+  var KINDS = ['pf', 'rfi', 'def', 'v3b', 'cold', 'cb', 'bc'];
   // 每日任務只看這三種基本測驗（其餘為進階題，不加重每天的量）
   var DAILY_KINDS = ['pf', 'rfi', 'def'];
   var DAILY_TARGET = 10;
@@ -361,11 +361,13 @@
 
   function aggroLabel(kind) {
     return kind === 'pf' ? '全下' : kind === 'rfi' ? '加注'
-      : kind === 'v3b' ? '4-bet' : kind === 'cb' ? '下注 75%' : '3-bet';
+      : kind === 'v3b' ? '4-bet' : kind === 'cold' ? '冷 4-bet'
+      : kind === 'cb' ? '下注 75%' : '3-bet';
   }
   /** 有「中間選項」的測驗種類（三選一），其餘為二選一 */
   function hasCallOption(kind) {
-    return kind === 'def' || kind === 'v3b' || kind === 'cb' || kind === 'bc';
+    return kind === 'def' || kind === 'v3b' || kind === 'cold' ||
+      kind === 'cb' || kind === 'bc';
   }
   function actionTxt(m, act) {
     return act === 'aggro' ? (m.aggro || aggroLabel(m.kind))
