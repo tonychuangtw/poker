@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-01",
+  "updated": "2026-08-03",
   "note": "每日自動更新（來源：各巡迴賽官網與撲克媒體公開行程），區間為即日起約 4 個月",
   "events": [
     {
@@ -289,6 +289,17 @@
       "url": "https://www.worldpokertour.com/press-release/wpt-prime-to-make-texas-debut-at-the-lodge-with-1-million-guaranteed-championship"
     },
     {
+      "series": "Harbour Poker Cup II 2026",
+      "region": "亞洲",
+      "country": "台灣",
+      "city": "台北",
+      "venue": "CTP Asia Poker Arena",
+      "start": "2026-09-30",
+      "end": "2026-10-04",
+      "note": "Harbour Poker Cup 台北站系列賽，為期 5 天的中額買入賽事；官方頁面截至 2026-08-03 查證，完整賽程與保證獎金金額尚待官方公布",
+      "url": "https://somuchpoker.com/events-calendar/tour/harbour-poker-cup"
+    },
+    {
       "series": "APT Jeju 2026",
       "region": "亞洲",
       "country": "韓國",
@@ -443,6 +454,17 @@
       "url": "https://www.pokerlistings.com/news/ept-prague-returns-to-the-2026-pokerstars-calendar"
     },
     {
+      "series": "Battle of Malta Autumn 2026",
+      "region": "歐洲",
+      "country": "馬爾他",
+      "city": "聖朱利安斯",
+      "venue": "Casino Malta",
+      "start": "2026-10-27",
+      "end": "2026-11-04",
+      "note": "Battle of Malta 年度秋季版，主賽事買入 €600，保證獎金 €2,000,000，為賽事歷史中規模最大的賽事之一；全系列賽事眾多，吸引全球玩家參賽",
+      "url": "https://casinomalta.com.mt/campaign/battle-of-malta-2026/"
+    },
+    {
       "series": "WSOP Circuit — Playground (Kahnawake)",
       "region": "北美",
       "country": "加拿大",
@@ -573,6 +595,17 @@
       "end": "2026-11-29",
       "note": "2026-07-24 查證新發現，Grosvenor UK Poker Tour（GUKPT）年度總決賽站，為 2026 年 GUKPT 完整賽季（含 7 月 Goliath／Coventry、8 月新增站 Glasgow、9 月 Luton、9-10 月 Leeds、10-11 月 Blackpool 等分站）的壓軸賽事；本次查詢區間僅涵蓋開賽首 9 天（11/19–11/27），逐場賽程與保證獎金截至查證時尚未見官方完整公布，建議持續追蹤",
       "url": "https://www.gukpt.com/"
+    },
+    {
+      "series": "EPT Prague 2026",
+      "region": "歐洲",
+      "country": "捷克",
+      "city": "布拉格",
+      "venue": "King's Casino Prague（Hilton Prague）",
+      "start": "2026-12-02",
+      "end": "2026-12-13",
+      "note": "EPT 2026 年度壓軸賽事，PokerStars Open 前置賽事（€1,650，12/2–12/7），EPT Main Event 主賽事買入 €5,300（詳細日期待進一步確認），另設 PokerStars Cup（€825）、High Roller（€2,700）等賽事；官方完整賽程正在公布中，建議持續追蹤官網更新",
+      "url": "https://www.pokerstarslive.com/ept/prague/"
     }
   ]
 }
