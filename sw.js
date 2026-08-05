@@ -1,6 +1,6 @@
 /* 撲克工具箱 service worker — app shell 快取 */
 'use strict';
-var CACHE = 'poker-v20';
+var CACHE = 'poker-v21';
 var ASSETS = [
   './index.html',
   './css/style.css',

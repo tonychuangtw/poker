@@ -2774,6 +2774,12 @@
   }
   $('#evRegion').addEventListener('change', renderEvents);
   $('#evCountry').addEventListener('change', renderEvents);
+  /* 賽事卡片預設收合兩行說明，點卡片展開全文（點連結不算） */
+  $('#evList').addEventListener('click', function (e) {
+    if (e.target.closest('a')) return;
+    var item = e.target.closest('.ev-item');
+    if (item) item.classList.toggle('open');
+  });
   loadEvents();
 
   /* ================= PWA ================= */
