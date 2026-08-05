@@ -57,7 +57,7 @@ body::before {
   display: flex; align-items: center;
 }
 .app-header h1 {
-  margin: 0; font-size: 1.28rem; letter-spacing: .04em;
+  margin: 0 8px 0 0; font-size: 1.08rem; letter-spacing: .03em; line-height: 1.3;
   font-weight: 800;
   background: linear-gradient(120deg, #f4e3b2, var(--accent2) 40%, var(--accent) 70%, #b8934c);
   -webkit-background-clip: text; background-clip: text;
@@ -101,7 +101,8 @@ body::before {
   letter-spacing: .02em; cursor: pointer; white-space: nowrap;
   transition: color .18s;
 }
-.tab-btn svg { width: 23px; height: 23px; display: block; }
+.tab-btn svg { width: 23px; height: 23px; display: block; flex-shrink: 0; }
+.tab-btn span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .tab-btn:hover { color: var(--accent2); }
 .tab-btn.active { color: var(--accent2); font-weight: 600; }
 .tab-btn.active svg { filter: drop-shadow(0 0 6px rgba(212, 175, 106, .45)); }

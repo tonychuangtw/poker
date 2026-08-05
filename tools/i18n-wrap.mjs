@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const CJK = /[　-ヿ一-鿿＀-￯]/;
 const files = ['app.js', 'training.js', 'pushfold.js', 'postflop.js', 'hands.js',
-  'tracker-stats.js', 'ranges.js', 'native.js', 'equity.js', 'evaluator.js', 'icm.js'];
+  'tracker-stats.js', 'ranges.js', 'native.js', 'equity.js', 'evaluator.js', 'icm.js', 'sync.js'];
 
 for (const f of files) {
   const p = join(root, 'js', f);

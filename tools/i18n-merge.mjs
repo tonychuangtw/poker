@@ -12,10 +12,14 @@ const srcDir = srcIdx > -1 ? process.argv[srcIdx + 1] : join(root, 'tools', 'i18
 const canonical = new Set(JSON.parse(readFileSync(join(root, 'tools', 'i18n-keys.json'), 'utf8')));
 const geo = JSON.parse(readFileSync(join(root, 'tools', 'i18n-geo.json'), 'utf8'));
 
+const LANGS = ['zh-CN', 'en', 'ja', 'ko', 'es', 'pt-BR', 'fr', 'de', 'ru', 'vi', 'th'];
 const dict = {};
-for (const f of readdirSync(srcDir).filter((f) => f.endsWith('.json')).sort()) {
-  const lang = f.replace(/\.json$/, '');
-  const table = JSON.parse(readFileSync(join(srcDir, f), 'utf8'));
+for (const lang of LANGS) {
+  const table = JSON.parse(readFileSync(join(srcDir, lang + '.json'), 'utf8'));
+  /* 修補 overlay（fix-<lang>.json）優先蓋過第一輪結果 */
+  try {
+    Object.assign(table, JSON.parse(readFileSync(join(srcDir, 'fix-' + lang + '.json'), 'utf8')));
+  } catch (e) {}
   let missing = 0, extra = 0;
   for (const k of canonical) if (table[k] === undefined) missing++;
   for (const k of Object.keys(table)) if (!canonical.has(k)) extra++;

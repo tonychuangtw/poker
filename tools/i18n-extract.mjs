@@ -24,7 +24,7 @@ if (title) keys.add(title[1]);
 
 /* ---- JS ---- */
 const files = ['app.js', 'training.js', 'pushfold.js', 'postflop.js', 'hands.js',
-  'tracker-stats.js', 'ranges.js', 'native.js', 'equity.js', 'evaluator.js', 'icm.js'];
+  'tracker-stats.js', 'ranges.js', 'native.js', 'equity.js', 'evaluator.js', 'icm.js', 'sync.js'];
 for (const f of files) {
   const src = readFileSync(join(root, 'js', f), 'utf8');
   for (const m of src.matchAll(/'((?:[^'\\\n]|\\.)*)'|"((?:[^"\\\n]|\\.)*)"/g)) {
