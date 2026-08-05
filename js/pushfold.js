@@ -88,23 +88,23 @@
    * 接受: "AA" / "A5s" / "KQo"（類別）或 "AhKs"（指定兩張牌）
    * 類別輸入時取代表 combo（同花→兩張黑桃；對子/雜色→黑桃+紅心）供 blocker 計數。 */
   function parseHand(str) {
-    if (typeof str !== 'string') throw new Error('請輸入手牌');
+    if (typeof str !== 'string') throw new Error(t('請輸入手牌'));
     var s = str.trim();
     var m4 = /^([2-9TJQKA])([SHDC])([2-9TJQKA])([SHDC])$/i.exec(s);
     if (m4) {
       var c1 = rankVal(m4[1]) << 2 | SUIT_CHARS.indexOf(m4[2].toLowerCase());
       var c2 = rankVal(m4[3]) << 2 | SUIT_CHARS.indexOf(m4[4].toLowerCase());
-      if (c1 === c2) throw new Error('兩張牌不能相同');
+      if (c1 === c2) throw new Error(t('兩張牌不能相同'));
       return { classIdx: classIndexFromCards(c1, c2), cards: [c1, c2], label: classLabel(classIndexFromCards(c1, c2)) };
     }
     var mC = /^([2-9TJQKA])([2-9TJQKA])([SO])?$/i.exec(s);
-    if (!mC) throw new Error('手牌格式錯誤（例：A5s、TT、AKo 或 AhKs）');
+    if (!mC) throw new Error(t('手牌格式錯誤（例：A5s、TT、AKo 或 AhKs）'));
     var hi = rankVal(mC[1]), lo = rankVal(mC[2]);
-    if (hi < lo) { var t = hi; hi = lo; lo = t; }
+    if (hi < lo) { var sw = hi; hi = lo; lo = sw; }
     var suf = mC[3] ? mC[3].toLowerCase() : '';
     var idx, cards;
     if (hi === lo) {
-      if (suf === 's') throw new Error('對子沒有同花');
+      if (suf === 's') throw new Error(t('對子沒有同花'));
       idx = (14 - hi) * 13 + (14 - hi);
       cards = [(hi << 2) | 3, (hi << 2) | 2]; // 黑桃 + 紅心
     } else if (suf === 's') {
@@ -114,7 +114,7 @@
       idx = (14 - lo) * 13 + (14 - hi);
       cards = [(hi << 2) | 3, (lo << 2) | 2];
     } else {
-      throw new Error('非對子請註明 s（同花）或 o（雜色），例：A5s / AKo');
+      throw new Error(t('非對子請註明 s（同花）或 o（雜色），例：A5s / AKo'));
     }
     return { classIdx: idx, cards: cards, label: classLabel(idx) };
   }
@@ -186,8 +186,8 @@
     var stacks = opts.stacks, payouts = opts.payouts;
     var h = opts.heroIdx, cl = opts.callerIdx;
     var n = stacks.length;
-    if (h === cl) throw new Error('Hero 與跟注者不能是同一人');
-    if (n < 2) throw new Error('至少 2 位玩家');
+    if (h === cl) throw new Error(t('Hero 與跟注者不能是同一人'));
+    if (n < 2) throw new Error(t('至少 2 位玩家'));
     var sb = opts.sb || 0, bb = opts.bb || 0, ante = opts.ante || 0;
     var hand = parseHand(opts.hand);
 
@@ -255,7 +255,7 @@
 
   /** 兩組類別 index 的翻前 range vs range（169×169 表加權，忽略 blocker） */
   function rangeVsRangeClasses(A, B) {
-    if (!A.length || !B.length) throw new Error('range 是空的');
+    if (!A.length || !B.length) throw new Error(t('range 是空的'));
     var wSum = 0, eqSum = 0;
     for (var i = 0; i < A.length; i++) {
       var a = A[i], ca = comboCount(a);
@@ -289,17 +289,17 @@
         var sufA = md[3] ? md[3].toLowerCase() : '',
             sufB = md[6] ? md[6].toLowerCase() : '';
         if (a1 === a2 && b1 === b2) { // 對子區間
-          if (sufA || sufB) throw new Error('range 記號錯誤：' + tok);
+          if (sufA || sufB) throw new Error(t('range 記號錯誤：') + tok);
           var pHi = Math.min(a1, b1), pLo = Math.max(a1, b1);
           for (var pp = pHi; pp <= pLo; pp++) out[pp * 13 + pp] = true;
           return;
         }
         if (a1 === a2 || b1 === b2 || !sufA || sufA !== sufB)
-          throw new Error('range 記號錯誤：' + tok);
+          throw new Error(t('range 記號錯誤：') + tok);
         // 正規化：高牌在前
         if (a1 > a2) { var tA = a1; a1 = a2; a2 = tA; }
         if (b1 > b2) { var tB = b1; b1 = b2; b2 = tB; }
-        if (a1 !== b1) throw new Error('range 記號錯誤（高牌需相同）：' + tok);
+        if (a1 !== b1) throw new Error(t('range 記號錯誤（高牌需相同）：') + tok);
         var suitedD = sufA === 's';
         var kHi = Math.min(a2, b2), kLo = Math.max(a2, b2);
         for (var kk = kHi; kk <= kLo; kk++) {
@@ -308,7 +308,7 @@
         return;
       }
       var m = /^([2-9TJQKA])([2-9TJQKA])(s|o)?(\+)?$/i.exec(tok);
-      if (!m) throw new Error('range 記號錯誤：' + tok);
+      if (!m) throw new Error(t('range 記號錯誤：') + tok);
       var r1 = RANK_CHARS.indexOf(m[1].toUpperCase());
       var r2 = RANK_CHARS.indexOf(m[2].toUpperCase());
       var suited = m[3] ? m[3].toLowerCase() === 's' : null;
@@ -318,7 +318,7 @@
         for (var p = top; p <= r1; p++) out[p * 13 + p] = true;
         return;
       }
-      if (suited === null) throw new Error('非對子需註明 s/o：' + tok);
+      if (suited === null) throw new Error(t('非對子需註明 s/o：') + tok);
       if (r1 > r2) { var tmp = r1; r1 = r2; r2 = tmp; } // r1 = 高牌
       var lo = plus ? r1 + 1 : r2; // "+" = kicker 從 r2 升到 r1 下一張
       for (var k = lo; k <= r2; k++) {

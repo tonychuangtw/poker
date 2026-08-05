@@ -23,6 +23,7 @@
  *   4. 隱含賠率權重調高：多人底池讓同花連張／小對子更值錢、雜色邊緣牌更差
  */
 'use strict';
+global.t = global.t || function (s) { return s; }; /* i18n stub for Node */
 var path = require('path');
 var Ranges = require(path.join(__dirname, '../js/ranges.js'));
 var PushFold = require(path.join(__dirname, '../js/pushfold.js'));

@@ -55,14 +55,14 @@
       pre3.setDate(pre3.getDate() - 3);
       var place = (ev.country || '') + (ev.city ? ' · ' + ev.city : '');
       [
-        { at: pre3, id: base * 2, body: ev.series + ' 將於 3 天後（' + ev.start + '）開賽 ｜ ' + place },
-        { at: startDay, id: base * 2 + 1, body: ev.series + ' 今天開賽 ｜ ' + place }
+        { at: pre3, id: base * 2, body: ev.series + t(' 將於 3 天後（') + ev.start + t('）開賽 ｜ ') + place },
+        { at: startDay, id: base * 2 + 1, body: ev.series + t(' 今天開賽 ｜ ') + place }
       ].forEach(function (n) {
-        var t = n.at.getTime();
-        if (t <= now || t > horizon) return;
+        var ts = n.at.getTime();
+        if (ts <= now || ts > horizon) return;
         list.push({
           id: n.id,
-          title: '♠ 撲克賽事提醒',
+          title: t('♠ 撲克賽事提醒'),
           body: n.body,
           schedule: { at: n.at },
           sound: 'default'
@@ -99,7 +99,7 @@
   }
 
   function setStatus(el, on) {
-    el.textContent = on ? '已開啟：開賽前 3 天與當天上午提醒' : '';
+    el.textContent = on ? t('已開啟：開賽前 3 天與當天上午提醒') : '';
   }
 
   /* 在賽事分頁插入提醒開關（只有原生殼看得到） */
@@ -113,7 +113,7 @@
     cb.type = 'checkbox';
     cb.checked = localStorage.getItem(PREF_KEY) === '1';
     var txt = document.createElement('span');
-    txt.textContent = '📅 開賽提醒通知';
+    txt.textContent = t('📅 開賽提醒通知');
     var status = document.createElement('small');
     wrap.appendChild(cb); wrap.appendChild(txt); wrap.appendChild(status);
     panel.insertBefore(wrap, anchor);
@@ -129,7 +129,7 @@
             setStatus(status, true);
           } else {
             cb.checked = false;
-            status.textContent = '通知權限被拒，請到 iOS 設定開啟';
+            status.textContent = t('通知權限被拒，請到 iOS 設定開啟');
           }
         }).catch(function () { cb.checked = false; });
       } else {

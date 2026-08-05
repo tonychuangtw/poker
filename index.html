@@ -363,6 +363,12 @@
 
 <!-- ============ Tab 4: Push/Fold Nash ============ -->
 <section id="tab-nash" class="tab-panel">
+  <div class="btn-row seg-row" id="chartSeg">
+    <button class="btn active-role" data-group="pre">翻前 range</button>
+    <button class="btn" data-group="post">翻後・速查</button>
+  </div>
+
+  <div id="chartGroupPre">
   <div class="card">
     <h2>Nash 均衡圖表（HU push/fold）</h2>
     <p class="hint">單挑（SB 只能全下或蓋牌、BB 只能跟注或蓋牌）的 chip-EV Nash 均衡，
@@ -498,7 +504,9 @@
     <p class="hint" id="coldNote"></p>
     <div class="nash-grid-wrap"><div id="coldGrid" class="nash-grid"></div></div>
   </div>
+  </div>
 
+  <div id="chartGroupPost" hidden>
   <div class="card">
     <h2>翻後 c-bet 速查</h2>
     <p class="hint">輸入翻牌，看牌面質地、建議的持續下注頻率與尺度，以及你手上這手牌該怎麼打。
@@ -551,6 +559,17 @@
       <table class="stats-table" id="oddsTable"></table>
     </div>
   </div>
+  </div>
+
+</section>
+
+<!-- ============ Tab 4b: 訓練 ============ -->
+<section id="tab-train" class="tab-panel">
+  <div class="card">
+    <h2>今日任務</h2>
+    <div id="trainTasks"></div>
+    <p class="hint" id="trainStreak"></p>
+  </div>
 
   <div class="card">
     <h2>訓練測驗</h2>
@@ -596,19 +615,10 @@
       </div>
     </div>
   </div>
-</section>
-
-<!-- ============ Tab 4b: 訓練 ============ -->
-<section id="tab-train" class="tab-panel">
-  <div class="card">
-    <h2>今日任務</h2>
-    <div id="trainTasks"></div>
-    <p class="hint" id="trainStreak"></p>
-  </div>
 
   <div class="card">
     <h2>熟練度（滾動 30 題）</h2>
-    <p class="hint">在「圖表」分頁作答測驗即可累積；最近 30 題正確率 ≥ 90% 獲得 🏆。
+    <p class="hint">在本分頁作答測驗即可累積；最近 30 題正確率 ≥ 90% 獲得 🏆。
       六種題型各自獨立計算。</p>
     <div id="masteryBars" class="bar-chart"></div>
   </div>
@@ -729,6 +739,8 @@
 
 <footer class="app-footer">純前端計算，資料存在此裝置的瀏覽器；右上角 Google 登入可跨裝置同步。</footer>
 
+<script src="js/i18n-dict.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/evaluator.js"></script>
 <script src="js/equity.js"></script>
 <script src="js/icm.js"></script>

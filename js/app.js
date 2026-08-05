@@ -5,7 +5,7 @@
   var $ = function (sel) { return document.querySelector(sel); };
   var $$ = function (sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); };
 
-  var TYPE_NAMES = { cash: '現金局', mtt: 'MTT', sng: 'SNG' };
+  var TYPE_NAMES = { cash: t('現金局'), mtt: 'MTT', sng: 'SNG' };
 
   /* ================= Tabs ================= */
   $('#tabNav').addEventListener('click', function (e) {
@@ -16,6 +16,15 @@
       p.classList.toggle('active', p.id === 'tab-' + btn.dataset.tab);
     });
     if (btn.dataset.tab === 'tracker') drawChart(); // canvas 需在可見時重繪
+  });
+
+  /* 圖表分頁的子分段：翻前 range / 翻後・速查 */
+  $('#chartSeg').addEventListener('click', function (e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    $$('#chartSeg button').forEach(function (b) { b.classList.toggle('active-role', b === btn); });
+    $('#chartGroupPre').hidden = btn.dataset.group !== 'pre';
+    $('#chartGroupPost').hidden = btn.dataset.group !== 'post';
   });
 
   /* ================= Tab 1: 記帳 ================= */
@@ -80,7 +89,7 @@
         return b.date < a.date ? -1 : b.date > a.date ? 1 : (b.id < a.id ? -1 : 1);
       });
     if (!shown.length) {
-      ul.innerHTML = '<li class="empty-msg">尚無紀錄</li>';
+      ul.innerHTML = t('<li class="empty-msg">尚無紀錄</li>');
       return;
     }
     shown.forEach(function (r) {
@@ -96,13 +105,13 @@
       badge.textContent = TYPE_NAMES[r.type] || r.type;
       title.appendChild(badge);
       title.appendChild(document.createTextNode(r.date + (r.venue ? ' · ' + r.venue : '') +
-        (r.tag ? ' · ＃' + r.tag : '')));
+        (r.tag ? t(' · ＃') + r.tag : '')));
       var sub = document.createElement('div');
       sub.className = 'session-sub';
-      sub.textContent = '買入 ' + fmtMoney(r.buyin) + ' → 兌現 ' + fmtMoney(r.cashout) +
-        (r.hours ? ' ｜ ' + r.hours + ' 小時' : '') +
-        (r.bb ? ' ｜ 大盲 ' + r.bb : '') +
-        (r.note ? ' ｜ ' + r.note : '');
+      sub.textContent = t('買入 ') + fmtMoney(r.buyin) + t(' → 兌現 ') + fmtMoney(r.cashout) +
+        (r.hours ? t(' ｜ ') + r.hours + t(' 小時') : '') +
+        (r.bb ? t(' ｜ 大盲 ') + r.bb : '') +
+        (r.note ? t(' ｜ ') + r.note : '');
       main.appendChild(title);
       main.appendChild(sub);
       var plEl = document.createElement('span');
@@ -111,9 +120,9 @@
       var del = document.createElement('button');
       del.className = 'del-btn';
       del.textContent = '✕';
-      del.setAttribute('aria-label', '刪除');
+      del.setAttribute('aria-label', t('刪除'));
       del.addEventListener('click', function () {
-        if (!confirm('刪除這筆紀錄？')) return;
+        if (!confirm(t('刪除這筆紀錄？'))) return;
         sessions = sessions.filter(function (x) { return x.id !== r.id; });
         saveSessions(sessions);
         renderTracker();
@@ -139,12 +148,12 @@
 
   function renderStats() {
     var cats = [
-      ['現金局', sessions.filter(function (r) { return r.type === 'cash'; }), false],
+      [t('現金局'), sessions.filter(function (r) { return r.type === 'cash'; }), false],
       ['MTT', sessions.filter(function (r) { return r.type === 'mtt'; }), true],
       ['SNG', sessions.filter(function (r) { return r.type === 'sng'; }), true],
-      ['總計', sessions, false]
+      [t('總計'), sessions, false]
     ];
-    var html = '<tr><th>類別</th><th>場次</th><th>總買入</th><th>總盈虧</th><th>ROI%</th><th>ITM%</th></tr>';
+    var html = t('<tr><th>類別</th><th>場次</th><th>總買入</th><th>總盈虧</th><th>ROI%</th><th>ITM%</th></tr>');
     cats.forEach(function (c) {
       var s = statsFor(c[1], c[2]);
       var plCls = s.pl > 0 ? 'pos' : s.pl < 0 ? 'neg' : 'muted';
@@ -198,45 +207,45 @@
     var tbl = $('#advStatsTable'), hint = $('#advStatsHint');
     if (s.n < 2) {
       tbl.innerHTML = '';
-      hint.textContent = '至少 2 筆紀錄後顯示。填時數可算時薪。';
+      hint.textContent = t('至少 2 筆紀錄後顯示。填時數可算時薪。');
       return;
     }
     function row(k, v, cls) {
       return '<tr><td>' + k + '</td><td class="' + (cls || '') + '">' + v + '</td></tr>';
     }
-    var html = '<tr><th>指標</th><th>數值</th></tr>';
-    html += row('每場平均盈虧', fmtPL(Math.round(s.mean * 100) / 100),
+    var html = t('<tr><th>指標</th><th>數值</th></tr>');
+    html += row(t('每場平均盈虧'), fmtPL(Math.round(s.mean * 100) / 100),
       s.mean > 0 ? 'pos' : s.mean < 0 ? 'neg' : 'muted');
-    html += row('每場標準差 σ', fmtMoney(Math.round(s.sd * 100) / 100));
-    html += row('最大回撤', s.maxDD > 0 ? '-' + fmtMoney(Math.round(s.maxDD * 100) / 100) : '0',
+    html += row(t('每場標準差 σ'), fmtMoney(Math.round(s.sd * 100) / 100));
+    html += row(t('最大回撤'), s.maxDD > 0 ? '-' + fmtMoney(Math.round(s.maxDD * 100) / 100) : '0',
       s.maxDD > 0 ? 'neg' : 'muted');
-    html += row('時薪（有填時數的場次）',
-      s.hourly === null ? '—（未填時數）' : fmtPL(Math.round(s.hourly * 100) / 100) + ' /hr',
+    html += row(t('時薪（有填時數的場次）'),
+      s.hourly === null ? t('—（未填時數）') : fmtPL(Math.round(s.hourly * 100) / 100) + ' /hr',
       s.hourly === null ? 'muted' : s.hourly > 0 ? 'pos' : 'neg');
     if (s.bbPerHr !== null) {
       var bb100 = s.bbPerHr / 30 * 100; // 現場約 30 手/小時
-      html += row('現金局 bb/hr', fmtPL(Math.round(s.bbPerHr * 100) / 100),
+      html += row(t('現金局 bb/hr'), fmtPL(Math.round(s.bbPerHr * 100) / 100),
         s.bbPerHr > 0 ? 'pos' : 'neg');
-      html += row('現金局 bb/100（估）', fmtPL(Math.round(bb100 * 10) / 10),
+      html += row(t('現金局 bb/100（估）'), fmtPL(Math.round(bb100 * 10) / 10),
         bb100 > 0 ? 'pos' : 'neg');
     } else {
-      html += row('現金局 bb/hr', '—（現金局需填大盲＋時數）', 'muted');
+      html += row(t('現金局 bb/hr'), t('—（現金局需填大盲＋時數）'), 'muted');
     }
     if (s.mean > 0 && s.sd > 0) {
       // 破產風險模型：RoR = exp(-2μB/σ²) → B = σ²·ln(1/risk)/(2μ)
       var br5 = s.sd * s.sd * Math.log(20) / (2 * s.mean);
       var br1 = s.sd * s.sd * Math.log(100) / (2 * s.mean);
-      html += row('建議資金（破產風險 ≤5%）', fmtMoney(Math.ceil(br5)));
-      html += row('建議資金（破產風險 ≤1%）', fmtMoney(Math.ceil(br1)));
-      hint.textContent = '資金建議用 Kelly 式破產風險模型 RoR = exp(−2μB/σ²)，' +
-        '假設每場盈虧近似常態且 winrate 不變，僅供參考。';
+      html += row(t('建議資金（破產風險 ≤5%）'), fmtMoney(Math.ceil(br5)));
+      html += row(t('建議資金（破產風險 ≤1%）'), fmtMoney(Math.ceil(br1)));
+      hint.textContent = t('資金建議用 Kelly 式破產風險模型 RoR = exp(−2μB/σ²)，') +
+        t('假設每場盈虧近似常態且 winrate 不變，僅供參考。');
     } else {
       hint.textContent = s.n >= 2 && s.mean <= 0
-        ? '平均盈虧 ≤ 0，任何資金長期都會歸零 — 資金建議不適用，先改善 winrate。'
+        ? t('平均盈虧 ≤ 0，任何資金長期都會歸零 — 資金建議不適用，先改善 winrate。')
         : '';
     }
     if (s.bbPerHr !== null) {
-      hint.textContent += ' bb/100 以現場約 30 手/小時換算，僅供參考。';
+      hint.textContent += t(' bb/100 以現場約 30 手/小時換算，僅供參考。');
     }
     tbl.innerHTML = html;
   }
@@ -246,12 +255,12 @@
     var tbl = $('#tagStatsTable'), hint = $('#tagStatsHint');
     if (!sessions.length) {
       tbl.innerHTML = '';
-      hint.textContent = '新增紀錄後顯示。無標籤的紀錄以場地分組。';
+      hint.textContent = t('新增紀錄後顯示。無標籤的紀錄以場地分組。');
       return;
     }
-    hint.textContent = '無標籤的舊紀錄以場地分組；依總盈虧排序。';
+    hint.textContent = t('無標籤的舊紀錄以場地分組；依總盈虧排序。');
     var groups = TrackerStats.tagStats(sessions);
-    var html = '<tr><th>標籤</th><th>場次</th><th>總盈虧</th><th>時薪</th></tr>';
+    var html = t('<tr><th>標籤</th><th>場次</th><th>總盈虧</th><th>時薪</th></tr>');
     groups.forEach(function (g) {
       var plCls = g.pl > 0 ? 'pos' : g.pl < 0 ? 'neg' : 'muted';
       html += '<tr><td>' + escapeHtml(g.tag) + '</td><td>' + g.n +
@@ -268,12 +277,12 @@
     chart.innerHTML = '';
     if (!sessions.length) {
       tbl.innerHTML = '';
-      hint.textContent = '新增紀錄後顯示每月盈虧。';
+      hint.textContent = t('新增紀錄後顯示每月盈虧。');
       return;
     }
     hint.textContent = '';
     var months = TrackerStats.monthlyStats(sessions);
-    var html = '<tr><th>月份</th><th>場次</th><th>盈虧</th><th>時數</th></tr>';
+    var html = t('<tr><th>月份</th><th>場次</th><th>盈虧</th><th>時數</th></tr>');
     months.forEach(function (m) {
       var plCls = m.pl > 0 ? 'pos' : m.pl < 0 ? 'neg' : 'muted';
       html += '<tr><td>' + escapeHtml(m.month) + '</td><td>' + m.n +
@@ -307,22 +316,22 @@
   /* --- 傾斜偵測 --- */
   function renderTilt() {
     var box = $('#tiltInsight');
-    var t = TrackerStats.tiltStats(sessions);
-    if (t.afterLossCount < 5) {
-      box.textContent = '樣本不足（連輸後的場次需 ≥ 5，目前 ' + t.afterLossCount +
-        '），累積更多紀錄後顯示分析。';
+    var st = TrackerStats.tiltStats(sessions);
+    if (st.afterLossCount < 5) {
+      box.textContent = t('樣本不足（連輸後的場次需 ≥ 5，目前 ') + st.afterLossCount +
+        t('），累積更多紀錄後顯示分析。');
       return;
     }
-    var after = Math.round(t.afterLossAvg * 100) / 100;
-    var overall = Math.round(t.overallAvg * 100) / 100;
-    var msg = '輸錢場次後的平均盈虧 ' + fmtPL(after) + ' vs 整體平均 ' + fmtPL(overall) +
-      '（樣本 ' + t.afterLossCount + ' 場）';
-    if (t.afterLossAvg < t.overallAvg) {
-      msg += ' —— 連輸後表現明顯變差，注意傾斜（tilt）。';
+    var after = Math.round(st.afterLossAvg * 100) / 100;
+    var overall = Math.round(st.overallAvg * 100) / 100;
+    var msg = t('輸錢場次後的平均盈虧 ') + fmtPL(after) + t(' vs 整體平均 ') + fmtPL(overall) +
+      t('（樣本 ') + st.afterLossCount + t(' 場）');
+    if (st.afterLossAvg < st.overallAvg) {
+      msg += t(' —— 連輸後表現明顯變差，注意傾斜（tilt）。');
     } else {
-      msg += ' —— 未見明顯傾斜跡象。';
+      msg += t(' —— 未見明顯傾斜跡象。');
     }
-    msg += ' 最長連敗：' + t.longestLossStreak + ' 場。';
+    msg += t(' 最長連敗：') + st.longestLossStreak + t(' 場。');
     box.textContent = msg;
   }
 
@@ -341,7 +350,7 @@
     var ul = $('#noteList');
     ul.innerHTML = '';
     if (!notes.length) {
-      ul.innerHTML = '<li class="empty-msg">尚無筆記</li>';
+      ul.innerHTML = t('<li class="empty-msg">尚無筆記</li>');
       return;
     }
     notes.slice().reverse().forEach(function (nt) {
@@ -359,9 +368,9 @@
       var del = document.createElement('button');
       del.className = 'del-btn';
       del.textContent = '✕';
-      del.setAttribute('aria-label', '刪除筆記');
+      del.setAttribute('aria-label', t('刪除筆記'));
       del.addEventListener('click', function () {
-        if (!confirm('刪除這則筆記？')) return;
+        if (!confirm(t('刪除這則筆記？'))) return;
         notes = notes.filter(function (x) { return x.id !== nt.id; });
         saveNotes(notes);
         renderNotes();
@@ -420,8 +429,8 @@
     ctx.strokeStyle = '#333848';
     ctx.lineWidth = 1;
     var ticks = 4;
-    for (var t = 0; t <= ticks; t++) {
-      var v = min + (max - min) * t / ticks;
+    for (var tk = 0; tk <= ticks; tk++) {
+      var v = min + (max - min) * tk / ticks;
       var yy = y(v);
       ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(cssW - padR, yy); ctx.stroke();
       ctx.textAlign = 'right';
@@ -438,7 +447,7 @@
     ctx.textAlign = 'center';
     ctx.fillStyle = '#8b91a3';
     ctx.fillText('0', x(0), cssH - 6);
-    if (pts.length > 1) ctx.fillText(String(pts.length - 1) + ' 場', x(pts.length - 1), cssH - 6);
+    if (pts.length > 1) ctx.fillText(String(pts.length - 1) + t(' 場'), x(pts.length - 1), cssH - 6);
 
     if (pts.length < 2) {
       ctx.textAlign = 'center';
@@ -487,7 +496,7 @@
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
   $('#btnExportCsv').addEventListener('click', function () {
-    var rows = [['日期', '類型', '場地', '標籤', '買入', '兌現', '盈虧', '時數', '大盲', '備註']];
+    var rows = [[t('日期'), t('類型'), t('場地'), t('標籤'), t('買入'), t('兌現'), t('盈虧'), t('時數'), t('大盲'), t('備註')]];
     sessions.forEach(function (r) {
       rows.push([r.date, TYPE_NAMES[r.type] || r.type, r.venue, r.tag || '', r.buyin, r.cashout,
         r.cashout - r.buyin, r.hours || '', r.bb || '', r.note]);
@@ -513,7 +522,7 @@
         valid.forEach(function (r) {
           if (!r.id) r.id = Date.now() + '-' + Math.random().toString(36).slice(2, 7);
         });
-        if (!confirm('匯入 ' + valid.length + ' 筆紀錄？（將加到現有紀錄後）')) return;
+        if (!confirm(t('匯入 ') + valid.length + t(' 筆紀錄？（將加到現有紀錄後）'))) return;
         sessions = sessions.concat(valid);
         saveSessions(sessions);
         renderTracker();
@@ -625,7 +634,7 @@
       row.className = 'hand-row';
       var label = document.createElement('span');
       label.className = 'hand-label villain';
-      label.textContent = villainCount === 1 ? 'Villain' : '對手 ' + (i + 1);
+      label.textContent = villainCount === 1 ? 'Villain' : t('對手 ') + (i + 1);
       row.appendChild(label);
       var slots = document.createElement('div');
       slots.className = 'slots';
@@ -680,11 +689,11 @@
       var a = slotCards['v' + vi + 'a'], b2 = slotCards['v' + vi + 'b'];
       if (a === undefined && b2 === undefined) continue; // 空白對手略過
       if (a === undefined || b2 === undefined) {
-        alert('對手 ' + (vi + 1) + ' 只選了 1 張牌，請選滿 2 張或全部清空');
+        alert('對手 ' + (vi + 1) + t(' 只選了 1 張牌，請選滿 2 張或全部清空'));
         return;
       }
       hands.push([a, b2]);
-      names.push(villainCount === 1 ? 'Villain' : '對手 ' + (vi + 1));
+      names.push(villainCount === 1 ? 'Villain' : t('對手 ') + (vi + 1));
     }
     if (hands.length < 2) {
       alert('至少需要 1 位對手（2 張手牌）');
@@ -701,7 +710,7 @@
     }
     var btn = $('#btnCalcEquity');
     btn.disabled = true;
-    btn.textContent = '計算中…';
+    btn.textContent = t('計算中…');
     setTimeout(function () {
       try {
         var res = EquityLib.computeEquityMulti(hands, board, 50000);
@@ -716,22 +725,22 @@
           div.innerHTML =
             '<div class="eqp-head"><span class="' + (pi === 0 ? 'pos' : 'neg') + '">' + names[pi] + '</span>' +
             '<span><b>' + pct + '%</b>' +
-            (p.tie > 0.0005 ? ' <span class="muted">(平手 ' + (p.tie * 100).toFixed(1) + '%)</span>' : '') +
+            (p.tie > 0.0005 ? t(' <span class="muted">(平手 ') + (p.tie * 100).toFixed(1) + '%)</span>' : '') +
             '</span></div>' +
             '<div class="equity-bar eqp-bar"><div class="' + (pi === 0 ? 'eq-hero' : 'eq-villain') +
             '" style="width:' + pct + '%"></div></div>';
           rows.appendChild(div);
         });
         $('#eqMethodTxt').textContent = (res.method === 'exact'
-          ? '窮舉 ' + res.trials.toLocaleString() + ' 種發牌'
-          : 'Monte Carlo 模擬 ' + res.trials.toLocaleString() + ' 次（誤差約 ±0.5%）') +
-          (hands.length > 2 ? ' · ' + hands.length + ' 人 all-in，平手依人數均分' : '');
+          ? t('窮舉 ') + res.trials.toLocaleString() + t(' 種發牌')
+          : t('Monte Carlo 模擬 ') + res.trials.toLocaleString() + t(' 次（誤差約 ±0.5%）')) +
+          (hands.length > 2 ? ' · ' + hands.length + t(' 人 all-in，平手依人數均分') : '');
         renderEV();
       } catch (err) {
         alert('計算失敗：' + err.message);
       } finally {
         btn.disabled = false;
-        btn.textContent = '計算勝率';
+        btn.textContent = t('計算勝率');
       }
     }, 30);
   });
@@ -743,23 +752,23 @@
     var pot = parseFloat($('#fPot').value);
     var call = parseFloat($('#fCall').value);
     if (!lastEquity) {
-      box.textContent = '先計算勝率，再輸入底池與跟注金額。';
+      box.textContent = t('先計算勝率，再輸入底池與跟注金額。');
       return;
     }
     if (!(pot >= 0) || !(call > 0)) {
-      box.textContent = 'Hero 勝率 ' + (lastEquity.hero * 100).toFixed(1) +
-        '%。輸入底池與需跟注金額即可算 EV。';
+      box.textContent = t('Hero 勝率 ') + (lastEquity.hero * 100).toFixed(1) +
+        t('%。輸入底池與需跟注金額即可算 EV。');
       return;
     }
     var ev = EquityLib.callEV(lastEquity.hero, pot, call);
     var needed = call / (pot + call) * 100;
     var verdict = ev >= 0
-      ? '<span class="pos">✔ +EV 跟注</span>'
-      : '<span class="neg">✘ −EV 蓋牌</span>';
+      ? t('<span class="pos">✔ +EV 跟注</span>')
+      : t('<span class="neg">✘ −EV 蓋牌</span>');
     box.innerHTML =
-      '跟注 EV = ' + (lastEquity.hero * 100).toFixed(1) + '% × (' + pot + ' + ' + call +
+      t('跟注 EV = ') + (lastEquity.hero * 100).toFixed(1) + '% × (' + pot + ' + ' + call +
       ') − ' + call + ' = <b class="' + (ev >= 0 ? 'pos' : 'neg') + '">' + fmtPL(Math.round(ev * 100) / 100) + '</b><br>' +
-      '所需勝率（底池賠率）：' + needed.toFixed(1) + '%<br>' + verdict;
+      t('所需勝率（底池賠率）：') + needed.toFixed(1) + '%<br>' + verdict;
   }
   $('#fPot').addEventListener('input', renderEV);
   $('#fCall').addEventListener('input', renderEV);
@@ -799,30 +808,30 @@
 
   function relabelPayouts() {
     $$('#payoutRows .dyn-row').forEach(function (row, i) {
-      row.querySelector('.row-label').textContent = '第 ' + (i + 1) + ' 名';
+      row.querySelector('.row-label').textContent = t('第 ') + (i + 1) + t(' 名');
     });
   }
   function addPayoutRow(value) {
     if ($$('#payoutRows .dyn-row').length >= ICM.MAX_PLACES) {
-      alert('最多計算前 ' + ICM.MAX_PLACES + ' 名獎金');
+      alert('最多計算前 ' + ICM.MAX_PLACES + t(' 名獎金'));
       return;
     }
     makeRow($('#payoutRows'), {
       label: '',
-      inputs: [{ placeholder: '獎金', cls: 'payout-input', value: value }],
+      inputs: [{ placeholder: t('獎金'), cls: 'payout-input', value: value }],
       onRemove: relabelPayouts
     });
     relabelPayouts();
   }
   function addPlayerRow(name, stack) {
     if ($$('#playerRows .dyn-row').length >= ICM.MAX_PLAYERS) {
-      alert('最多 ' + ICM.MAX_PLAYERS + ' 位玩家');
+      alert('最多 ' + ICM.MAX_PLAYERS + t(' 位玩家'));
       return;
     }
     makeRow($('#playerRows'), {
       inputs: [
-        { type: 'text', placeholder: '名字（選填）', cls: 'name-input', value: name },
-        { placeholder: '籌碼', cls: 'stack-input', value: stack }
+        { type: 'text', placeholder: t('名字（選填）'), cls: 'name-input', value: name },
+        { placeholder: t('籌碼'), cls: 'stack-input', value: stack }
       ]
     });
   }
@@ -844,7 +853,7 @@
       var stack = parseFloat(row.querySelector('.stack-input').value);
       if (stack > 0) {
         players.push({
-          name: row.querySelector('.name-input').value.trim() || ('玩家 ' + (i + 1)),
+          name: row.querySelector('.name-input').value.trim() || (t('玩家 ') + (i + 1)),
           stack: stack
         });
       }
@@ -866,7 +875,7 @@
     }
     var totalChips = players.reduce(function (a, p) { return a + p.stack; }, 0);
     var pool = payouts.reduce(function (a, b) { return a + b; }, 0);
-    var html = '<tr><th>玩家</th><th>籌碼</th><th>籌碼%</th><th>ICM $EV</th><th>占獎池%</th></tr>';
+    var html = t('<tr><th>玩家</th><th>籌碼</th><th>籌碼%</th><th>ICM $EV</th><th>占獎池%</th></tr>');
     players
       .map(function (p, i) { return { p: p, ev: evs[i] }; })
       .sort(function (a, b) { return b.p.stack - a.p.stack; })
@@ -877,7 +886,7 @@
           x.ev.toFixed(2) + '</td><td>' +
           (x.ev / pool * 100).toFixed(1) + '</td></tr>';
       });
-    html += '<tr><td><b>合計</b></td><td>' + totalChips.toLocaleString() +
+    html += t('<tr><td><b>合計</b></td><td>') + totalChips.toLocaleString() +
       '</td><td>100.0</td><td>' + pool.toFixed(2) + '</td><td>100.0</td></tr>';
     $('#icmTable').innerHTML = html;
     $('#icmResultCard').hidden = false;
@@ -893,14 +902,14 @@
   var DEAL_MAX_PLAYERS = 9;
   function addDealPlayerRow(name, stack, locked) {
     if ($$('#dealPlayerRows .dyn-row').length >= DEAL_MAX_PLAYERS) {
-      alert('最多 ' + DEAL_MAX_PLAYERS + ' 位玩家');
+      alert('最多 ' + DEAL_MAX_PLAYERS + t(' 位玩家'));
       return;
     }
     makeRow($('#dealPlayerRows'), {
       inputs: [
-        { type: 'text', placeholder: '名字（選填）', cls: 'name-input', value: name },
-        { placeholder: '籌碼', cls: 'deal-stack', value: stack },
-        { placeholder: '已鎖定獎金', cls: 'deal-locked', value: locked }
+        { type: 'text', placeholder: t('名字（選填）'), cls: 'name-input', value: name },
+        { placeholder: t('籌碼'), cls: 'deal-stack', value: stack },
+        { placeholder: t('已鎖定獎金'), cls: 'deal-locked', value: locked }
       ]
     });
   }
@@ -917,14 +926,14 @@
       var stack = parseFloat(row.querySelector('.deal-stack').value);
       if (stack > 0) {
         players.push({
-          name: row.querySelector('.name-input').value.trim() || ('玩家 ' + (i + 1)),
+          name: row.querySelector('.name-input').value.trim() || (t('玩家 ') + (i + 1)),
           stack: stack,
           locked: parseFloat(row.querySelector('.deal-locked').value) || 0
         });
       }
     });
     if (players.length < 2 || players.length > DEAL_MAX_PLAYERS) {
-      alert('請輸入 2–' + DEAL_MAX_PLAYERS + ' 位玩家籌碼');
+      alert('請輸入 2–' + DEAL_MAX_PLAYERS + t(' 位玩家籌碼'));
       return;
     }
     var stacks = players.map(function (p) { return p.stack; });
@@ -939,7 +948,7 @@
     }
     var totalChips = stacks.reduce(function (a, b) { return a + b; }, 0);
     var lockedSum = locked.reduce(function (a, b) { return a + b; }, 0);
-    var html = '<tr><th>玩家</th><th>籌碼%</th><th>ICM 分法</th><th>Chip-chop</th><th>差異</th></tr>';
+    var html = t('<tr><th>玩家</th><th>籌碼%</th><th>ICM 分法</th><th>Chip-chop</th><th>差異</th></tr>');
     players
       .map(function (p, i) { return { p: p, icm: icmAmts[i], chop: chopAmts[i] }; })
       .sort(function (a, b) { return b.p.stack - a.p.stack; })
@@ -952,7 +961,7 @@
           fmtMoney(Math.round(x.chop * 100) / 100) + '</td><td class="' + dCls + '">' +
           fmtPL(Math.round(diff * 100) / 100) + '</td></tr>';
       });
-    html += '<tr><td><b>合計</b></td><td>100.0</td><td>' +
+    html += t('<tr><td><b>合計</b></td><td>100.0</td><td>') +
       fmtMoney(Math.round((pool + lockedSum) * 100) / 100) + '</td><td>' +
       fmtMoney(Math.round((pool + lockedSum) * 100) / 100) + '</td><td>—</td></tr>';
     $('#dealTable').innerHTML = html;
@@ -969,7 +978,7 @@
       players.forEach(function (p, i) {
         var opt = document.createElement('option');
         opt.value = String(i);
-        opt.textContent = p.name + '（' + p.stack.toLocaleString() + '）';
+        opt.textContent = p.name + t('（') + p.stack.toLocaleString() + t('）');
         sel.appendChild(opt);
       });
       // 盡量保留原選擇，否則預設 hero=第1位、caller=第2位
@@ -1023,21 +1032,21 @@
 
     var d = Math.round(res.diff * 100) / 100;
     var verdictHtml = res.verdict === 'SHOVE'
-      ? '<span class="pos">✔ 推薦 SHOVE（多 ' + fmtPL(d) + '）</span>'
-      : '<span class="neg">✘ 推薦 FOLD（全下少 ' + fmtPL(d) + '）</span>';
+      ? t('<span class="pos">✔ 推薦 SHOVE（多 ') + fmtPL(d) + t('）</span>')
+      : t('<span class="neg">✘ 推薦 FOLD（全下少 ') + fmtPL(d) + t('）</span>');
     var box = $('#pfResult');
     box.hidden = false;
     box.innerHTML =
-      '手牌 <b>' + escapeHtml(res.hand) + '</b> ｜ 跟注 range 前 ' + callPct + '%（' +
-      res.rangeClasses.length + ' 類 / ' + res.rangeCombos + ' combo）<br>' +
-      'P(被跟注) = ' + (res.pCall * 100).toFixed(1) + '%，被跟注時勝率 = ' +
+      t('手牌 <b>') + escapeHtml(res.hand) + t('</b> ｜ 跟注 range 前 ') + callPct + t('%（') +
+      res.rangeClasses.length + t(' 類 / ') + res.rangeCombos + t(' combo）<br>') +
+      t('P(被跟注) = ') + (res.pCall * 100).toFixed(1) + t('%，被跟注時勝率 = ') +
       (res.equity * 100).toFixed(1) + '%<br>' +
-      '蓋牌 $EV = <b>' + res.foldEV.toFixed(2) + '</b><br>' +
-      '全下 $EV = <b class="' + (res.diff >= 0 ? 'pos' : 'neg') + '">' + res.shoveEV.toFixed(2) +
-      '</b>（全蓋 ' + res.evAllFold.toFixed(2) +
-      ' ／ 被跟注且贏 ' + res.evWin.toFixed(2) +
-      ' ／ 被跟注且輸 ' + res.evLose.toFixed(2) + '）<br>' +
-      '差異 ' + fmtPL(d) + ' → ' + verdictHtml;
+      t('蓋牌 $EV = <b>') + res.foldEV.toFixed(2) + '</b><br>' +
+      t('全下 $EV = <b class="') + (res.diff >= 0 ? 'pos' : 'neg') + '">' + res.shoveEV.toFixed(2) +
+      t('</b>（全蓋 ') + res.evAllFold.toFixed(2) +
+      t(' ／ 被跟注且贏 ') + res.evWin.toFixed(2) +
+      t(' ／ 被跟注且輸 ') + res.evLose.toFixed(2) + t('）<br>') +
+      t('差異 ') + fmtPL(d) + ' → ' + verdictHtml;
   });
 
   /* ================= Tab 4: Push/Fold Nash ================= */
@@ -1071,10 +1080,10 @@
       call += (hasCall ? fr.call : 0) * n;
       if (Ranges.isMixed(fr)) mixed++;
     }
-    return '混合頻率檢視（模型推估）：加權加注 ' + (aggro / total * 100).toFixed(1) + '%' +
-      (hasCall ? '、跟注 ' + (call / total * 100).toFixed(1) + '%' : '') +
-      '，其中 ' + mixed + ' 手是混合手牌（沒有任何動作 ≥90%）。' +
-      '門檻附近本來就沒有明確的分界，測驗也依此放寬評分。';
+    return t('混合頻率檢視（模型推估）：加權加注 ') + (aggro / total * 100).toFixed(1) + '%' +
+      (hasCall ? t('、跟注 ') + (call / total * 100).toFixed(1) + '%' : '') +
+      t('，其中 ') + mixed + t(' 手是混合手牌（沒有任何動作 ≥90%）。') +
+      t('門檻附近本來就沒有明確的分界，測驗也依此放寬評分。');
   }
   /** 切換鈕的共用行為 */
   function bindFreqToggle(sel, get, set, render) {
@@ -1109,9 +1118,9 @@
       }
       $('#nashGrid').innerHTML = html;
       $('#nashRangeTxt').textContent =
-        (nashRole === 'push' ? 'SB 全下 range：' : 'BB 跟注 range：') +
-        pct.toFixed(1) + '%（' + nashS + ' bb）｜' +
-        freqSummary(fmap, false).replace('（模型推估）', '（Nash 均衡實際頻率）');
+        (nashRole === 'push' ? t('SB 全下 range：') : t('BB 跟注 range：')) +
+        pct.toFixed(1) + t('%（') + nashS + t(' bb）｜') +
+        freqSummary(fmap, false).replace(t('（模型推估）'), t('（Nash 均衡實際頻率）'));
       return;
     }
     for (i = 0; i < 169; i++) {
@@ -1121,8 +1130,8 @@
     }
     $('#nashGrid').innerHTML = html;
     $('#nashRangeTxt').textContent =
-      (nashRole === 'push' ? 'SB 全下 range：' : 'BB 跟注 range：') +
-      pct.toFixed(1) + '% 的手牌（' + nashS + ' bb）';
+      (nashRole === 'push' ? t('SB 全下 range：') : t('BB 跟注 range：')) +
+      pct.toFixed(1) + t('% 的手牌（') + nashS + t(' bb）');
   }
   bindFreqToggle('#btnNashFreq',
     function () { return nashFreq; },
@@ -1216,8 +1225,8 @@
     var pct = combos / 1326 * 100;
     var info = Ranges.rfiStackInfo(rfiStackCur);
     if (rfiFreq) {
-      $('#rfiTxt').textContent = rfiTable + '-max ' + def.name + ' 開牌（' + info.effBb +
-        'bb，寬度 ' + pct.toFixed(1) + '%）｜' + freqSummary(rfiFmap, false);
+      $('#rfiTxt').textContent = rfiTable + '-max ' + def.name + t(' 開牌（') + info.effBb +
+        t('bb，寬度 ') + pct.toFixed(1) + t('%）｜') + freqSummary(rfiFmap, false);
       $('#rfiCustomRow').hidden = !ov;
       $('#btnRfiEdit').disabled = true;
       if (!rfiSliding) $('#rfiPct').value = pct;
@@ -1227,13 +1236,13 @@
       return;
     }
     $('#rfiTxt').textContent = rfiTable + '-max ' + def.name +
-      (info.mode === 'jam' ? ' 開牌（≤' + Ranges.RFI_JAM_BB + 'bb，等於全下）' : ' 開牌') +
-      ' range：' + pct.toFixed(1) + '% 的手牌（' + combos + ' combo）' +
+      (info.mode === 'jam' ? t(' 開牌（≤') + Ranges.RFI_JAM_BB + t('bb，等於全下）') : t(' 開牌')) +
+      t(' range：') + pct.toFixed(1) + t('% 的手牌（') + combos + t(' combo）') +
       (depth
-        ? '｜有效籌碼 ' + info.effBb + 'bb：寬度不變，組成依深度重排（' +
+        ? t('｜有效籌碼 ') + info.effBb + t('bb：寬度不變，組成依深度重排（') +
           (info.effBb < Ranges.VS3B_BASE_BB
-            ? '淺 → 高張／雜色大牌擠進來，同花小連張掉出去'
-            : '深 → 同花連張與小對子擠進來，雜色邊緣牌掉出去') + '，唯讀）'
+            ? t('淺 → 高張／雜色大牌擠進來，同花小連張掉出去')
+            : t('深 → 同花連張與小對子擠進來，雜色邊緣牌掉出去')) + t('，唯讀）')
         : '');
     // 深度模式只鎖「點格子微調」；寬度（% 滑桿）仍可調，深度圖會照新寬度重排
     $('#rfiCustomRow').hidden = !ov;
@@ -1282,7 +1291,7 @@
   $('#btnRfiEdit').addEventListener('click', function () {
     rfiEdit = !rfiEdit;
     this.classList.toggle('active-role', rfiEdit);
-    this.textContent = rfiEdit ? '✔ 完成編輯' : '✏️ 編輯';
+    this.textContent = rfiEdit ? t('✔ 完成編輯') : t('✏️ 編輯');
     renderRfi();
   });
   bindFreqToggle('#btnRfiFreq',
@@ -1313,7 +1322,7 @@
     renderRfi();
   });
   $('#btnRfiReset').addEventListener('click', function () {
-    if (!confirm('確定捨棄這張圖的自訂內容，還原為建議 range？')) return;
+    if (!confirm(t('確定捨棄這張圖的自訂內容，還原為建議 range？'))) return;
     setRangeOverride(rfiChartKey(), null);
     renderRfi();
   });
@@ -1405,8 +1414,8 @@
       for (i = 0; i < 169; i++) html += freqCellHtml(i, fmap[PushFold.classLabel(i)], true);
       $('#defGrid').innerHTML = html;
       $('#defGrid').classList.remove('editing');
-      $('#defTxt').textContent = spot.name + '（對手開 ' + defPctCur.toFixed(1) + '%，' +
-        stackInfo.effBb + 'bb）｜' + freqSummary(fmap, true);
+      $('#defTxt').textContent = spot.name + t('（對手開 ') + defPctCur.toFixed(1) + t('%，') +
+        stackInfo.effBb + t('bb）｜') + freqSummary(fmap, true);
       $('#defSpot').value = defKeyCur;
       $('#defCustomRow').hidden = true;
       $('#btnDefEdit').disabled = true;
@@ -1425,23 +1434,23 @@
     $('#defGrid').innerHTML = html;
     $('#defGrid').classList.toggle('editing', defEdit && !dynamic);
     if (dynamic) {
-      $('#defTxt').textContent = '動態試算：對手開 ' + defPctCur.toFixed(1) + '%，有效籌碼 ' +
-        stackInfo.effBb + 'bb（3-bet 到 ' + stackInfo.threeBetBb + 'bb' +
-        (stackInfo.threeBetAllIn ? '＝全下' : '') + '，跟注賠率 ' +
-        (stackInfo.needEq * 100).toFixed(0) + '%，跟注後 SPR ' + stackInfo.spr.toFixed(1) +
-        '）→ 3-bet ' + (tbCombos / 1326 * 100).toFixed(1) + '%（' + tbCombos + ' combo）／跟注 ' +
-        (callCombos / 1326 * 100).toFixed(1) + '%（' + callCombos + ' combo）。' +
+      $('#defTxt').textContent = t('動態試算：對手開 ') + defPctCur.toFixed(1) + t('%，有效籌碼 ') +
+        stackInfo.effBb + t('bb（3-bet 到 ') + stackInfo.threeBetBb + 'bb' +
+        (stackInfo.threeBetAllIn ? t('＝全下') : '') + t('，跟注賠率 ') +
+        (stackInfo.needEq * 100).toFixed(0) + t('%，跟注後 SPR ') + stackInfo.spr.toFixed(1) +
+        t('）→ 3-bet ') + (tbCombos / 1326 * 100).toFixed(1) + t('%（') + tbCombos + t(' combo）／跟注 ') +
+        (callCombos / 1326 * 100).toFixed(1) + t('%（') + callCombos + t(' combo）。') +
         (stackInfo.mode === 'jamOrFold'
-          ? 'SPR 太低 → 沒有平跟，只剩 3-bet 全下或棄牌。'
+          ? t('SPR 太低 → 沒有平跟，只剩 3-bet 全下或棄牌。')
           : stackInfo.effBb < Ranges.VS3B_BASE_BB
-            ? '籌碼淺 → 隱含賠率縮水，小對子與同花連張先掉出跟注；3-bet 因為接近全下而放寬。'
+            ? t('籌碼淺 → 隱含賠率縮水，小對子與同花連張先掉出跟注；3-bet 因為接近全下而放寬。')
             : stackInfo.effBb > Ranges.VS3B_BASE_BB
-              ? '籌碼深 → 隱含賠率變大，跟注變寬、3-bet 價值範圍收緊。' : '') +
-        '門檻以 100bb 建議表校準；簡化 equity 近似，阻斷牌 bluff（如 A5s 3-bet）不在模型內。';
+              ? t('籌碼深 → 隱含賠率變大，跟注變寬、3-bet 價值範圍收緊。') : '') +
+        t('門檻以 100bb 建議表校準；簡化 equity 近似，阻斷牌 bluff（如 A5s 3-bet）不在模型內。');
     } else {
-      $('#defTxt').textContent = spot.sizeTxt + '｜3-bet ' +
-        (tbCombos / 1326 * 100).toFixed(1) + '%（' + tbCombos + ' combo）＋跟注 ' +
-        (callCombos / 1326 * 100).toFixed(1) + '%（' + callCombos + ' combo）';
+      $('#defTxt').textContent = spot.sizeTxt + t('｜3-bet ') +
+        (tbCombos / 1326 * 100).toFixed(1) + t('%（') + tbCombos + t(' combo）＋跟注 ') +
+        (callCombos / 1326 * 100).toFixed(1) + t('%（') + callCombos + t(' combo）');
     }
     $('#defSpot').value = defKeyCur;
     $('#defCustomRow').hidden = dynamic || !ov;
@@ -1477,7 +1486,7 @@
   $('#btnDefEdit').addEventListener('click', function () {
     defEdit = !defEdit;
     this.classList.toggle('active-role', defEdit);
-    this.textContent = defEdit ? '✔ 完成編輯' : '✏️ 編輯';
+    this.textContent = defEdit ? t('✔ 完成編輯') : t('✏️ 編輯');
     renderDef();
   });
   bindFreqToggle('#btnDefFreq',
@@ -1496,7 +1505,7 @@
     renderDef();
   });
   $('#btnDefReset').addEventListener('click', function () {
-    if (!confirm('確定捨棄這張圖的自訂內容，還原為建議 range？')) return;
+    if (!confirm(t('確定捨棄這張圖的自訂內容，還原為建議 range？'))) return;
     setRangeOverride(defChartKey(), null);
     renderDef();
   });
@@ -1521,7 +1530,7 @@
     });
     $('#v3bSpot').innerHTML =
       '<optgroup label="6-max">' + six + '</optgroup>' +
-      '<optgroup label="9-max Full Ring（現場取向）">' + nine + '</optgroup>';
+      t('<optgroup label="9-max Full Ring（現場取向）">') + nine + '</optgroup>';
   })();
 
   function v3bChartKey() { return 'vs3b:' + v3bKeyCur; }
@@ -1552,10 +1561,10 @@
       for (i = 0; i < 169; i++) html += freqCellHtml(i, fmap[PushFold.classLabel(i)], true);
       $('#v3bGrid').innerHTML = html;
       $('#v3bGrid').classList.remove('editing');
-      $('#v3bTxt').textContent = spot.name + '（有效籌碼 ' + info.effBb + 'bb）｜' +
+      $('#v3bTxt').textContent = spot.name + t('（有效籌碼 ') + info.effBb + t('bb）｜') +
         freqSummary(fmap, info.mode === 'normal');
-      $('#v3bNote').textContent = '跟注要再投 ' + info.toCall + 'bb 進 ' + info.pot +
-        'bb 底池 → 底池賠率約 ' + (info.needEq * 100).toFixed(0) + '%。頻率檢視為唯讀。';
+      $('#v3bNote').textContent = t('跟注要再投 ') + info.toCall + t('bb 進 ') + info.pot +
+        t('bb 底池 → 底池賠率約 ') + (info.needEq * 100).toFixed(0) + t('%。頻率檢視為唯讀。');
       $('#v3bCustomRow').hidden = true;
       $('#btnV3bEdit').disabled = true;
       $('#v3bSpot').value = v3bKeyCur;
@@ -1571,27 +1580,27 @@
     }
     $('#v3bGrid').innerHTML = html;
     $('#v3bGrid').classList.toggle('editing', v3bEdit && !dynamic);
-    var aggroTxt = info.mode === 'callAllin' ? '跟全下'
-      : info.mode === 'jamOrFold' ? '4-bet 全下' : '4-bet';
-    $('#v3bTxt').textContent = spot.hero + ' 開 ' + info.openBb + 'bb → ' + spot.villain +
-      ' 3-bet 到 ' + info.tbBb + 'bb（有效籌碼 ' + info.effBb + 'bb）｜' +
-      aggroTxt + ' ' + (fbCombos / 1326 * 100).toFixed(1) + '%（' + fbCombos + ' combo）' +
+    var aggroTxt = info.mode === 'callAllin' ? t('跟全下')
+      : info.mode === 'jamOrFold' ? t('4-bet 全下') : '4-bet';
+    $('#v3bTxt').textContent = spot.hero + t(' 開 ') + info.openBb + 'bb → ' + spot.villain +
+      t(' 3-bet 到 ') + info.tbBb + t('bb（有效籌碼 ') + info.effBb + t('bb）｜') +
+      aggroTxt + ' ' + (fbCombos / 1326 * 100).toFixed(1) + t('%（') + fbCombos + t(' combo）') +
       (info.mode === 'normal'
-        ? '＋跟注 ' + (callCombos / 1326 * 100).toFixed(1) + '%（' + callCombos + ' combo）'
-        : '，其餘蓋牌');
+        ? t('＋跟注 ') + (callCombos / 1326 * 100).toFixed(1) + t('%（') + callCombos + t(' combo）')
+        : t('，其餘蓋牌'));
     var modeTxt = info.mode === 'callAllin'
-      ? '籌碼不夠蓋住這個 3-bet → 對手等於直接全下你，只能跟全下或棄。'
+      ? t('籌碼不夠蓋住這個 3-bet → 對手等於直接全下你，只能跟全下或棄。')
       : info.mode === 'jamOrFold'
-        ? '跟注後 SPR 只剩 ' + info.spr.toFixed(2) + ' → 沒有平跟的空間，只剩 4-bet 全下或棄牌。'
-        : '跟注後 SPR ' + info.spr.toFixed(1) +
+        ? t('跟注後 SPR 只剩 ') + info.spr.toFixed(2) + t(' → 沒有平跟的空間，只剩 4-bet 全下或棄牌。')
+        : t('跟注後 SPR ') + info.spr.toFixed(1) +
           (info.effBb > Ranges.VS3B_BASE_BB
-            ? '，籌碼深 → 小對子與同花連張的隱含賠率變大，跟注變寬、4-bet 價值範圍收緊。'
+            ? t('，籌碼深 → 小對子與同花連張的隱含賠率變大，跟注變寬、4-bet 價值範圍收緊。')
             : info.effBb < Ranges.VS3B_BASE_BB
-              ? '，籌碼淺 → 隱含賠率縮水，小對子與同花連張先掉出跟注範圍。'
-              : '。');
-    $('#v3bNote').textContent = '跟注要再投 ' + info.toCall + 'bb 進 ' + info.pot +
-      'bb 底池 → 直接的底池賠率約 ' + (info.needEq * 100).toFixed(0) + '%。' + modeTxt +
-      (dynamic ? '（動態試算，唯讀）' : spot.note + '。');
+              ? t('，籌碼淺 → 隱含賠率縮水，小對子與同花連張先掉出跟注範圍。')
+              : t('。'));
+    $('#v3bNote').textContent = t('跟注要再投 ') + info.toCall + t('bb 進 ') + info.pot +
+      t('bb 底池 → 直接的底池賠率約 ') + (info.needEq * 100).toFixed(0) + t('%。') + modeTxt +
+      (dynamic ? t('（動態試算，唯讀）') : spot.note + t('。'));
     $('#v3bCustomRow').hidden = dynamic || !ov;
     $('#btnV3bEdit').disabled = dynamic;
     $('#v3bSpot').value = v3bKeyCur;
@@ -1614,7 +1623,7 @@
   $('#btnV3bEdit').addEventListener('click', function () {
     v3bEdit = !v3bEdit;
     this.classList.toggle('active-role', v3bEdit);
-    this.textContent = v3bEdit ? '✔ 完成編輯' : '✏️ 編輯';
+    this.textContent = v3bEdit ? t('✔ 完成編輯') : t('✏️ 編輯');
     renderV3b();
   });
   bindFreqToggle('#btnV3bFreq',
@@ -1632,7 +1641,7 @@
     renderV3b();
   });
   $('#btnV3bReset').addEventListener('click', function () {
-    if (!confirm('確定捨棄這張圖的自訂內容，還原為建議 range？')) return;
+    if (!confirm(t('確定捨棄這張圖的自訂內容，還原為建議 range？'))) return;
     setRangeOverride(v3bChartKey(), null);
     renderV3b();
   });
@@ -1653,7 +1662,7 @@
       if (spot.table === 9) nine += opt; else six += opt;
     });
     $('#coldSpot').innerHTML =
-      '<optgroup label="9-max Full Ring（現場取向）">' + nine + '</optgroup>' +
+      t('<optgroup label="9-max Full Ring（現場取向）">') + nine + '</optgroup>' +
       '<optgroup label="6-max">' + six + '</optgroup>';
   })();
 
@@ -1680,8 +1689,8 @@
       var fmap = Ranges.coldFreqMap(coldKeyCur, villain, coldStackCur);
       for (i = 0; i < 169; i++) html += freqCellHtml(i, fmap[PushFold.classLabel(i)], true);
       $('#coldGrid').innerHTML = html;
-      $('#coldTxt').textContent = spot.name + '（對手 3-bet ' + coldPctCur.toFixed(1) + '%，' +
-        info.effBb + 'bb）｜' + freqSummary(fmap, info.mode === 'normal');
+      $('#coldTxt').textContent = spot.name + t('（對手 3-bet ') + coldPctCur.toFixed(1) + t('%，') +
+        info.effBb + t('bb）｜') + freqSummary(fmap, info.mode === 'normal');
       $('#coldNote').textContent = spot.note;
       $('#coldSpot').value = coldKeyCur;
       if (!coldSliding) $('#coldPct').value = coldPctCur;
@@ -1703,28 +1712,28 @@
     $('#coldGrid').innerHTML = html;
 
     var aggroTxt = info.mode === 'normal'
-      ? '冷 4-bet 到 ' + info.fourBetBb.toFixed(1) + 'bb' + (info.fourBetAllIn ? '＝全下' : '')
-      : '全下';
-    $('#coldTxt').textContent = spot.opener + ' 開 ' + info.openBb + 'bb → ' + spot.tbettor +
-      ' 3-bet 到 ' + info.tbBb + 'bb（' + coldPctCur.toFixed(1) + '% 的手牌），你在 ' +
-      spot.hero + '，有效籌碼 ' + info.effBb + 'bb｜' +
-      aggroTxt + ' ' + (tbCombos / 1326 * 100).toFixed(1) + '%（' + tbCombos + ' combo）' +
+      ? t('冷 4-bet 到 ') + info.fourBetBb.toFixed(1) + 'bb' + (info.fourBetAllIn ? t('＝全下') : '')
+      : t('全下');
+    $('#coldTxt').textContent = spot.opener + t(' 開 ') + info.openBb + 'bb → ' + spot.tbettor +
+      t(' 3-bet 到 ') + info.tbBb + t('bb（') + coldPctCur.toFixed(1) + t('% 的手牌），你在 ') +
+      spot.hero + t('，有效籌碼 ') + info.effBb + t('bb｜') +
+      aggroTxt + ' ' + (tbCombos / 1326 * 100).toFixed(1) + t('%（') + tbCombos + t(' combo）') +
       (info.mode === 'normal'
-        ? '＋冷跟 ' + (callCombos / 1326 * 100).toFixed(1) + '%（' + callCombos + ' combo）'
-        : '，其餘蓋牌');
-    $('#coldNote').textContent = '你要補 ' + info.toCall + 'bb 進 ' + info.pot +
-      'bb 底池 → 需要 ' + (info.needEq * 100).toFixed(1) + '% 勝率' +
-      (spot.oopPenalty ? '，再加 ' + (spot.oopPenalty * 100).toFixed(1) +
-        ' 點的無位置代價（接下來三條街都要無位置面對兩家）' : '（你有位置，沒有額外代價）') +
-      '。' + (info.mode === 'normal'
-        ? '跟注後 SPR ' + info.spr.toFixed(1) +
-          (info.effBb > Ranges.VS3B_BASE_BB ? '，籌碼深 → 小對子的 set mining 價值變大。'
-            : info.effBb < Ranges.VS3B_BASE_BB ? '，籌碼淺 → 小對子先掉出冷跟範圍。' : '。')
-        : 'SPR 太低 → 沒有冷跟這個選項，只剩全下或棄牌。') + spot.note;
+        ? t('＋冷跟 ') + (callCombos / 1326 * 100).toFixed(1) + t('%（') + callCombos + t(' combo）')
+        : t('，其餘蓋牌'));
+    $('#coldNote').textContent = t('你要補 ') + info.toCall + t('bb 進 ') + info.pot +
+      t('bb 底池 → 需要 ') + (info.needEq * 100).toFixed(1) + t('% 勝率') +
+      (spot.oopPenalty ? t('，再加 ') + (spot.oopPenalty * 100).toFixed(1) +
+        t(' 點的無位置代價（接下來三條街都要無位置面對兩家）') : t('（你有位置，沒有額外代價）')) +
+      t('。') + (info.mode === 'normal'
+        ? t('跟注後 SPR ') + info.spr.toFixed(1) +
+          (info.effBb > Ranges.VS3B_BASE_BB ? t('，籌碼深 → 小對子的 set mining 價值變大。')
+            : info.effBb < Ranges.VS3B_BASE_BB ? t('，籌碼淺 → 小對子先掉出冷跟範圍。') : t('。'))
+        : t('SPR 太低 → 沒有冷跟這個選項，只剩全下或棄牌。')) + spot.note;
     $('#coldSpot').value = coldKeyCur;
     if (!coldSliding) $('#coldPct').value = coldPctCur;
     $('#coldPctVal').textContent = coldPctCur.toFixed(1) + '%' +
-      (coldPctChanged() ? '' : '（該情境建議值）');
+      (coldPctChanged() ? '' : t('（該情境建議值）'));
     if (!coldStackSliding) $('#coldStack').value = coldStackCur;
     $('#coldStackVal').textContent = coldStackCur + 'bb';
   }
@@ -1770,30 +1779,30 @@
     var opts = { role: $('#cbRole').value, potType: $('#cbPot').value };
     var tex = Postflop.classifyBoard(board);
     var rp = Postflop.cbetRangePolicy(tex, opts);
-    var summary = '<b>' + cardsHtml(board) + '</b>　' + tex.label +
-      '（濕度 ' + tex.wetness.toFixed(2) + '）<br>' +
-      '整體建議：<b>' + Math.round(rp.freq * 100) + '% 的頻率持續下注</b>，主要尺度 <b>' +
-      rp.sizeTxt + '</b>。<br><span class="hint">' + rp.why + '</span>';
+    var summary = '<b>' + cardsHtml(board) + t('</b>　') + tex.label +
+      t('（濕度 ') + tex.wetness.toFixed(2) + t('）<br>') +
+      t('整體建議：<b>') + Math.round(rp.freq * 100) + t('% 的頻率持續下注</b>，主要尺度 <b>') +
+      rp.sizeTxt + t('</b>。<br><span class="hint">') + rp.why + '</span>';
     if (hero) {
       var hp = Postflop.cbetHandPolicy(hero, board, opts);
-      summary += '<hr>你的 ' + cardsHtml(hero) + '：' + hp.hand.label +
-        '（' + hp.hand.bucketTxt + '）→ <b class="' +
+      summary += t('<hr>你的 ') + cardsHtml(hero) + t('：') + hp.hand.label +
+        t('（') + hp.hand.bucketTxt + t('）→ <b class="') +
         (hp.action === 'check' ? 'neg' : 'pos') + '">' + hp.actionTxt + '</b><br>' +
         '<span class="hint">' + hp.why + '</span>';
     }
     $('#cbSummary').innerHTML = summary;
 
-    var rows = '<tr><th>項目</th><th>值</th></tr>';
+    var rows = t('<tr><th>項目</th><th>值</th></tr>');
     function row(k, v) { rows += '<tr><td>' + k + '</td><td>' + v + '</td></tr>'; }
-    row('最大張', Evaluator.RANKS[tex.highCard - 2]);
-    row('花色', tex.monotone ? '單色（3 張以上同花色）' : tex.twoTone ? '兩色' : '彩虹');
-    row('配對', tex.paired ? (tex.trips ? '三條面' : '配對面') : '無');
-    row('順子連結度', tex.straightSpan + ' / 5（同一順子窗內的張數）');
-    row('濕度', tex.wetness.toFixed(2) + '（' + tex.wetTxt + '）');
-    row('建議 c-bet 頻率', Math.round(rp.freq * 100) + '%');
-    row('建議尺度', rp.sizeTxt);
-    row('對手面對 33% 的 MDF', (Postflop.mdf(0.33, 1) * 100).toFixed(0) + '%');
-    row('對手面對 75% 的 MDF', (Postflop.mdf(0.75, 1) * 100).toFixed(0) + '%');
+    row(t('最大張'), Evaluator.RANKS[tex.highCard - 2]);
+    row(t('花色'), tex.monotone ? t('單色（3 張以上同花色）') : tex.twoTone ? t('兩色') : t('彩虹'));
+    row(t('配對'), tex.paired ? (tex.trips ? t('三條面') : t('配對面')) : t('無'));
+    row(t('順子連結度'), tex.straightSpan + t(' / 5（同一順子窗內的張數）'));
+    row(t('濕度'), tex.wetness.toFixed(2) + t('（') + tex.wetTxt + t('）'));
+    row(t('建議 c-bet 頻率'), Math.round(rp.freq * 100) + '%');
+    row(t('建議尺度'), rp.sizeTxt);
+    row(t('對手面對 33% 的 MDF'), (Postflop.mdf(0.33, 1) * 100).toFixed(0) + '%');
+    row(t('對手面對 75% 的 MDF'), (Postflop.mdf(0.75, 1) * 100).toFixed(0) + '%');
     $('#cbTable').innerHTML = rows;
     $('#cbResult').hidden = false;
   });
@@ -1801,15 +1810,15 @@
   /* ---------- MDF / 詐唬比速查表 ---------- */
   (function () {
     var SIZES = [0.25, 0.33, 0.5, 0.66, 0.75, 1, 1.5, 2];
-    var html = '<tr><th>下注（底池比）</th><th>MDF</th><th>對手棄牌超過</th>' +
-      '<th>跟注賠率</th><th>value : bluff</th></tr>';
+    var html = t('<tr><th>下注（底池比）</th><th>MDF</th><th>對手棄牌超過</th>') +
+      t('<th>跟注賠率</th><th>value : bluff</th></tr>');
     SIZES.forEach(function (f) {
       var m = Postflop.mdf(f, 1);
       var need = Postflop.callPotOdds(f, 1);
       // 平衡時 bluff = value × bet/(pot+bet) → value : bluff = (pot+bet) : bet
       var ratio = (1 + f) / f;
       html += '<tr><td>' + Math.round(f * 100) + '%</td><td>' + (m * 100).toFixed(0) +
-        '%</td><td>' + ((1 - m) * 100).toFixed(0) + '% 就該詐唬</td><td>' +
+        '%</td><td>' + ((1 - m) * 100).toFixed(0) + t('% 就該詐唬</td><td>') +
         (need * 100).toFixed(0) + '%</td><td>' + ratio.toFixed(1) + ' : 1</td></tr>';
     });
     $('#mdfTable').innerHTML = html;
@@ -1818,10 +1827,10 @@
   /* ---------- Outs / 賠率速查表 ---------- */
   (function () {
     var DRAWS = {
-      2: '口袋對 → set', 4: '卡順（gutshot）', 6: '兩張高牌',
-      8: '兩頭順（OESD）', 9: '同花聽牌', 12: '同花＋卡順', 15: '同花＋兩頭順'
+      2: t('口袋對 → set'), 4: t('卡順（gutshot）'), 6: t('兩張高牌'),
+      8: t('兩頭順（OESD）'), 9: t('同花聽牌'), 12: t('同花＋卡順'), 15: t('同花＋兩頭順')
     };
-    var html = '<tr><th>Outs</th><th>常見聽牌</th><th>轉牌</th><th>河牌</th><th>轉+河</th></tr>';
+    var html = t('<tr><th>Outs</th><th>常見聽牌</th><th>轉牌</th><th>河牌</th><th>轉+河</th></tr>');
     for (var o = 2; o <= 15; o++) {
       var pTurn = o / 47, pRiver = o / 46;
       var pBoth = 1 - (47 - o) / 47 * (46 - o) / 46;
@@ -1847,16 +1856,16 @@
   function quizSave(mode, s) { localStorage.setItem(QUIZ_KEYS[mode], JSON.stringify(s)); }
   function scoreLine(name, s) {
     return s.total
-      ? name + '：' + s.correct + ' / ' + s.total + '（' + Math.round(s.correct / s.total * 100) + '%）'
+      ? name + t('：') + s.correct + ' / ' + s.total + t('（') + Math.round(s.correct / s.total * 100) + t('%）')
       : '';
   }
   function renderQuizScore() {
     $('#quizScoreTxt').textContent =
       [scoreLine('Push/Fold', quizScore('pf')), scoreLine('RFI', quizScore('rfi')),
-       scoreLine('面對開牌', quizScore('def')), scoreLine('被 3-bet', quizScore('v3b')),
-       scoreLine('冷 4-bet', quizScore('cold')),
-       scoreLine('翻後 c-bet', quizScore('cb')), scoreLine('河牌接 bluff', quizScore('bc'))]
-        .filter(Boolean).join(' ｜ ');
+       scoreLine(t('面對開牌'), quizScore('def')), scoreLine(t('被 3-bet'), quizScore('v3b')),
+       scoreLine(t('冷 4-bet'), quizScore('cold')),
+       scoreLine(t('翻後 c-bet'), quizScore('cb')), scoreLine(t('河牌接 bluff'), quizScore('bc'))]
+        .filter(Boolean).join(t(' ｜ '));
   }
 
   function randHandIdx() {
@@ -1909,19 +1918,19 @@
   }
 
   function v3bAggroLabel(info) {
-    return info.mode === 'callAllin' ? '跟全下'
-      : info.mode === 'jamOrFold' ? '4-bet 全下' : '4-bet';
+    return info.mode === 'callAllin' ? t('跟全下')
+      : info.mode === 'jamOrFold' ? t('4-bet 全下') : '4-bet';
   }
   function v3bActionTxt(info) {
     return info.mode === 'normal'
-      ? '4-bet、跟注還是蓋牌'
-      : v3bAggroLabel(info) + '還是蓋牌';
+      ? t('4-bet、跟注還是蓋牌')
+      : v3bAggroLabel(info) + t('還是蓋牌');
   }
-  function defAggroLabel(info) { return info.threeBetAllIn ? '3-bet 全下' : '3-bet'; }
+  function defAggroLabel(info) { return info.threeBetAllIn ? t('3-bet 全下') : '3-bet'; }
   function defActionTxt(info) {
     return info.mode === 'normal'
-      ? defAggroLabel(info) + '、跟注還是蓋牌'
-      : defAggroLabel(info) + '還是蓋牌';
+      ? defAggroLabel(info) + t('、跟注還是蓋牌')
+      : defAggroLabel(info) + t('還是蓋牌');
   }
   /** 該深度下的開牌正解 — 與圖表一致：100bb 看建議表，其餘依深度重排（寬度不變） */
   function rfiStateAt(table, pos, bb, idx) {
@@ -1952,10 +1961,10 @@
                         def: '#btnQuizModeDef', v3b: '#btnQuizModeV3b',
                         cold: '#btnQuizModeCold',
                         cb: '#btnQuizModeCb', bc: '#btnQuizModeBc' };
-  var QUIZ_AGGRO_TXT = { pf: '全下', rfi: '加注', def: '3-bet', v3b: '4-bet',
-                         cold: '冷 4-bet', cb: '下注 75%', bc: '' };
-  var QUIZ_CALL_TXT = { def: '跟注', v3b: '跟注', cold: '冷跟', cb: '下注 33%', bc: '跟注' };
-  var QUIZ_FOLD_TXT = { cb: '過牌' };
+  var QUIZ_AGGRO_TXT = { pf: t('全下'), rfi: t('加注'), def: '3-bet', v3b: '4-bet',
+                         cold: t('冷 4-bet'), cb: t('下注 75%'), bc: '' };
+  var QUIZ_CALL_TXT = { def: t('跟注'), v3b: t('跟注'), cold: t('冷跟'), cb: t('下注 33%'), bc: t('跟注') };
+  var QUIZ_FOLD_TXT = { cb: t('過牌') };
   // 有「中間選項」的題型（三選一）；bc 的中間選項就是跟注（沒有加注）
   function quizHasCall(mode) { return !!QUIZ_CALL_TXT[mode]; }
   function quizHasAggro(mode) { return mode !== 'bc'; }
@@ -1972,8 +1981,8 @@
     $('#btnQuizPush').textContent = QUIZ_AGGRO_TXT[mode] || '';
     $('#btnQuizPush').hidden = !quizHasAggro(mode);
     $('#btnQuizCall').hidden = !quizHasCall(mode);
-    $('#btnQuizCall').textContent = QUIZ_CALL_TXT[mode] || '跟注';
-    $('#btnQuizFold').textContent = QUIZ_FOLD_TXT[mode] || '蓋牌';
+    $('#btnQuizCall').textContent = QUIZ_CALL_TXT[mode] || t('跟注');
+    $('#btnQuizFold').textContent = QUIZ_FOLD_TXT[mode] || t('蓋牌');
     $('#quizBoard').hidden = quizIsPreflop(mode);
     if (!$('#quizRun').hidden) quizNext();
   }
@@ -2003,9 +2012,9 @@
     return null;
   }
   function freqTxt(mode, fr, hasCall) {
-    return '（模型頻率：' + QUIZ_AGGRO_TXT[mode] + ' ' + Math.round(fr.aggro * 100) + '%' +
-      (hasCall ? '、跟注 ' + Math.round(fr.call * 100) + '%' : '') +
-      '、棄牌 ' + Math.round(fr.fold * 100) + '%）';
+    return t('（模型頻率：') + QUIZ_AGGRO_TXT[mode] + ' ' + Math.round(fr.aggro * 100) + '%' +
+      (hasCall ? t('、跟注 ') + Math.round(fr.call * 100) + '%' : '') +
+      t('、棄牌 ') + Math.round(fr.fold * 100) + t('%）');
   }
   Object.keys(QUIZ_MODE_BTN).forEach(function (m) {
     $(QUIZ_MODE_BTN[m]).addEventListener('click', function () { setQuizMode(m); });
@@ -2016,26 +2025,26 @@
     if (quizMode === 'pf') {
       var S = 2 + Math.floor(Math.random() * 14); // 2–15 bb
       quizCur = { mode: 'pf', S: S, idx: randHandIdx() };
-      $('#quizInfo').textContent = '你在 SB（按鈕位），有效籌碼 ' + S + ' bb。推還是棄？';
+      $('#quizInfo').textContent = t('你在 SB（按鈕位），有效籌碼 ') + S + t(' bb。推還是棄？');
     } else if (quizMode === 'rfi') {
       var rtable = Math.random() < 0.5 ? '6' : '9';
       var pos = pick(rtable === '9' ? Ranges.RFI_POS_9 : Ranges.RFI_POS_6);
       var rbb = pick(QUIZ_DEPTHS);
       var rInfo = Ranges.rfiStackInfo(rbb);
       quizCur = { mode: 'rfi', table: rtable, pos: pos, bb: rbb, idx: randHandIdx() };
-      $('#quizInfo').textContent = rtable + '-max，有效籌碼 ' + rInfo.effBb + 'bb，你在 ' +
-        RFI_TABLES[rtable][pos].name + '，前面無人入池。' +
-        (rInfo.mode === 'jam' ? '開牌等於全下 —— 全下還是蓋牌？' : '開牌加注還是蓋牌？');
-      $('#btnQuizPush').textContent = rInfo.mode === 'jam' ? '全下' : '加注';
+      $('#quizInfo').textContent = rtable + t('-max，有效籌碼 ') + rInfo.effBb + t('bb，你在 ') +
+        RFI_TABLES[rtable][pos].name + t('，前面無人入池。') +
+        (rInfo.mode === 'jam' ? t('開牌等於全下 —— 全下還是蓋牌？') : t('開牌加注還是蓋牌？'));
+      $('#btnQuizPush').textContent = rInfo.mode === 'jam' ? t('全下') : t('加注');
     } else if (quizMode === 'def') {
       var spotKey = pickSpot(Ranges.DEF_SPOT_KEYS, Ranges.DEF_SPOTS);
       var spot = Ranges.DEF_SPOTS[spotKey];
       var dbb = QUIZ_DEPTHS[Math.floor(Math.random() * QUIZ_DEPTHS.length)];
       var dInfo = Ranges.defStackInfo(spotKey, dbb);
       quizCur = { mode: 'def', spot: spotKey, bb: dbb, idx: randHandIdx() };
-      $('#quizInfo').textContent = (spot.table === 9 ? '9-max' : '6-max') + '，有效籌碼 ' +
-        dInfo.effBb + 'bb，' + spot.sizeTxt + '，你在 ' + spot.hero + '。' +
-        defActionTxt(dInfo) + '？';
+      $('#quizInfo').textContent = (spot.table === 9 ? '9-max' : '6-max') + t('，有效籌碼 ') +
+        dInfo.effBb + t('bb，') + spot.sizeTxt + t('，你在 ') + spot.hero + t('。') +
+        defActionTxt(dInfo) + t('？');
       // SPR 太低就沒有平跟這個選項
       $('#btnQuizCall').hidden = dInfo.mode !== 'normal';
       $('#btnQuizPush').textContent = defAggroLabel(dInfo);
@@ -2052,32 +2061,32 @@
       quizCur = { mode: 'cold', spot: cKey, villain: cVillain, pct: cPct,
                   bb: cbb, idx: randHandIdx() };
       $('#quizInfo').textContent = (cSpot.table === 9 ? '9-max' : '6-max') +
-        '，有效籌碼 ' + cInfo.effBb + 'bb。' + cSpot.opener + ' 開 ' + cInfo.openBb +
-        'bb，' + cSpot.tbettor + ' 3-bet 到 ' + cInfo.tbBb + 'bb（他這條線 3-bet 約 ' +
-        cPct.toFixed(1) + '% 的手牌），你在 ' + cSpot.hero + '，還沒投錢。' +
-        (cInfo.mode === 'normal' ? '冷 4-bet、冷跟還是蓋牌？' : '全下還是蓋牌？');
+        t('，有效籌碼 ') + cInfo.effBb + t('bb。') + cSpot.opener + t(' 開 ') + cInfo.openBb +
+        t('bb，') + cSpot.tbettor + t(' 3-bet 到 ') + cInfo.tbBb + t('bb（他這條線 3-bet 約 ') +
+        cPct.toFixed(1) + t('% 的手牌），你在 ') + cSpot.hero + t('，還沒投錢。') +
+        (cInfo.mode === 'normal' ? t('冷 4-bet、冷跟還是蓋牌？') : t('全下還是蓋牌？'));
       $('#btnQuizCall').hidden = cInfo.mode !== 'normal';
-      $('#btnQuizPush').textContent = cInfo.mode === 'normal' ? '冷 4-bet' : '全下';
+      $('#btnQuizPush').textContent = cInfo.mode === 'normal' ? t('冷 4-bet') : t('全下');
     } else if (quizMode === 'cb') {
       var cs = Postflop.buildCbetSpot({});
       quizCur = { mode: 'cb', spot: cs };
       $('#quizBoard').innerHTML = cardsHtml(cs.board) +
         '<span class="board-tag">' + cs.policy.texture.label +
-        '（濕度 ' + cs.policy.texture.wetness.toFixed(2) + '）</span>';
+        t('（濕度 ') + cs.policy.texture.wetness.toFixed(2) + t('）</span>');
       $('#quizInfo').textContent =
-        (cs.potType === '3bp' ? '3-bet 底池' : '單次加注底池') + '，你是翻前加注者，' +
-        (cs.role === 'ip' ? '有位置' : '無位置') + '，對手過牌給你。' +
-        '下注 75%、下注 33% 還是過牌？';
+        (cs.potType === '3bp' ? t('3-bet 底池') : t('單次加注底池')) + t('，你是翻前加注者，') +
+        (cs.role === 'ip' ? t('有位置') : t('無位置')) + t('，對手過牌給你。') +
+        t('下注 75%、下注 33% 還是過牌？');
     } else if (quizMode === 'bc') {
       var rs = Postflop.buildRiverSpot({ pot: 10 });
       quizCur = { mode: 'bc', spot: rs };
       $('#quizBoard').innerHTML = cardsHtml(rs.board) +
-        '<span class="board-tag">你的牌力：' + rs.heroClass.label + '</span>';
+        t('<span class="board-tag">你的牌力：') + rs.heroClass.label + '</span>';
       $('#quizInfo').textContent =
-        '河牌，底池 ' + rs.pot + 'bb，對手下注 ' + rs.bet + 'bb（' +
-        Math.round(rs.betFrac * 100) + '% 底池）。他這條線的下注 range 是：價值 ' +
-        rs.nValue + ' combo（兩對以上）＋詐唬 ' + rs.nBluff +
-        ' combo（高牌）。你這手贏光他所有詐唬、輸給所有價值 —— 跟還是棄？';
+        t('河牌，底池 ') + rs.pot + t('bb，對手下注 ') + rs.bet + t('bb（') +
+        Math.round(rs.betFrac * 100) + t('% 底池）。他這條線的下注 range 是：價值 ') +
+        rs.nValue + t(' combo（兩對以上）＋詐唬 ') + rs.nBluff +
+        t(' combo（高牌）。你這手贏光他所有詐唬、輸給所有價值 —— 跟還是棄？');
     } else {
       var vKey = pickSpot(Ranges.VS3B_SPOT_KEYS, Ranges.VS3B_SPOTS);
       var vSpot = Ranges.VS3B_SPOTS[vKey];
@@ -2085,10 +2094,10 @@
       var vInfo = Ranges.vs3bStackInfo(vKey, bb);
       quizCur = { mode: 'v3b', spot: vKey, bb: bb, idx: randHandIdx() };
       $('#quizInfo').textContent = (vSpot.table === 9 ? '9-max' : '6-max') +
-        '，有效籌碼 ' + vInfo.effBb + 'bb，你在 ' +
-        vSpot.hero + ' 開 ' + vInfo.openBb + 'bb，' + vSpot.villain + ' 3-bet 到 ' +
-        vInfo.tbBb + 'bb' + (vInfo.mode === 'callAllin' ? '（等於全下你）' : '') + '。' +
-        v3bActionTxt(vInfo) + '？';
+        t('，有效籌碼 ') + vInfo.effBb + t('bb，你在 ') +
+        vSpot.hero + t(' 開 ') + vInfo.openBb + t('bb，') + vSpot.villain + t(' 3-bet 到 ') +
+        vInfo.tbBb + 'bb' + (vInfo.mode === 'callAllin' ? t('（等於全下你）') : '') + t('。') +
+        v3bActionTxt(vInfo) + t('？');
       // 淺籌碼沒有平跟這個選項 → 該題不給「跟注」按鈕
       $('#btnQuizCall').hidden = vInfo.mode !== 'normal';
       $('#btnQuizPush').textContent = v3bAggroLabel(vInfo);
@@ -2116,21 +2125,21 @@
       ok = (action === 'aggro') === !!correct;
       bestAct = correct ? 'aggro' : 'fold';
       qKey = 'pf:' + quizCur.S + ':' + quizCur.idx;
-      detail = ' Nash 均衡：' + PushFold.classLabel(quizCur.idx) + ' 在 ' + quizCur.S + ' bb ' +
-        (correct ? '應該<b>全下</b>' : '應該<b>蓋牌</b>') +
-        '（均衡全下頻率 ' + Math.round(sol.push[quizCur.idx] * 100) + '%）。';
+      detail = t(' Nash 均衡：') + PushFold.classLabel(quizCur.idx) + t(' 在 ') + quizCur.S + ' bb ' +
+        (correct ? t('應該<b>全下</b>') : t('應該<b>蓋牌</b>')) +
+        t('（均衡全下頻率 ') + Math.round(sol.push[quizCur.idx] * 100) + t('%）。');
     } else if (quizCur.mode === 'rfi') {
       var rInfo2 = Ranges.rfiStackInfo(quizCur.bb);
       var inRange = rfiStateAt(quizCur.table, quizCur.pos, quizCur.bb, quizCur.idx) === 'in';
       ok = (action === 'aggro') === inRange;
       bestAct = inRange ? 'aggro' : 'fold';
       qKey = 'rfi:' + quizCur.table + ':' + quizCur.pos + ':' + quizCur.bb + ':' + quizCur.idx;
-      var rAggro = rInfo2.mode === 'jam' ? '全下' : '加注';
+      var rAggro = rInfo2.mode === 'jam' ? t('全下') : t('加注');
       detail = ' ' + quizCur.table + '-max ' + RFI_TABLES[quizCur.table][quizCur.pos].name +
-        ' 開牌（' + rInfo2.effBb + 'bb）：' +
+        t(' 開牌（') + rInfo2.effBb + t('bb）：') +
         PushFold.classLabel(quizCur.idx) +
-        (inRange ? ' 在開牌 range 內，應該<b>' + rAggro + '</b>。'
-                 : ' 不在開牌 range，應該<b>蓋牌</b>。');
+        (inRange ? t(' 在開牌 range 內，應該<b>') + rAggro + t('</b>。')
+                 : t(' 不在開牌 range，應該<b>蓋牌</b>。'));
     } else if (quizCur.mode === 'def') {
       var dInfo2 = Ranges.defStackInfo(quizCur.spot, quizCur.bb);
       var dst = defStateAt(quizCur.spot, quizCur.bb, quizCur.idx);
@@ -2139,11 +2148,11 @@
       bestAct = best;
       qKey = 'def:' + quizCur.spot + ':' + quizCur.bb + ':' + quizCur.idx;
       var bestTxt = best === 'aggro' ? '<b>' + defAggroLabel(dInfo2) + '</b>'
-        : best === 'call' ? '<b>跟注</b>' : '<b>蓋牌</b>';
-      detail = ' ' + Ranges.DEF_SPOTS[quizCur.spot].name + '（' + dInfo2.effBb + 'bb）：' +
-        PushFold.classLabel(quizCur.idx) + ' 應該' + bestTxt +
-        '（跟注要投 ' + dInfo2.toCall + 'bb 進 ' + dInfo2.pot + 'bb 底池，需約 ' +
-        Math.round(dInfo2.needEq * 100) + '%）。';
+        : best === 'call' ? t('<b>跟注</b>') : t('<b>蓋牌</b>');
+      detail = ' ' + Ranges.DEF_SPOTS[quizCur.spot].name + t('（') + dInfo2.effBb + t('bb）：') +
+        PushFold.classLabel(quizCur.idx) + t(' 應該') + bestTxt +
+        t('（跟注要投 ') + dInfo2.toCall + t('bb 進 ') + dInfo2.pot + t('bb 底池，需約 ') +
+        Math.round(dInfo2.needEq * 100) + t('%）。');
     } else if (quizCur.mode === 'cold') {
       var cInfo2 = Ranges.coldStackInfo(quizCur.spot, quizCur.bb);
       var cSpot2 = Ranges.COLD_SPOTS[quizCur.spot];
@@ -2155,14 +2164,14 @@
       qKey = 'cold:' + quizCur.spot + ':' + quizCur.pct.toFixed(1) + ':' +
         quizCur.bb + ':' + quizCur.idx;
       var cEq = PushFold.equityVsRange(quizCur.idx, [], quizCur.villain).equity;
-      detail = ' ' + PushFold.classLabel(quizCur.idx) + ' 對上 ' + cSpot2.tbettor +
-        ' 的 3-bet range（' + quizCur.pct.toFixed(1) + '%）只有 <b>' +
-        (cEq * 100).toFixed(1) + '%</b> 勝率，你要補 ' + cInfo2.toCall + 'bb 進 ' +
-        cInfo2.pot + 'bb 底池 → 需要 ' + (cInfo2.needEq * 100).toFixed(1) + '%' +
-        (cSpot2.oopPenalty ? '（再加 ' + (cSpot2.oopPenalty * 100).toFixed(1) +
-          ' 點的無位置代價）' : '') + ' → 應該<b>' +
-        (cBest === 'aggro' ? (cInfo2.mode === 'normal' ? '冷 4-bet' : '全下')
-          : cBest === 'call' ? '冷跟' : '蓋牌') + '</b>。';
+      detail = ' ' + PushFold.classLabel(quizCur.idx) + t(' 對上 ') + cSpot2.tbettor +
+        t(' 的 3-bet range（') + quizCur.pct.toFixed(1) + t('%）只有 <b>') +
+        (cEq * 100).toFixed(1) + t('%</b> 勝率，你要補 ') + cInfo2.toCall + t('bb 進 ') +
+        cInfo2.pot + t('bb 底池 → 需要 ') + (cInfo2.needEq * 100).toFixed(1) + '%' +
+        (cSpot2.oopPenalty ? t('（再加 ') + (cSpot2.oopPenalty * 100).toFixed(1) +
+          t(' 點的無位置代價）') : '') + t(' → 應該<b>') +
+        (cBest === 'aggro' ? (cInfo2.mode === 'normal' ? t('冷 4-bet') : t('全下'))
+          : cBest === 'call' ? t('冷跟') : t('蓋牌')) + t('</b>。');
     } else if (quizCur.mode === 'cb') {
       var cs2 = quizCur.spot, cp = cs2.policy;
       var cBest = cp.action === 'big' ? 'aggro' : cp.action === 'small' ? 'call' : 'fold';
@@ -2170,24 +2179,24 @@
       bestAct = cBest;
       qKey = 'cb:' + cs2.board.concat(cs2.hero).map(Evaluator.cardToString).join('') +
         ':' + cs2.role + ':' + cs2.potType;
-      detail = ' ' + cp.texture.label + '（濕度 ' + cp.texture.wetness.toFixed(2) + '），你是 ' +
-        cp.hand.label + ' → 應該<b>' + cp.actionTxt + '</b>。' + cp.why +
-        '。這個牌面整體建議 c-bet 頻率約 ' + Math.round(cp.rangePolicy.freq * 100) +
-        '%、主要尺度 ' + cp.rangePolicy.sizeTxt + '。';
+      detail = ' ' + cp.texture.label + t('（濕度 ') + cp.texture.wetness.toFixed(2) + t('），你是 ') +
+        cp.hand.label + t(' → 應該<b>') + cp.actionTxt + t('</b>。') + cp.why +
+        t('。這個牌面整體建議 c-bet 頻率約 ') + Math.round(cp.rangePolicy.freq * 100) +
+        t('%、主要尺度 ') + cp.rangePolicy.sizeTxt + t('。');
     } else if (quizCur.mode === 'bc') {
       var rs2 = quizCur.spot;
       ok = action === rs2.best;
       bestAct = rs2.best;
       qKey = 'bc:' + rs2.board.concat(rs2.hero).map(Evaluator.cardToString).join('') +
         ':' + rs2.bet + ':' + rs2.nBluff;
-      detail = ' 對手詐唬占比 ' + (rs2.equity * 100).toFixed(1) + '%（' + rs2.nBluff + ' bluff / ' +
-        (rs2.nBluff + rs2.nValue) + ' 總 combo），你的底池賠率需要 ' +
-        (rs2.needEq * 100).toFixed(1) + '% → 應該<b>' + (rs2.best === 'call' ? '跟注' : '蓋牌') +
-        '</b>（跟注 EV ' + (rs2.evBB >= 0 ? '+' : '') + rs2.evBB.toFixed(2) + 'bb）。' +
-        '平衡的話他該有 ' + rs2.balancedBluff.toFixed(1) + ' 個詐唬 combo，' +
-        '他實際 ' + rs2.nBluff + ' 個 → ' +
-        (rs2.nBluff > rs2.balancedBluff ? '詐唬過多，你該多跟' : '詐唬不足，你該多棄') +
-        '。你面對這個尺度的 MDF 是 ' + (rs2.mdf * 100).toFixed(0) + '%。';
+      detail = t(' 對手詐唬占比 ') + (rs2.equity * 100).toFixed(1) + t('%（') + rs2.nBluff + ' bluff / ' +
+        (rs2.nBluff + rs2.nValue) + t(' 總 combo），你的底池賠率需要 ') +
+        (rs2.needEq * 100).toFixed(1) + t('% → 應該<b>') + (rs2.best === 'call' ? t('跟注') : t('蓋牌')) +
+        t('</b>（跟注 EV ') + (rs2.evBB >= 0 ? '+' : '') + rs2.evBB.toFixed(2) + t('bb）。') +
+        t('平衡的話他該有 ') + rs2.balancedBluff.toFixed(1) + t(' 個詐唬 combo，') +
+        t('他實際 ') + rs2.nBluff + t(' 個 → ') +
+        (rs2.nBluff > rs2.balancedBluff ? t('詐唬過多，你該多跟') : t('詐唬不足，你該多棄')) +
+        t('。你面對這個尺度的 MDF 是 ') + (rs2.mdf * 100).toFixed(0) + t('%。');
     } else {
       var vInfo2 = Ranges.vs3bStackInfo(quizCur.spot, quizCur.bb);
       var st3 = v3bStateAt(quizCur.spot, quizCur.bb, quizCur.idx);
@@ -2196,20 +2205,20 @@
       bestAct = vBest;
       qKey = 'v3b:' + quizCur.spot + ':' + quizCur.bb + ':' + quizCur.idx;
       var vBestTxt = vBest === 'aggro' ? '<b>' + v3bAggroLabel(vInfo2) + '</b>'
-        : vBest === 'call' ? '<b>跟注</b>' : '<b>蓋牌</b>';
-      detail = ' ' + Ranges.VS3B_SPOTS[quizCur.spot].name + '（' + vInfo2.effBb + 'bb）：' +
-        PushFold.classLabel(quizCur.idx) + ' 應該' + vBestTxt +
-        '（跟注要投 ' + vInfo2.toCall + 'bb 進 ' + vInfo2.pot + 'bb 底池，需約 ' +
+        : vBest === 'call' ? t('<b>跟注</b>') : t('<b>蓋牌</b>');
+      detail = ' ' + Ranges.VS3B_SPOTS[quizCur.spot].name + t('（') + vInfo2.effBb + t('bb）：') +
+        PushFold.classLabel(quizCur.idx) + t(' 應該') + vBestTxt +
+        t('（跟注要投 ') + vInfo2.toCall + t('bb 進 ') + vInfo2.pot + t('bb 底池，需約 ') +
         Math.round(vInfo2.needEq * 100) + '%' +
-        (vInfo2.mode === 'normal' ? '，跟注後 SPR ' + vInfo2.spr.toFixed(1) : '') + '）。';
+        (vInfo2.mode === 'normal' ? t('，跟注後 SPR ') + vInfo2.spr.toFixed(1) : '') + t('）。');
     }
     // 混合策略放寬：門檻附近的手牌本來就有多個動作，選到有足夠頻率的也算對
     if (!ok && quizIsPreflop(quizCur.mode)) {
       var fr = quizFreqs(quizCur);
       if (Ranges.mixTolerates(fr, action, bestAct)) {
         ok = true;
-        detail = ' 這手在門檻附近是<b>混合策略</b>，你選的動作也在頻率內 ' +
-          freqTxt(quizCur.mode, fr, !$('#btnQuizCall').hidden) + '。' + detail;
+        detail = t(' 這手在門檻附近是<b>混合策略</b>，你選的動作也在頻率內 ') +
+          freqTxt(quizCur.mode, fr, !$('#btnQuizCall').hidden) + t('。') + detail;
       }
     }
     var s = quizScore(quizCur.mode);
@@ -2223,13 +2232,13 @@
         payload.board = quizCur.spot.board.map(Evaluator.cardToString).join(' ');
         payload.aggro = QUIZ_AGGRO_TXT[quizCur.mode];
         payload.call = QUIZ_CALL_TXT[quizCur.mode];
-        payload.fold = QUIZ_FOLD_TXT[quizCur.mode] || '蓋牌';
+        payload.fold = QUIZ_FOLD_TXT[quizCur.mode] || t('蓋牌');
         payload.noAggro = quizCur.mode === 'bc';
         delete payload.idx;
       } else if (quizCur.mode === 'cold') {
         var pcInfo = Ranges.coldStackInfo(quizCur.spot, quizCur.bb);
-        payload.aggro = pcInfo.mode === 'normal' ? '冷 4-bet' : '全下';
-        payload.call = '冷跟';
+        payload.aggro = pcInfo.mode === 'normal' ? t('冷 4-bet') : t('全下');
+        payload.call = t('冷跟');
         payload.noCall = pcInfo.mode !== 'normal';
       } else if (quizCur.mode === 'v3b') {
         var pInfo = Ranges.vs3bStackInfo(quizCur.spot, quizCur.bb);
@@ -2240,14 +2249,14 @@
         payload.aggro = defAggroLabel(pdInfo);
         payload.noCall = pdInfo.mode !== 'normal';
       } else if (quizCur.mode === 'rfi') {
-        payload.aggro = Ranges.rfiStackInfo(quizCur.bb).mode === 'jam' ? '全下' : '加注';
+        payload.aggro = Ranges.rfiStackInfo(quizCur.bb).mode === 'jam' ? t('全下') : t('加注');
       }
       window.TRAINING.record(quizCur.mode, ok, qKey, payload);
     }
     var fb = $('#quizFeedback');
     fb.hidden = false;
-    fb.innerHTML = (ok ? '<span class="pos">✔ 正確！</span>' : '<span class="neg">✘ 錯誤。</span>') +
-      detail + '<br>目前成績 ' + s.correct + ' / ' + s.total;
+    fb.innerHTML = (ok ? t('<span class="pos">✔ 正確！</span>') : t('<span class="neg">✘ 錯誤。</span>')) +
+      detail + t('<br>目前成績 ') + s.correct + ' / ' + s.total;
     $('#btnQuizNext').hidden = false;
     $('#btnQuizPush').disabled = true;
     $('#btnQuizCall').disabled = true;
@@ -2295,7 +2304,7 @@
         var pct = parseFloat($('#rvhPct').value);
         if (!(pct > 0 && pct <= 100)) { alert('前 X% 請輸入 0.1–100'); return; }
         classes = PushFold.topPercentRange(pct);
-        rangeName = '前 ' + pct + '%';
+        rangeName = t('前 ') + pct + '%';
       }
     } catch (err) { alert(err.message); return; }
     if (!classes.length) { alert('range 是空的'); return; }
@@ -2305,27 +2314,27 @@
     });
     var btn = $('#btnCalcRvh');
     btn.disabled = true;
-    btn.textContent = '計算中…';
+    btn.textContent = t('計算中…');
     setTimeout(function () {
       try {
         var res = EquityLib.computeEquityVsCombos(hero, combos, board, 30000);
         var eqH = res.hero * 100, eqR = 100 - eqH;
         $('#rvhResult').hidden = false;
-        $('#rvhHeroTxt').textContent = 'Hero：' + eqH.toFixed(1) + '%';
-        $('#rvhRangeTxt').textContent = 'Range：' + eqR.toFixed(1) + '%';
+        $('#rvhHeroTxt').textContent = t('Hero：') + eqH.toFixed(1) + '%';
+        $('#rvhRangeTxt').textContent = t('Range：') + eqR.toFixed(1) + '%';
         $('#rvhBarHero').style.width = eqH + '%';
         $('#rvhBarRange').style.width = eqR + '%';
-        $('#rvhDetail').textContent = '對手 range「' + rangeName + '」：' + classes.length +
-          ' 類 / ' + res.combos + ' 可用 combo（已扣 blocker）｜' +
+        $('#rvhDetail').textContent = t('對手 range「') + rangeName + t('」：') + classes.length +
+          t(' 類 / ') + res.combos + t(' 可用 combo（已扣 blocker）｜') +
           (res.method === 'exact'
-            ? '窮舉 ' + res.trials.toLocaleString() + ' 種發牌'
-            : 'Monte Carlo ' + res.trials.toLocaleString() + ' 次（誤差約 ±0.6%）') +
-          (board.length ? '' : '｜翻前') + '，平手依勝率折半計入';
+            ? t('窮舉 ') + res.trials.toLocaleString() + t(' 種發牌')
+            : 'Monte Carlo ' + res.trials.toLocaleString() + t(' 次（誤差約 ±0.6%）')) +
+          (board.length ? '' : t('｜翻前')) + t('，平手依勝率折半計入');
       } catch (err) {
         alert('計算失敗：' + err.message);
       } finally {
         btn.disabled = false;
-        btn.textContent = '計算 vs range 勝率';
+        btn.textContent = t('計算 vs range 勝率');
       }
     }, 30);
   });
@@ -2336,8 +2345,8 @@
     var notation = $(notSel).value.trim();
     if (notation) return { classes: PushFold.rangeFromNotation(notation), name: notation };
     var pct = parseFloat($(pctSel).value);
-    if (!(pct > 0 && pct <= 100)) throw new Error(tag + ' 的「前 X%」請輸入 0.1–100');
-    return { classes: PushFold.topPercentRange(pct), name: '前 ' + pct + '%' };
+    if (!(pct > 0 && pct <= 100)) throw new Error(tag + t(' 的「前 X%」請輸入 0.1–100'));
+    return { classes: PushFold.topPercentRange(pct), name: t('前 ') + pct + '%' };
   }
 
   function renderRvrProfile(board, A, B) {
@@ -2346,14 +2355,14 @@
     var rows = Postflop.BUCKET_ORDER.map(function (b) {
       var na = pa.buckets[b], nb = pb.buckets[b];
       return '<tr><td>' + Postflop.BUCKET_NAMES[b] + '</td>' +
-        '<td>' + na + '（' + (pa.combos ? na / pa.combos * 100 : 0).toFixed(1) + '%）</td>' +
-        '<td>' + nb + '（' + (pb.combos ? nb / pb.combos * 100 : 0).toFixed(1) + '%）</td></tr>';
+        '<td>' + na + t('（') + (pa.combos ? na / pa.combos * 100 : 0).toFixed(1) + t('%）</td>') +
+        '<td>' + nb + t('（') + (pb.combos ? nb / pb.combos * 100 : 0).toFixed(1) + t('%）</td></tr>');
     }).join('');
     $('#rvrProfileTable').innerHTML =
-      '<tr><th>牌力</th><th>Range A</th><th>Range B</th></tr>' + rows +
-      '<tr><td><b>堅果（三條以上）</b></td><td>' + pa.nutPct.toFixed(1) + '%</td><td>' +
+      t('<tr><th>牌力</th><th>Range A</th><th>Range B</th></tr>') + rows +
+      t('<tr><td><b>堅果（三條以上）</b></td><td>') + pa.nutPct.toFixed(1) + '%</td><td>' +
       pb.nutPct.toFixed(1) + '%</td></tr>' +
-      '<tr><td><b>空氣</b></td><td>' + pa.airPct.toFixed(1) + '%</td><td>' +
+      t('<tr><td><b>空氣</b></td><td>') + pa.airPct.toFixed(1) + '%</td><td>' +
       pb.airPct.toFixed(1) + '%</td></tr>';
     $('#rvrProfileWrap').hidden = false;
     return { a: pa, b: pb };
@@ -2375,8 +2384,8 @@
     function show(eqA, detail) {
       var eqB = 100 - eqA;
       $('#rvrResult').hidden = false;
-      $('#rvrATxt').textContent = 'A ' + A.name + '：' + eqA.toFixed(1) + '%';
-      $('#rvrBTxt').textContent = 'B ' + B.name + '：' + eqB.toFixed(1) + '%';
+      $('#rvrATxt').textContent = 'A ' + A.name + t('：') + eqA.toFixed(1) + '%';
+      $('#rvrBTxt').textContent = 'B ' + B.name + t('：') + eqB.toFixed(1) + '%';
       $('#rvrBarA').style.width = eqA + '%';
       $('#rvrBarB').style.width = eqB + '%';
       $('#rvrDetail').textContent = detail;
@@ -2387,15 +2396,15 @@
       var r;
       try { r = PushFold.rangeVsRangeClasses(A.classes, B.classes); }
       catch (err) { alert(err.message); return; }
-      show(r.equityA * 100, '翻前：Range A ' + r.classesA + ' 類 / ' + r.combosA +
-        ' combo ｜ Range B ' + r.classesB + ' 類 / ' + r.combosB +
-        ' combo（169×169 勝率表加權，忽略 blocker，平手折半計入）');
+      show(r.equityA * 100, t('翻前：Range A ') + r.classesA + t(' 類 / ') + r.combosA +
+        t(' combo ｜ Range B ') + r.classesB + t(' 類 / ') + r.combosB +
+        t(' combo（169×169 勝率表加權，忽略 blocker，平手折半計入）'));
       return;
     }
 
     var btn = this;
     btn.disabled = true;
-    btn.textContent = '計算中…';
+    btn.textContent = t('計算中…');
     setTimeout(function () {
       try {
         var res = Postflop.rangeVsRangeBoard(A.classes, B.classes, board, 12000);
@@ -2404,15 +2413,15 @@
         var edge = (res.a - res.b) * 100;
         var nutEdge = prof.a.nutPct - prof.b.nutPct;
         show(res.a * 100,
-          board.length + ' 張公牌（' + tex.label + '，濕度 ' + tex.wetness.toFixed(2) + '）｜' +
-          'range 優勢：' + (edge >= 0 ? 'A' : 'B') + ' 領先 ' + Math.abs(edge).toFixed(1) +
-          ' 個百分點；堅果優勢：' + (nutEdge >= 0 ? 'A' : 'B') + ' 多 ' +
-          Math.abs(nutEdge).toFixed(1) + ' 個百分點。' +
-          'A ' + res.combosA + ' combo／B ' + res.combosB + ' combo，' +
-          (res.method === 'exact' ? '窮舉 ' : 'Monte Carlo ') + res.trials + ' 次。');
+          board.length + t(' 張公牌（') + tex.label + t('，濕度 ') + tex.wetness.toFixed(2) + t('）｜') +
+          t('range 優勢：') + (edge >= 0 ? 'A' : 'B') + t(' 領先 ') + Math.abs(edge).toFixed(1) +
+          t(' 個百分點；堅果優勢：') + (nutEdge >= 0 ? 'A' : 'B') + t(' 多 ') +
+          Math.abs(nutEdge).toFixed(1) + t(' 個百分點。') +
+          'A ' + res.combosA + t(' combo／B ') + res.combosB + t(' combo，') +
+          (res.method === 'exact' ? t('窮舉 ') : 'Monte Carlo ') + res.trials + t(' 次。'));
       } catch (err) { alert(err.message); }
       btn.disabled = false;
-      btn.textContent = '計算 range 勝率';
+      btn.textContent = t('計算 range 勝率');
     }, 20);
   });
 
@@ -2429,9 +2438,9 @@
   var handRecords = loadHands();
 
   var HS_BOARD_LABEL = {
-    flop: '翻牌公牌（3 張，例：Qh 7d 2s）',
-    turn: '轉牌（第 4 張，例：9c）',
-    river: '河牌（第 5 張，例：2d）'
+    flop: t('翻牌公牌（3 張，例：Qh 7d 2s）'),
+    turn: t('轉牌（第 4 張，例：9c）'),
+    river: t('河牌（第 5 張，例：2d）')
   };
   (function buildStreetBlocks() {
     var box = $('#hStreets');
@@ -2445,13 +2454,13 @@
           '<input type="text" class="hs-board" autocapitalize="off" autocomplete="off"></label>';
       }
       html += '<div class="grid-3">' +
-        '<label>行動前底池(bb)<input type="number" class="hs-pot" inputmode="decimal" step="any" min="0"></label>' +
-        '<label>需跟注(bb)<input type="number" class="hs-call" inputmode="decimal" step="any" min="0" placeholder="0"></label>' +
-        '<label>我的行動<select class="hs-action"><option value="">（略過）</option>' +
-        '<option value="fold">蓋牌</option><option value="call">跟注</option>' +
-        '<option value="raise">加注</option><option value="allin">全下</option></select></label>' +
+        t('<label>行動前底池(bb)<input type="number" class="hs-pot" inputmode="decimal" step="any" min="0"></label>') +
+        t('<label>需跟注(bb)<input type="number" class="hs-call" inputmode="decimal" step="any" min="0" placeholder="0"></label>') +
+        t('<label>我的行動<select class="hs-action"><option value="">（略過）</option>') +
+        t('<option value="fold">蓋牌</option><option value="call">跟注</option>') +
+        t('<option value="raise">加注</option><option value="allin">全下</option></select></label>') +
         '</div>' +
-        '<label>對手估計 range（例：77+ A9s+ KQo）' +
+        t('<label>對手估計 range（例：77+ A9s+ KQo）') +
         '<input type="text" class="hs-range" autocapitalize="off" autocomplete="off"></label>';
       div.innerHTML = html;
       box.appendChild(div);
@@ -2471,14 +2480,14 @@
       var action = block.querySelector('.hs-action').value;
       if (!action) return; // 該街略過
       if (boardSoFar.length !== HANDS.BOARD_LEN[st]) {
-        throw new Error(HANDS.STREET_NAMES[st] + ' 決策需要 ' + HANDS.BOARD_LEN[st] +
-          ' 張公牌（目前 ' + boardSoFar.length + ' 張，前面街的公牌也要填）');
+        throw new Error(HANDS.STREET_NAMES[st] + t(' 決策需要 ') + HANDS.BOARD_LEN[st] +
+          t(' 張公牌（目前 ') + boardSoFar.length + t(' 張，前面街的公牌也要填）'));
       }
       var pot = parseFloat(block.querySelector('.hs-pot').value);
       var toCall = parseFloat(block.querySelector('.hs-call').value) || 0;
       var range = block.querySelector('.hs-range').value.trim();
-      if (!(pot >= 0)) throw new Error(HANDS.STREET_NAMES[st] + '：請輸入行動前底池（bb）');
-      if (!range) throw new Error(HANDS.STREET_NAMES[st] + '：請輸入對手估計 range');
+      if (!(pot >= 0)) throw new Error(HANDS.STREET_NAMES[st] + t('：請輸入行動前底池（bb）'));
+      if (!range) throw new Error(HANDS.STREET_NAMES[st] + t('：請輸入對手估計 range'));
       out.push({ street: st, board: boardSoFar.slice(), pot: pot, toCall: toCall,
                  action: action, range: range });
     });
@@ -2495,7 +2504,7 @@
     if (!streets.length) { alert('至少記錄一街的決策（選一個行動）'); return; }
     var btn = $('#btnSaveHand');
     btn.disabled = true;
-    btn.textContent = '分析中…';
+    btn.textContent = t('分析中…');
     setTimeout(function () {
       try {
         streets.forEach(function (s) {
@@ -2534,7 +2543,7 @@
         alert('分析失敗：' + err.message);
       } finally {
         btn.disabled = false;
-        btn.textContent = '儲存並分析';
+        btn.textContent = t('儲存並分析');
       }
     }, 30);
   });
@@ -2547,22 +2556,22 @@
       : (a.verdict === 'good_call' || a.verdict === 'good_fold' || a.verdict === 'raise_ahead')
         ? 'pos' : 'muted';
     var html = '<b>' + HANDS.STREET_NAMES[st.street] + '</b>' +
-      (st.boardTxt ? ' ｜ 公牌 ' + escapeHtml(st.boardTxt) : '') +
-      ' ｜ 底池 ' + st.pot + ' bb，需跟注 ' + st.toCall + ' bb，行動：' +
+      (st.boardTxt ? t(' ｜ 公牌 ') + escapeHtml(st.boardTxt) : '') +
+      t(' ｜ 底池 ') + st.pot + t(' bb，需跟注 ') + st.toCall + t(' bb，行動：') +
       HANDS.ACTION_NAMES[st.action] + '<br>' +
-      '對手 range「' + escapeHtml(st.range) + '」：' + a.rangeClasses + ' 類 / ' +
-      a.combos + ' combo（' + (a.method === 'exact' ? '窮舉' : 'Monte Carlo') + '）<br>' +
-      '需要勝率 ' + needPct + '% vs 實際勝率 <b>' + eqPct + '%</b><br>';
+      t('對手 range「') + escapeHtml(st.range) + t('」：') + a.rangeClasses + t(' 類 / ') +
+      a.combos + t(' combo（') + (a.method === 'exact' ? t('窮舉') : 'Monte Carlo') + t('）<br>') +
+      t('需要勝率 ') + needPct + t('% vs 實際勝率 <b>') + eqPct + '%</b><br>';
     if (st.action === 'call') {
-      html += '跟注 EV = ' + eqPct + '% × (' + st.pot + ' + ' + st.toCall + ') − ' + st.toCall +
+      html += t('跟注 EV = ') + eqPct + '% × (' + st.pot + ' + ' + st.toCall + ') − ' + st.toCall +
         ' = <b class="' + (a.evBB >= 0 ? 'pos' : 'neg') + '">' + fmtPL(evRounded) + ' bb</b><br>';
     } else if (st.action === 'fold') {
-      html += '蓋牌 EV = 0 bb' +
+      html += t('蓋牌 EV = 0 bb') +
         (a.verdict === 'missed_call'
-          ? '（跟注本可 ' + fmtPL(Math.round(HANDS.callEVbb(a.equity, st.pot, st.toCall) * 100) / 100) + ' bb）'
+          ? t('（跟注本可 ') + fmtPL(Math.round(HANDS.callEVbb(a.equity, st.pot, st.toCall) * 100) / 100) + t(' bb）')
           : '') + '<br>';
     } else {
-      html += '視同跟注 EV = ' + fmtPL(evRounded) + ' bb（簡化模型，未計 fold equity）<br>';
+      html += t('視同跟注 EV = ') + fmtPL(evRounded) + t(' bb（簡化模型，未計 fold equity）<br>');
     }
     html += '<span class="' + vCls + '">' + HANDS.verdictText(a.verdict) + '</span>';
     return html;
@@ -2573,10 +2582,10 @@
     var tbl = $('#leakTable'), hint = $('#leakHint');
     if (!s.decisions) {
       tbl.innerHTML = '';
-      hint.textContent = '儲存手牌後，統計各街的 −EV 跟注與錯過的 +EV 跟注。';
+      hint.textContent = t('儲存手牌後，統計各街的 −EV 跟注與錯過的 +EV 跟注。');
       return;
     }
-    var html = '<tr><th>街</th><th>決策數</th><th>−EV 跟注</th><th>錯過 +EV</th></tr>';
+    var html = t('<tr><th>街</th><th>決策數</th><th>−EV 跟注</th><th>錯過 +EV</th></tr>');
     HANDS.STREETS.forEach(function (st) {
       var b = s.byStreet[st];
       if (!b.decisions) return;
@@ -2584,21 +2593,21 @@
         '</td><td class="' + (b.badCalls ? 'neg' : 'muted') + '">' + b.badCalls +
         '</td><td class="' + (b.missedCalls ? 'neg' : 'muted') + '">' + b.missedCalls + '</td></tr>';
     });
-    html += '<tr><td><b>合計</b></td><td>' + s.decisions +
+    html += t('<tr><td><b>合計</b></td><td>') + s.decisions +
       '</td><td class="' + (s.badCalls ? 'neg' : 'muted') + '">' + s.badCalls +
       '</td><td class="' + (s.missedCalls ? 'neg' : 'muted') + '">' + s.missedCalls + '</td></tr>';
     tbl.innerHTML = html;
     var leaks = s.badCalls + s.missedCalls;
     hint.textContent = leaks
-      ? '共 ' + leaks + ' 個 leak（跟注決策）— 點下方手牌看完整分析。加注 / 全下未計 fold equity，不列入 leak。'
-      : '目前跟注決策沒有 leak，繼續保持。';
+      ? t('共 ') + leaks + t(' 個 leak（跟注決策）— 點下方手牌看完整分析。加注 / 全下未計 fold equity，不列入 leak。')
+      : t('目前跟注決策沒有 leak，繼續保持。');
   }
 
   function renderHandList(expandId) {
     var ul = $('#handList');
     ul.innerHTML = '';
     if (!handRecords.length) {
-      ul.innerHTML = '<li class="empty-msg">尚無複盤紀錄</li>';
+      ul.innerHTML = t('<li class="empty-msg">尚無複盤紀錄</li>');
       return;
     }
     handRecords.forEach(function (h) {
@@ -2619,9 +2628,9 @@
       var sub = document.createElement('div');
       sub.className = 'session-sub';
       sub.textContent = (h.streets || []).map(function (st) {
-        return HANDS.STREET_NAMES[st.street] + HANDS.ACTION_NAMES[st.action] + '：' +
+        return HANDS.STREET_NAMES[st.street] + HANDS.ACTION_NAMES[st.action] + t('：') +
           HANDS.verdictText(st.analysis.verdict);
-      }).join(' ｜ ');
+      }).join(t(' ｜ '));
       main.appendChild(title);
       main.appendChild(sub);
       var pl = document.createElement('span');
@@ -2632,10 +2641,10 @@
       var del = document.createElement('button');
       del.className = 'del-btn';
       del.textContent = '✕';
-      del.setAttribute('aria-label', '刪除手牌');
+      del.setAttribute('aria-label', t('刪除手牌'));
       del.addEventListener('click', function (e) {
         e.stopPropagation();
-        if (!confirm('刪除這手複盤紀錄？')) return;
+        if (!confirm(t('刪除這手複盤紀錄？'))) return;
         handRecords = handRecords.filter(function (x) { return x.id !== h.id; });
         saveHands(handRecords);
         renderHands();
@@ -2648,8 +2657,8 @@
       detail.hidden = h.id !== expandId;
       var dHtml = '';
       if (h.stack || h.ante) {
-        dHtml += '<p class="hint">有效籌碼 ' + h.stack + ' bb' +
-          (h.ante ? '，前注/人 ' + h.ante : '') + '</p>';
+        dHtml += t('<p class="hint">有效籌碼 ') + h.stack + ' bb' +
+          (h.ante ? t('，前注/人 ') + h.ante : '') + '</p>';
       }
       (h.streets || []).forEach(function (st) {
         dHtml += '<div class="ev-result">' + streetDetailHtml(st) + '</div>';
@@ -2674,10 +2683,10 @@
   var evData = null;
 
   function evFmtDate(s, e) {
-    if (!s) return '日期未定';
+    if (!s) return t('日期未定');
     var txt = s.slice(5).replace('-', '/');
     if (e) txt += ' – ' + e.slice(5).replace('-', '/');
-    return txt + '（' + s.slice(0, 4) + '）';
+    return txt + t('（') + s.slice(0, 4) + t('）');
   }
 
   function renderEvents() {
@@ -2696,7 +2705,7 @@
     var box = $('#evList');
     box.innerHTML = '';
     if (!list.length) {
-      box.innerHTML = '<p class="empty-msg">此篩選條件下沒有賽事</p>';
+      box.innerHTML = t('<p class="empty-msg">此篩選條件下沒有賽事</p>');
       return;
     }
     var byRegion = {};
@@ -2706,7 +2715,7 @@
     Object.keys(byRegion).forEach(function (rg) {
       var h = document.createElement('div');
       h.className = 'ev-region';
-      h.textContent = rg;
+      h.textContent = t(rg);
       box.appendChild(h);
       byRegion[rg].forEach(function (ev) {
         var item = document.createElement('div');
@@ -2730,9 +2739,9 @@
         top.appendChild(name); top.appendChild(date);
         var sub = document.createElement('div');
         sub.className = 'ev-sub';
-        sub.textContent = ev.country + ' · ' + ev.city +
+        sub.textContent = t(ev.country) + ' · ' + ev.city +
           (ev.venue ? ' · ' + ev.venue : '') +
-          (ev.note ? ' ｜ ' + ev.note : '');
+          (ev.note ? t(' ｜ ') + ev.note : '');
         item.appendChild(top); item.appendChild(sub);
         box.appendChild(item);
       });
@@ -2747,10 +2756,10 @@
     });
     function fill(sel, keys) {
       var cur = sel.value;
-      sel.innerHTML = '<option value="all">全部</option>';
+      sel.innerHTML = t('<option value="all">全部</option>');
       Object.keys(keys).sort().forEach(function (k) {
         var o = document.createElement('option');
-        o.value = k; o.textContent = k;
+        o.value = k; o.textContent = t(k);
         sel.appendChild(o);
       });
       sel.value = cur && (cur === 'all' || keys[cur]) ? cur : 'all';
@@ -2764,12 +2773,12 @@
       .then(function (r) { return r.json(); })
       .then(function (data) {
         evData = data;
-        $('#evUpdated').textContent = '更新於 ' + (data.updated || '—');
+        $('#evUpdated').textContent = t('更新於 ') + (data.updated || '—');
         evFillFilters();
         renderEvents();
       })
       .catch(function () {
-        $('#evList').innerHTML = '<p class="empty-msg">賽事資料載入失敗</p>';
+        $('#evList').innerHTML = t('<p class="empty-msg">賽事資料載入失敗</p>');
       });
   }
   $('#evRegion').addEventListener('change', renderEvents);

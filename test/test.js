@@ -1,5 +1,6 @@
 /* node test/test.js */
 'use strict';
+global.t = global.t || function (s) { return s; }; /* i18n stub for Node */
 var Evaluator = require('../js/evaluator.js');
 var EquityLib = require('../js/equity.js');
 var ICM = require('../js/icm.js');

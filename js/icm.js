@@ -12,11 +12,11 @@
    */
   function icmEV(stacks, payouts) {
     var n = stacks.length;
-    if (n > MAX_PLAYERS) throw new Error('最多 ' + MAX_PLAYERS + ' 位玩家');
+    if (n > MAX_PLAYERS) throw new Error(t('最多 ') + MAX_PLAYERS + t(' 位玩家'));
     var places = Math.min(payouts.length, n);
-    if (places > MAX_PLACES) throw new Error('最多計算前 ' + MAX_PLACES + ' 名獎金');
+    if (places > MAX_PLACES) throw new Error(t('最多計算前 ') + MAX_PLACES + t(' 名獎金'));
     stacks.forEach(function (s) {
-      if (!(s > 0)) throw new Error('籌碼必須為正數');
+      if (!(s > 0)) throw new Error(t('籌碼必須為正數'));
     });
 
     var ev = new Array(n).fill(0);
@@ -48,11 +48,11 @@
    */
   function icmDeal(stacks, payouts, pool, locked) {
     var n = stacks.length;
-    if (n < 2) throw new Error('至少需要 2 位玩家');
-    if (!(pool >= 0)) throw new Error('剩餘獎池必須 ≥ 0');
+    if (n < 2) throw new Error(t('至少需要 2 位玩家'));
+    if (!(pool >= 0)) throw new Error(t('剩餘獎池必須 ≥ 0'));
     var pays = payouts.slice(0, n); // 剩 n 人最多只能拿前 n 名
     var tot = pays.reduce(function (a, b) { return a + b; }, 0);
-    if (!(tot > 0)) throw new Error('請輸入獎金結構');
+    if (!(tot > 0)) throw new Error(t('請輸入獎金結構'));
     var ev = icmEV(stacks, pays);
     return ev.map(function (e, i) {
       return e / tot * pool + ((locked && locked[i] > 0) ? locked[i] : 0);
@@ -65,11 +65,11 @@
    */
   function chipChopDeal(stacks, pool, locked) {
     var n = stacks.length;
-    if (n < 2) throw new Error('至少需要 2 位玩家');
-    if (!(pool >= 0)) throw new Error('剩餘獎池必須 ≥ 0');
+    if (n < 2) throw new Error(t('至少需要 2 位玩家'));
+    if (!(pool >= 0)) throw new Error(t('剩餘獎池必須 ≥ 0'));
     var tot = 0;
     stacks.forEach(function (s) {
-      if (!(s > 0)) throw new Error('籌碼必須為正數');
+      if (!(s > 0)) throw new Error(t('籌碼必須為正數'));
       tot += s;
     });
     return stacks.map(function (s, i) {

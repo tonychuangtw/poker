@@ -72,7 +72,7 @@
     } else {
       method = 'montecarlo';
       var n = deck.length;
-      for (var t = 0; t < mcIters; t++) {
+      for (var mcI = 0; mcI < mcIters; mcI++) {
         // 部分 Fisher-Yates：抽 need 張
         for (i = 0; i < need; i++) {
           var k = i + Math.floor(Math.random() * (n - i));
@@ -167,7 +167,7 @@
     } else {
       method = 'montecarlo';
       var n = deck.length;
-      for (var t = 0; t < mcIters; t++) {
+      for (var mcI = 0; mcI < mcIters; mcI++) {
         for (i = 0; i < need; i++) {
           var k = i + Math.floor(Math.random() * (n - i));
           var tmp = deck[i]; deck[i] = deck[k]; deck[k] = tmp;
@@ -204,7 +204,7 @@
       used[c] = true;
     });
     var valid = combos.filter(function (vc) { return !used[vc[0]] && !used[vc[1]]; });
-    if (!valid.length) throw new Error('range 內沒有可用 combo（都被 blocker 排除）');
+    if (!valid.length) throw new Error(t('range 內沒有可用 combo（都被 blocker 排除）'));
     var need = 5 - board.length;
     if (need < 0) throw new Error('board too long');
 
@@ -221,7 +221,7 @@
     var deck = buildDeck(hero.concat(board));
     var n = deck.length;
     var drawn = [];
-    for (var t = 0; t < mcIters; t++) {
+    for (var mcI = 0; mcI < mcIters; mcI++) {
       var vc = valid[Math.floor(Math.random() * valid.length)];
       drawn.length = 0;
       while (drawn.length < need) {

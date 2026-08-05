@@ -464,8 +464,18 @@ a.ev-name:hover { text-decoration: underline; }
 .dyn-row input { margin: 0; }
 .dyn-row .del-btn { flex-shrink: 0; }
 
+/* ---- 語言切換器 ---- */
+.lang-sel {
+  margin-left: auto; width: auto; min-height: 0;
+  padding: 5px 24px 5px 10px; font-size: .78rem;
+  color: var(--accent2);
+  background: rgba(212, 175, 106, .06);
+  border: 1px solid rgba(212, 175, 106, .3); border-radius: 999px;
+}
+.inline-select { min-height: 0; }
+
 /* ---- cloud sync ---- */
-.sync-ui { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.sync-ui { margin-left: 8px; display: flex; align-items: center; gap: 6px; }
 .sync-chip {
   font-weight: 700; border-radius: 50%; width: 34px; height: 34px;
   border: 1px solid rgba(212, 175, 106, .35); background: rgba(212, 175, 106, .06);

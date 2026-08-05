@@ -18,7 +18,7 @@
   function tagStats(list) {
     var map = {};
     list.forEach(function (r) {
-      var key = (r.tag || '').trim() || (r.venue || '').trim() || '未標籤';
+      var key = (r.tag || '').trim() || (r.venue || '').trim() || t('未標籤');
       if (!map[key]) map[key] = { tag: key, n: 0, pl: 0, hours: 0, hourPl: 0 };
       var g = map[key];
       g.n++;
@@ -40,7 +40,7 @@
     var map = {};
     list.forEach(function (r) {
       var m = String(r.date || '').slice(0, 7);
-      if (!/^\d{4}-\d{2}$/.test(m)) m = '未知';
+      if (!/^\d{4}-\d{2}$/.test(m)) m = t('未知');
       if (!map[m]) map[m] = { month: m, n: 0, pl: 0, hours: 0 };
       map[m].n++;
       map[m].pl += plOf(r);

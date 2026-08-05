@@ -16,9 +16,9 @@
   var PushFold = isNode ? require('./pushfold.js') : global.PushFold;
 
   var STREETS = ['preflop', 'flop', 'turn', 'river'];
-  var STREET_NAMES = { preflop: '翻前', flop: '翻牌', turn: '轉牌', river: '河牌' };
+  var STREET_NAMES = { preflop: t('翻前'), flop: t('翻牌'), turn: t('轉牌'), river: t('河牌') };
   var BOARD_LEN = { preflop: 0, flop: 3, turn: 4, river: 5 };
-  var ACTION_NAMES = { fold: '蓋牌', call: '跟注', raise: '加注', allin: '全下' };
+  var ACTION_NAMES = { fold: t('蓋牌'), call: t('跟注'), raise: t('加注'), allin: t('全下') };
 
   /* 解析牌組字串："As Kd"、"AsKd"、"Qh 7d 2s" → card int 陣列
    * expected 給定時強制張數；一律檢查重複。 */
@@ -36,11 +36,11 @@
     });
     var out = flat.map(function (t) { return Evaluator.cardFromString(t); });
     if (expected !== undefined && out.length !== expected) {
-      throw new Error('需要 ' + expected + ' 張牌，收到 ' + out.length + ' 張：' + s);
+      throw new Error(t('需要 ') + expected + t(' 張牌，收到 ') + out.length + t(' 張：') + s);
     }
     var seen = {};
     out.forEach(function (c) {
-      if (seen[c]) throw new Error('牌重複：' + Evaluator.cardToString(c));
+      if (seen[c]) throw new Error(t('牌重複：') + Evaluator.cardToString(c));
       seen[c] = true;
     });
     return out;
@@ -48,7 +48,7 @@
 
   /* 底池賠率 = 需跟注 / (底池 + 需跟注)，即跟注所需最低勝率 */
   function potOdds(pot, toCall) {
-    if (!(pot >= 0) || !(toCall >= 0)) throw new Error('底池 / 跟注需為非負數');
+    if (!(pot >= 0) || !(toCall >= 0)) throw new Error(t('底池 / 跟注需為非負數'));
     if (toCall === 0) return 0;
     return toCall / (pot + toCall);
   }
@@ -67,9 +67,9 @@
    * verdict: good_call / bad_call / good_fold / missed_call / raise_ahead / raise_behind */
   function classifyDecision(action, equity, pot, toCall) {
     if (['fold', 'call', 'raise', 'allin'].indexOf(action) === -1) {
-      throw new Error('未知行動：' + action);
+      throw new Error(t('未知行動：') + action);
     }
-    if (!(equity >= 0 && equity <= 1)) throw new Error('equity 需在 0–1');
+    if (!(equity >= 0 && equity <= 1)) throw new Error(t('equity 需在 0–1'));
     var needed = potOdds(pot, toCall);
     var res = { action: action, equity: equity, needed: needed,
                 evBB: 0, verdict: '', leak: false, simplified: false };
@@ -91,12 +91,12 @@
 
   function verdictText(verdict) {
     return {
-      good_call: '✔ +EV 跟注',
-      bad_call: '✘ −EV 跟注（leak）',
-      good_fold: '✔ 合理蓋牌',
-      missed_call: '✘ 錯過 +EV 跟注（leak）',
-      raise_ahead: '加注時 vs range 領先（未計 fold equity）',
-      raise_behind: '加注時 vs range 落後 — 需靠 fold equity（未計）'
+      good_call: t('✔ +EV 跟注'),
+      bad_call: t('✘ −EV 跟注（leak）'),
+      good_fold: t('✔ 合理蓋牌'),
+      missed_call: t('✘ 錯過 +EV 跟注（leak）'),
+      raise_ahead: t('加注時 vs range 領先（未計 fold equity）'),
+      raise_behind: t('加注時 vs range 落後 — 需靠 fold equity（未計）')
     }[verdict] || verdict;
   }
 
@@ -105,10 +105,10 @@
    *                    pot:number, toCall:number, action:string, mcIters?:number} */
   function analyzeStreet(o) {
     if (BOARD_LEN[o.street] !== undefined && o.board.length !== BOARD_LEN[o.street]) {
-      throw new Error(STREET_NAMES[o.street] + ' 公牌需 ' + BOARD_LEN[o.street] + ' 張');
+      throw new Error(STREET_NAMES[o.street] + t(' 公牌需 ') + BOARD_LEN[o.street] + t(' 張'));
     }
     var classes = PushFold.rangeFromNotation(o.range);
-    if (!classes.length) throw new Error('range 是空的');
+    if (!classes.length) throw new Error(t('range 是空的'));
     var combos = [];
     classes.forEach(function (ci) {
       PushFold.expandCombos(ci).forEach(function (vc) { combos.push(vc); });

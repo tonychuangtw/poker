@@ -18,6 +18,7 @@
  * 啟動時先與 js/evaluator.js 交叉驗證 20000 組隨機牌，確保排序一致。
  */
 'use strict';
+global.t = global.t || function (s) { return s; }; /* i18n stub for Node */
 
 var fs = require('fs');
 var path = require('path');

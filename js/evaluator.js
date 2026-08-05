@@ -19,7 +19,7 @@
   function cardToString(c) { return RANKS[(c >> 2) - 2] + SUITS[c & 3]; }
 
   var CATEGORY_NAMES = [
-    '高牌', '一對', '兩對', '三條', '順子', '同花', '葫蘆', '四條', '同花順'
+    t('高牌'), t('一對'), t('兩對'), t('三條'), t('順子'), t('同花'), t('葫蘆'), t('四條'), t('同花順')
   ];
 
   // 回傳分數陣列 [category, tiebreakers...]，可用 compareScore 比較

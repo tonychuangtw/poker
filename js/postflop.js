@@ -33,7 +33,7 @@
     var n = cards.length;
     if (n === 5) return Evaluator.evaluate5(cards);
     if (n === 7) return Evaluator.evaluate7(cards);
-    if (n !== 6) throw new Error('bestScore 需 5–7 張，收到 ' + n);
+    if (n !== 6) throw new Error(t('bestScore 需 5–7 張，收到 ') + n);
     var best = null;
     for (var a = 0; a < n; a++) {
       for (var b = a + 1; b < n; b++) {
@@ -117,7 +117,7 @@
    *   順子：同一個順子窗內 3 張以上 = 1、2 張 = 0.5、否則 0
    */
   function classifyBoard(board) {
-    if (!board || board.length < 3 || board.length > 5) throw new Error('公牌需 3–5 張');
+    if (!board || board.length < 3 || board.length > 5) throw new Error(t('公牌需 3–5 張'));
     var ranks = board.map(rankOf).sort(desc);
     var uRanks = uniq(ranks);
     var rc = {}, sc = {};
@@ -136,8 +136,8 @@
     var wetness = 0.5 * suitComp + 0.5 * strComp;
     var paired = pairs > 0 || trips;
 
-    var suitTxt = suitMax >= 3 ? '單色' : suitMax === 2 ? '兩色' : '彩虹';
-    var wetTxt = wetness >= 0.6 ? '濕' : wetness <= 0.25 ? '乾' : '中性';
+    var suitTxt = suitMax >= 3 ? t('單色') : suitMax === 2 ? t('兩色') : t('彩虹');
+    var wetTxt = wetness >= 0.6 ? t('濕') : wetness <= 0.25 ? t('乾') : t('中性');
     return {
       ranks: ranks, highCard: ranks[0], lowCard: ranks[ranks.length - 1],
       paired: paired, trips: trips, suitMax: suitMax,
@@ -146,7 +146,7 @@
       boardStraight: span >= 5, boardFlush: suitMax >= 5,
       wetness: wetness,
       wetTxt: wetTxt,
-      label: HIGH_TXT(ranks[0]) + ' 高' + (paired ? '配對' : '') + suitTxt + wetTxt + '面'
+      label: HIGH_TXT(ranks[0]) + t(' 高') + (paired ? t('配對') : '') + suitTxt + wetTxt + t('面')
     };
   }
 
@@ -185,8 +185,8 @@
   /* ---------- 手牌分級 ---------- */
 
   var BUCKET_NAMES = {
-    nut: '三條以上', twoPair: '兩對', topPair: '頂對／超對',
-    weakPair: '弱對', draw: '聽牌', air: '空氣'
+    nut: t('三條以上'), twoPair: t('兩對'), topPair: t('頂對／超對'),
+    weakPair: t('弱對'), draw: t('聽牌'), air: t('空氣')
   };
 
   /**
@@ -203,20 +203,20 @@
     var bucket, pairTxt = '';
 
     if (cat >= 3) { bucket = 'nut'; pairTxt = Evaluator.CATEGORY_NAMES[cat]; }
-    else if (cat === 2) { bucket = 'twoPair'; pairTxt = '兩對'; }
+    else if (cat === 2) { bucket = 'twoPair'; pairTxt = t('兩對'); }
     else if (cat === 1) {
       var pr = score[1];
       var onBoard = bRanks.filter(function (r) { return r === pr; }).length;
-      if (onBoard >= 2) { bucket = 'air'; pairTxt = '只有檯面對子'; }
-      else if (hRanks[0] === hRanks[1] && pr > bSorted[0]) { bucket = 'topPair'; pairTxt = '超對'; }
-      else if (onBoard === 0) { bucket = 'weakPair'; pairTxt = '口袋對（低於檯面最大張）'; }
+      if (onBoard >= 2) { bucket = 'air'; pairTxt = t('只有檯面對子'); }
+      else if (hRanks[0] === hRanks[1] && pr > bSorted[0]) { bucket = 'topPair'; pairTxt = t('超對'); }
+      else if (onBoard === 0) { bucket = 'weakPair'; pairTxt = t('口袋對（低於檯面最大張）'); }
       else {
         var pos = bSorted.indexOf(pr);
-        if (pos === 0) { bucket = 'topPair'; pairTxt = '頂對'; }
-        else if (pos === 1) { bucket = 'weakPair'; pairTxt = '第二對'; }
-        else { bucket = 'weakPair'; pairTxt = '第三對以下'; }
+        if (pos === 0) { bucket = 'topPair'; pairTxt = t('頂對'); }
+        else if (pos === 1) { bucket = 'weakPair'; pairTxt = t('第二對'); }
+        else { bucket = 'weakPair'; pairTxt = t('第三對以下'); }
       }
-    } else { bucket = 'air'; pairTxt = '高牌'; }
+    } else { bucket = 'air'; pairTxt = t('高牌'); }
 
     var fd = flushDrawInfo(hero, board);
     var sd = straightDrawInfo(hero, board);
@@ -228,15 +228,15 @@
     if (bucket === 'air' && (strongDraw || sd.type === 'gutshot' || fd.backdoor)) bucket = 'draw';
 
     var drawTxt = [
-      fd.draw ? (fd.nut ? '堅果同花聽牌' : '同花聽牌') : fd.backdoor ? '後門同花' : '',
-      sd.type === 'oesd' ? '兩頭順' : sd.type === 'gutshot' ? '卡順' : ''
-    ].filter(Boolean).join('＋');
+      fd.draw ? (fd.nut ? t('堅果同花聽牌') : t('同花聽牌')) : fd.backdoor ? t('後門同花') : '',
+      sd.type === 'oesd' ? t('兩頭順') : sd.type === 'gutshot' ? t('卡順') : ''
+    ].filter(Boolean).join(t('＋'));
 
     return {
       cat: cat, bucket: bucket, bucketTxt: BUCKET_NAMES[bucket], pairTxt: pairTxt,
       fd: fd, sd: sd, strongDraw: strongDraw, drawTxt: drawTxt,
       overcards: overcards,
-      label: pairTxt + (drawTxt ? '＋' + drawTxt : '')
+      label: pairTxt + (drawTxt ? t('＋') + drawTxt : '')
     };
   }
 
@@ -244,14 +244,14 @@
 
   /** 面對 bet（下注額）進 pot（下注前底池）時，防守方最低跟注頻率 */
   function mdf(bet, pot) {
-    if (!(bet > 0) || !(pot > 0)) throw new Error('bet / pot 需為正數');
+    if (!(bet > 0) || !(pot > 0)) throw new Error(t('bet / pot 需為正數'));
     return pot / (pot + bet);
   }
   /** α：詐唬要打平所需的對手棄牌率 = 1 − MDF */
   function alpha(bet, pot) { return 1 - mdf(bet, pot); }
   /** 跟注方的底池賠率（＝所需最低勝率）。同時也是對手 range 裡 bluff 該占的比例。 */
   function callPotOdds(bet, pot) {
-    if (!(bet > 0) || !(pot >= 0)) throw new Error('bet / pot 不合法');
+    if (!(bet > 0) || !(pot >= 0)) throw new Error(t('bet / pot 不合法'));
     return bet / (pot + 2 * bet);
   }
   /** 平衡的 bluff 數：讓跟注方無差異 → bluff = value × bet/(pot+bet) */
@@ -261,7 +261,7 @@
 
   /* ---------- c-bet 策略 ---------- */
 
-  var CBET_ACTIONS = { big: '下注 75%', small: '下注 33%', check: '過牌' };
+  var CBET_ACTIONS = { big: t('下注 75%'), small: t('下注 33%'), check: t('過牌') };
 
   /**
    * range 層級的 c-bet 建議（速查用）。
@@ -285,11 +285,11 @@
     var size = (tex.wetness >= 0.55 && !tex.paired) ? 'big' : 'small';
     return {
       freq: f, size: size, sizeTxt: CBET_ACTIONS[size],
-      why: (tex.paired ? '配對面對手很難有東西 → 高頻小注。'
-        : tex.wetness >= 0.55 ? '濕面雙方都有很多續玩牌 → 降頻、改用大注兩極化。'
-          : '乾面且高牌優勢在你 → 高頻小注整個 range。') +
-        (threeBet ? ' 3-bet 底池 SPR 低，可再拉高頻率。' : '') +
-        (ip ? '' : ' 無位置要多過牌，頻率再往下修。')
+      why: (tex.paired ? t('配對面對手很難有東西 → 高頻小注。')
+        : tex.wetness >= 0.55 ? t('濕面雙方都有很多續玩牌 → 降頻、改用大注兩極化。')
+          : t('乾面且高牌優勢在你 → 高頻小注整個 range。')) +
+        (threeBet ? t(' 3-bet 底池 SPR 低，可再拉高頻率。') : '') +
+        (ip ? '' : t(' 無位置要多過牌，頻率再往下修。'))
     };
   }
 
@@ -309,35 +309,35 @@
 
     if (hc.bucket === 'nut' || hc.bucket === 'twoPair') {
       act = wet >= 0.5 ? 'big' : 'small';
-      why = '強成手：' + (act === 'big'
-        ? '濕面要收費保護、順便把底池做大' : '乾面對手續玩範圍窄，小注留住他的弱牌');
+      why = t('強成手：') + (act === 'big'
+        ? t('濕面要收費保護、順便把底池做大') : t('乾面對手續玩範圍窄，小注留住他的弱牌'));
     } else if (hc.bucket === 'topPair') {
       act = wet >= 0.6 ? 'big' : 'small';
-      why = act === 'big' ? '頂對／超對在濕面必須收費保護' : '乾面小注薄價值，也保護得夠';
+      why = act === 'big' ? t('頂對／超對在濕面必須收費保護') : t('乾面小注薄價值，也保護得夠');
     } else if (hc.bucket === 'weakPair') {
-      if (wet <= 0.3 && ip) { act = 'small'; why = '弱對在乾面有位置 → 小注薄價值兼保護'; }
-      else { act = 'check'; why = '弱對承受不了加注，過牌控池'; }
+      if (wet <= 0.3 && ip) { act = 'small'; why = t('弱對在乾面有位置 → 小注薄價值兼保護'); }
+      else { act = 'check'; why = t('弱對承受不了加注，過牌控池'); }
     } else if (hc.strongDraw) {
       act = wet >= 0.5 ? 'big' : 'small';
-      why = '強聽牌（' + hc.drawTxt + '）當半詐唬，' +
-        (act === 'big' ? '濕面下大最大化棄牌權益' : '乾面下小成本較低');
+      why = t('強聽牌（') + hc.drawTxt + t('）當半詐唬，') +
+        (act === 'big' ? t('濕面下大最大化棄牌權益') : t('乾面下小成本較低'));
     } else if (hc.bucket === 'draw') {
       act = (tex.highCard >= 12 && wet <= 0.4) ? 'small' : 'check';
-      why = act === 'small' ? '弱聽牌（' + (hc.drawTxt || '後門') + '）跟著 range 一起小注'
-        : '弱聽牌先過牌，保留便宜看牌權';
+      why = act === 'small' ? t('弱聽牌（') + (hc.drawTxt || t('後門')) + t('）跟著 range 一起小注')
+        : t('弱聽牌先過牌，保留便宜看牌權');
     } else {
       if (wet <= 0.3 && tex.highCard >= 12 && (ip || threeBet)) {
-        act = 'small'; why = '高牌乾面 range 優勢大 → 整個 range 小注';
+        act = 'small'; why = t('高牌乾面 range 優勢大 → 整個 range 小注');
       } else if (hc.overcards >= 2 && wet <= 0.4 && ip) {
-        act = 'small'; why = '兩張高張還有補牌，乾面有位置可以小注';
-      } else { act = 'check'; why = '沒牌力也沒補牌 → 過牌放棄'; }
+        act = 'small'; why = t('兩張高張還有補牌，乾面有位置可以小注');
+      } else { act = 'check'; why = t('沒牌力也沒補牌 → 過牌放棄'); }
     }
 
     if (threeBet && act === 'big' && wet < 0.7) {
-      act = 'small'; why += '；3-bet 底池 SPR 低，小注就推得動籌碼';
+      act = 'small'; why += t('；3-bet 底池 SPR 低，小注就推得動籌碼');
     }
     if (!ip && act === 'small' && (hc.bucket === 'air' || hc.bucket === 'draw') && !hc.strongDraw) {
-      act = 'check'; why = '無位置又沒牌力 → 過牌，別把自己打進難處理的局面';
+      act = 'check'; why = t('無位置又沒牌力 → 過牌，別把自己打進難處理的局面');
     }
     return {
       action: act, actionTxt: CBET_ACTIONS[act], why: why,
@@ -381,9 +381,9 @@
     rand = rand || Math.random;
     iters = iters || 20000;
     var A = expandFiltered(clsA, board), B = expandFiltered(clsB, board);
-    if (!A.length || !B.length) throw new Error('range 在此牌面沒有可用 combo');
+    if (!A.length || !B.length) throw new Error(t('range 在此牌面沒有可用 combo'));
     var need = 5 - board.length;
-    if (need < 0) throw new Error('公牌太多');
+    if (need < 0) throw new Error(t('公牌太多'));
     var eqA = 0, ties = 0, trials = 0, i, j;
 
     function tally(a, b, full) {
@@ -401,13 +401,13 @@
           tally(a, b, board);
         }
       }
-      if (!trials) throw new Error('兩個 range 完全互相阻斷');
+      if (!trials) throw new Error(t('兩個 range 完全互相阻斷'));
       return { a: eqA / trials, b: 1 - eqA / trials, tie: ties / trials,
                trials: trials, combosA: A.length, combosB: B.length, method: 'exact' };
     }
 
     var deck = buildDeck(board);
-    for (var t = 0; t < iters; t++) {
+    for (var it = 0; it < iters; it++) {
       var ha = A[Math.floor(rand() * A.length)];
       var hb = B[Math.floor(rand() * B.length)];
       if (ha[0] === hb[0] || ha[0] === hb[1] || ha[1] === hb[0] || ha[1] === hb[1]) continue;
@@ -420,7 +420,7 @@
       }
       tally(ha, hb, full);
     }
-    if (!trials) throw new Error('兩個 range 完全互相阻斷');
+    if (!trials) throw new Error(t('兩個 range 完全互相阻斷'));
     return { a: eqA / trials, b: 1 - eqA / trials, tie: ties / trials,
              trials: trials, combosA: A.length, combosB: B.length, method: 'montecarlo' };
   }
@@ -473,7 +473,7 @@
     var classes = PushFold.topPercentRange(villainPct);
     var tries = opts.tries || 60;
 
-    for (var t = 0; t < tries; t++) {
+    for (var tr = 0; tr < tries; tr++) {
       var deck = buildDeck([]);
       var board = [];
       while (board.length < 5) board.push(draw(deck, rand));
@@ -521,7 +521,7 @@
         evBB: heroEq * (pot + 2 * bet) - bet
       };
     }
-    throw new Error('產不出合適的河牌題目');
+    throw new Error(t('產不出合適的河牌題目'));
   }
 
   var Postflop = {

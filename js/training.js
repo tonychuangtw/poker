@@ -177,8 +177,8 @@
     activity: 'poker.activity',
     streak: 'poker.streak'
   };
-  var KIND_NAMES = { pf: 'Push/Fold', rfi: '開牌 RFI', def: '面對開牌', v3b: '被 3-bet',
-                     cold: '冷 4-bet', cb: '翻後 c-bet', bc: '河牌接 bluff' };
+  var KIND_NAMES = { pf: 'Push/Fold', rfi: t('開牌 RFI'), def: t('面對開牌'), v3b: t('被 3-bet'),
+                     cold: t('冷 4-bet'), cb: t('翻後 c-bet'), bc: t('河牌接 bluff') };
   var KINDS = ['pf', 'rfi', 'def', 'v3b', 'cold', 'cb', 'bc'];
   // 每日任務只看這三種基本測驗（其餘為進階題，不加重每天的量）
   var DAILY_KINDS = ['pf', 'rfi', 'def'];
@@ -289,19 +289,19 @@
     };
     var target = Math.min(st.due.length, 20);
     var drillTxt = st.mistakes.length === 0
-      ? '錯題本已清空'
+      ? t('錯題本已清空')
       : st.due.length === 0
-        ? '今天沒有到期的錯題（' + st.mistakes.length + ' 題排在後面幾天複習）'
-        : '今日已重練 ' + Math.min(st.rec.drill, target) + ' / ' + target +
-          ' 題（今天到期 ' + st.due.length + ' 題，錯題本共 ' + st.mistakes.length + ' 題）';
+        ? t('今天沒有到期的錯題（') + st.mistakes.length + t(' 題排在後面幾天複習）')
+        : t('今日已重練 ') + Math.min(st.rec.drill, target) + ' / ' + target +
+          t(' 題（今天到期 ') + st.due.length + t(' 題，錯題本共 ') + st.mistakes.length + t(' 題）');
     $('#trainTasks').innerHTML =
-      mk(st.t1, '清錯題 — ' + drillTxt) +
-      mk(st.t2, '基本測驗各答 ' + DAILY_TARGET + ' 題 — ' + DAILY_KINDS.map(function (k) {
+      mk(st.t1, t('清錯題 — ') + drillTxt) +
+      mk(st.t2, t('基本測驗各答 ') + DAILY_TARGET + t(' 題 — ') + DAILY_KINDS.map(function (k) {
         return KIND_NAMES[k] + ' ' + Math.min(st.rec[k], DAILY_TARGET) + '/' + DAILY_TARGET;
-      }).join('、'));
+      }).join(t('、')));
     var s = loadStreak();
-    $('#trainStreak').textContent = '🔥 連續完成 ' + (s.current || 0) + ' 天（最佳 ' +
-      (s.best || 0) + ' 天）' + (st.allDone ? '，今日任務全數完成！' : '');
+    $('#trainStreak').textContent = t('🔥 連續完成 ') + (s.current || 0) + t(' 天（最佳 ') +
+      (s.best || 0) + t(' 天）') + (st.allDone ? t('，今日任務全數完成！') : '');
   }
 
   /* ---------- 渲染：熟練度 ---------- */
@@ -319,7 +319,7 @@
         (mastered ? 'bar-pos' : 'bar-acc') + '" style="width:' +
         (arr.length ? pct : 0) + '%"></div></div>' +
         '<span class="bar-value">' + arr.length + '/' + ROLL_SIZE +
-        (arr.length ? '｜' + pct + '%' : '') + (mastered ? ' 🏆' : '') + '</span>' +
+        (arr.length ? t('｜') + pct + '%' : '') + (mastered ? ' 🏆' : '') + '</span>' +
         '</div>';
     });
     $('#masteryBars').innerHTML = html;
@@ -350,19 +350,19 @@
     var list = loadMistakes();
     var due = srsDue(list, todayStr());
     $('#mistakeCountTxt').textContent = list.length
-      ? '錯題本共 ' + list.length + ' 題，今天到期 ' + due.length + ' 題。' +
-        '答對往上升一盒（隔 1 → 3 → 7 → 14 天再考），連過 5 盒才移出錯題本；答錯打回第 1 盒。'
-      : '錯題本是空的，太強了！去「圖表」分頁做測驗累積題目。';
+      ? t('錯題本共 ') + list.length + t(' 題，今天到期 ') + due.length + t(' 題。') +
+        t('答對往上升一盒（隔 1 → 3 → 7 → 14 天再考），連過 5 盒才移出錯題本；答錯打回第 1 盒。')
+      : t('錯題本是空的，太強了！去「訓練」分頁做測驗累積題目。');
     $('#btnDrillStart').disabled = due.length === 0;
     $('#btnDrillStart').textContent = due.length
-      ? '錯題重練（今天到期 ' + due.length + ' 題）'
-      : list.length ? '今天沒有到期的錯題' : '錯題重練';
+      ? t('錯題重練（今天到期 ') + due.length + t(' 題）')
+      : list.length ? t('今天沒有到期的錯題') : t('錯題重練');
   }
 
   function aggroLabel(kind) {
-    return kind === 'pf' ? '全下' : kind === 'rfi' ? '加注'
-      : kind === 'v3b' ? '4-bet' : kind === 'cold' ? '冷 4-bet'
-      : kind === 'cb' ? '下注 75%' : '3-bet';
+    return kind === 'pf' ? t('全下') : kind === 'rfi' ? t('加注')
+      : kind === 'v3b' ? '4-bet' : kind === 'cold' ? t('冷 4-bet')
+      : kind === 'cb' ? t('下注 75%') : '3-bet';
   }
   /** 有「中間選項」的測驗種類（三選一），其餘為二選一 */
   function hasCallOption(kind) {
@@ -371,7 +371,7 @@
   }
   function actionTxt(m, act) {
     return act === 'aggro' ? (m.aggro || aggroLabel(m.kind))
-      : act === 'call' ? (m.call || '跟注') : (m.fold || '蓋牌');
+      : act === 'call' ? (m.call || t('跟注')) : (m.fold || t('蓋牌'));
   }
 
   function drillShow() {
@@ -384,12 +384,12 @@
     $('#drillBoard').hidden = !drillCur.board;
     $('#drillBoard').textContent = drillCur.board || '';
     $('#drillInfo').textContent = (drillCur.info || '') +
-    '（' + KIND_NAMES[drillCur.kind] + '｜第 ' + (drillCur.box || 1) + ' 盒）';
+    t('（') + KIND_NAMES[drillCur.kind] + t('｜第 ') + (drillCur.box || 1) + t(' 盒）');
     $('#btnDrillAggro').textContent = drillCur.aggro || aggroLabel(drillCur.kind);
     $('#btnDrillAggro').hidden = drillCur.noAggro === true;
-    $('#btnDrillCall').textContent = drillCur.call || '跟注';
+    $('#btnDrillCall').textContent = drillCur.call || t('跟注');
     $('#btnDrillCall').hidden = drillCur.noCall === true || !hasCallOption(drillCur.kind);
-    $('#btnDrillFold').textContent = drillCur.fold || '蓋牌';
+    $('#btnDrillFold').textContent = drillCur.fold || t('蓋牌');
     $('#drillFeedback').hidden = true;
     $('#btnDrillNext').hidden = true;
     $('#btnDrillAggro').disabled = false;
@@ -406,17 +406,17 @@
     drillQueue.shift();
     bumpActivity('drill', ok);
     checkStreak();
-    var srsTxt = !ok ? '打回第 1 盒，今天會再考一次。'
-      : next ? '升到第 ' + next.box + ' 盒，' + next.due + ' 再考一次。'
-        : '連過 5 盒 —— 從錯題本畢業了！';
+    var srsTxt = !ok ? t('打回第 1 盒，今天會再考一次。')
+      : next ? t('升到第 ') + next.box + t(' 盒，') + next.due + t(' 再考一次。')
+        : t('連過 5 盒 —— 從錯題本畢業了！');
     var fb = $('#drillFeedback');
     fb.hidden = false;
     fb.innerHTML = (ok
-      ? '<span class="pos">✔ 正確！</span>'
-      : '<span class="neg">✘ 錯誤。</span>') + srsTxt +
-      ' 正解：<b>' + actionTxt(drillCur, drillCur.best || 'fold') + '</b>。';
+      ? t('<span class="pos">✔ 正確！</span>')
+      : t('<span class="neg">✘ 錯誤。</span>')) + srsTxt +
+      t(' 正解：<b>') + actionTxt(drillCur, drillCur.best || 'fold') + t('</b>。');
     $('#btnDrillNext').hidden = false;
-    $('#btnDrillNext').textContent = drillQueue.length ? '下一題' : '看結果';
+    $('#btnDrillNext').textContent = drillQueue.length ? t('下一題') : t('看結果');
     $('#btnDrillAggro').disabled = true;
     $('#btnDrillCall').disabled = true;
     $('#btnDrillFold').disabled = true;
@@ -429,9 +429,9 @@
   function drillFinish() {
     var fb = $('#drillFeedback');
     fb.hidden = false;
-    fb.innerHTML = '<span class="pos">完成！</span>本輪重練 ' + drillDone + ' 題，答對 ' +
-      drillFixed + ' 題。錯題本共 ' + loadMistakes().length + ' 題，今天到期 ' +
-      srsDue(loadMistakes(), todayStr()).length + ' 題。';
+    fb.innerHTML = t('<span class="pos">完成！</span>本輪重練 ') + drillDone + t(' 題，答對 ') +
+      drillFixed + t(' 題。錯題本共 ') + loadMistakes().length + t(' 題，今天到期 ') +
+      srsDue(loadMistakes(), todayStr()).length + t(' 題。');
     $('#btnDrillAggro').hidden = false;
     $('#btnDrillAggro').disabled = true;
     $('#drillBoard').hidden = true;
@@ -465,10 +465,10 @@
     var html = '';
     days.forEach(function (d, i) {
       html += '<div class="bar-row">' +
-        '<span class="bar-label">' + d.slice(5) + (d === today ? '＊' : '') + '</span>' +
+        '<span class="bar-label">' + d.slice(5) + (d === today ? t('＊') : '') + '</span>' +
         '<div class="bar-track"><div class="bar-fill bar-acc" style="width:' +
         Math.round(totals[i] / max * 100) + '%"></div></div>' +
-        '<span class="bar-value">' + totals[i] + ' 題</span>' +
+        '<span class="bar-value">' + totals[i] + t(' 題</span>') +
         '</div>';
     });
     $('#weekChart').innerHTML = html;
@@ -478,8 +478,8 @@
       correct += (act[d] && act[d].c) || 0;
     });
     $('#weekTotals').textContent = sum
-      ? '本週共答 ' + sum + ' 題，正確率 ' + Math.round(correct / sum * 100) + '%。'
-      : '本週還沒答題，去「圖表」分頁開始測驗吧。';
+      ? t('本週共答 ') + sum + t(' 題，正確率 ') + Math.round(correct / sum * 100) + t('%。')
+      : t('本週還沒答題，去「訓練」分頁開始測驗吧。');
   }
 
   function renderAll() {
