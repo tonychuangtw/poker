@@ -1,0 +1,23 @@
+{
+  "dependencies": {
+    "@capacitor/cli": "8.5.0",
+    "@capacitor/core": "8.5.0",
+    "@capacitor/haptics": "8.0.2",
+    "@capacitor/ios": "8.5.0",
+    "@capacitor/local-notifications": "8.2.1",
+    "@capacitor/splash-screen": "8.0.2",
+    "@capacitor/status-bar": "8.0.3"
+  },
+  "name": "poker-toolbox",
+  "version": "1.0.0",
+  "private": true,
+  "description": "撲克工具箱 — 德州撲克記帳 / EV / ICM / Push-Fold",
+  "scripts": {
+    "build:www": "node tools/build-www.mjs",
+    "sync:ios": "node tools/build-www.mjs && cap sync ios"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "sharp": "^0.35.3"
+  }
+}

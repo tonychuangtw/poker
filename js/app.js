@@ -2777,7 +2777,9 @@
   loadEvents();
 
   /* ================= PWA ================= */
-  if ('serviceWorker' in navigator) {
+  /* 原生殼（Capacitor）內不註冊 SW：離線由 app bundle 負責，避免 capacitor:// scheme 下的快取干擾 */
+  var isNativeShell = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if ('serviceWorker' in navigator && !isNativeShell) {
     window.addEventListener('load', function () {
       navigator.serviceWorker.register('sw.js').catch(function () {});
     });

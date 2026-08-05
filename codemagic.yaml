@@ -1,0 +1,54 @@
+# Codemagic 建置流程：Capacitor iOS → TestFlight
+#
+# 開通前置（Tony 動手，之後 Claude 接手設定）：
+#   1. Apple Developer Program 註冊完成（US$99/年）
+#   2. Codemagic 帳號（GitHub 登入）→ 加入 tonychuangtw/poker repo
+#   3. App Store Connect 建 App（bundle id: com.tonychuang.pokertoolbox）
+#   4. App Store Connect → Users and Access → Integrations 建 API Key，
+#      到 Codemagic → Teams → Integrations → App Store Connect 貼上，
+#      命名 "asc-api-key"（要跟下面 integrations 的名稱一致）
+#
+# 免費方案：macOS M2 每月 500 分鐘，此 app 一次 build 約 10–15 分鐘。
+
+workflows:
+  ios-testflight:
+    name: iOS → TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    integrations:
+      app_store_connect: asc-api-key
+    environment:
+      xcode: latest
+      node: 22
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.tonychuang.pokertoolbox
+    scripts:
+      - name: 安裝相依
+        script: npm ci
+      - name: 打包 web 資產並同步進 iOS 專案
+        script: npm run sync:ios
+      - name: 套用簽章 profile
+        script: xcode-project use-profiles
+      - name: 遞增 build number
+        script: |
+          cd ios/App
+          agvtool new-version -all $BUILD_NUMBER
+      - name: 建置 ipa
+        script: |
+          xcode-project build-ipa \
+            --project ios/App/App.xcodeproj \
+            --scheme App
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+      email:
+        recipients:
+          - tonychuangtw@gmail.com
+        notify:
+          success: true
+          failure: true

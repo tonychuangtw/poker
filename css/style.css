@@ -36,7 +36,19 @@ html, body {
   font-size: 16px;
   -webkit-tap-highlight-color: transparent;
 }
-main { max-width: 640px; margin: 0 auto; padding: 12px 12px 48px; }
+main { max-width: 640px; margin: 0 auto; padding: 12px 12px calc(48px + env(safe-area-inset-bottom, 0px)); }
+
+/* iOS 原生殼 safe-area：瀏海下的狀態列鋪一條同色模糊底，內容從 inset 下開始 */
+body { padding-top: env(safe-area-inset-top, 0px); }
+body::before {
+  content: "";
+  position: fixed; top: 0; left: 0; right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: rgba(11, 14, 13, .82);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  z-index: 30;
+}
 
 /* header */
 .app-header { text-align: center; padding: 20px 0 10px; position: relative; }
@@ -62,11 +74,23 @@ main { max-width: 640px; margin: 0 auto; padding: 12px 12px 48px; }
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
   opacity: .7;
 }
-.app-footer { text-align: center; color: var(--muted); font-size: .75rem; padding: 16px 0 32px; }
+.app-footer { text-align: center; color: var(--muted); font-size: .75rem; padding: 16px 0 calc(32px + env(safe-area-inset-bottom, 0px)); }
+
+/* 原生殼的賽事提醒開關（native.js 動態插入，瀏覽器版不會出現） */
+.notif-toggle {
+  display: flex; align-items: center; gap: 8px;
+  margin: 10px 0; padding: 10px 12px;
+  background: rgba(212, 175, 106, .06);
+  border: 1px solid rgba(212, 175, 106, .18);
+  border-radius: var(--radius-sm);
+  font-size: .9rem; cursor: pointer;
+}
+.notif-toggle input { width: auto; margin: 0; }
+.notif-toggle small { color: var(--muted); margin-left: auto; font-size: .72rem; }
 
 /* tabs — pill segmented bar */
 .tabs {
-  position: sticky; top: 0; z-index: 10;
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10;
   display: flex; gap: 4px;
   padding: 10px 12px;
   background: rgba(11, 14, 13, .82);
