@@ -2739,9 +2739,9 @@
         top.appendChild(name); top.appendChild(date);
         var sub = document.createElement('div');
         sub.className = 'ev-sub';
-        sub.textContent = t(ev.country) + ' · ' + ev.city +
+        sub.textContent = t(ev.country) + ' · ' + t(ev.city) +
           (ev.venue ? ' · ' + ev.venue : '') +
-          (ev.note ? t(' ｜ ') + ev.note : '');
+          (ev.note ? t(' ｜ ') + t(ev.note) : '');
         item.appendChild(top); item.appendChild(sub);
         box.appendChild(item);
       });
@@ -2769,7 +2769,20 @@
   }
 
   function loadEvents() {
-    fetch('data/tournaments.json?d=' + new Date().toISOString().slice(0, 10))
+    var day = new Date().toISOString().slice(0, 10);
+    /* 賽事資料的 city/note 翻譯表：載入後併進當前語言字典，t() 即可查到 */
+    var i18nReady = (window.I18N_LANG && window.I18N_LANG !== 'zh-TW' && window.I18N_DICT)
+      ? fetch('data/tournaments-i18n.json?d=' + day)
+          .then(function (r) { return r.json(); })
+          .then(function (tables) {
+            var cur = window.I18N_DICT[window.I18N_LANG];
+            if (cur && tables[window.I18N_LANG]) Object.assign(cur, tables[window.I18N_LANG]);
+          })
+          .catch(function () {})
+      : Promise.resolve();
+    i18nReady.then(function () {
+      return fetch('data/tournaments.json?d=' + day);
+    })
       .then(function (r) { return r.json(); })
       .then(function (data) {
         evData = data;
