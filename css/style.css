@@ -376,9 +376,10 @@ canvas { width: 100%; display: block; border-radius: 8px; }
 .deck-grid-wrap { overflow-x: auto; margin-top: 12px; padding-bottom: 4px; }
 .deck-grid {
   display: grid;
-  grid-template-columns: repeat(13, minmax(34px, 1fr));
+  grid-template-columns: repeat(13, minmax(2.125rem, 1fr));
   gap: 4px;
-  min-width: 500px;
+  /* 用 rem：放大字級時格子跟著長，外層 .deck-grid-wrap 可橫向捲動 */
+  min-width: 31.25rem;
 }
 .deck-card {
   padding: 8px 0; text-align: center;
@@ -432,7 +433,8 @@ canvas { width: 100%; display: block; border-radius: 8px; }
   display: grid;
   grid-template-columns: repeat(13, 1fr);
   gap: 2px;
-  min-width: 480px;
+  /* 同 .deck-grid：rem 讓 13×13 手牌格在大字級下仍放得下 AKo 這種三字 */
+  min-width: 30rem;
 }
 .nash-cell {
   text-align: center; padding: 6px 0;
