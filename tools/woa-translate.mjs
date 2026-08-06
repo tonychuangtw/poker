@@ -7,6 +7,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { claudeChildEnv } from './claude-child-env.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const blocks = JSON.parse(readFileSync(join(root, 'tools/woa-src/guide.json'), 'utf8'));
@@ -33,8 +34,10 @@ Rules:
 - Natural, concise wording a poker player would use. No commentary.
 
 ${payload}`;
+  // env 一定要用 claudeChildEnv()：不清掉 TELEGRAM_STATE_DIR 的話，這個子程序會
+  // 把 telegram plugin 叫起來搶同一顆 bot token，整條線變聾（見 claude-child-env.mjs）
   const out = execFileSync('claude', ['--print', '--model', 'haiku'], {
-    input: prompt, encoding: 'utf8', maxBuffer: 40 * 1024 * 1024
+    input: prompt, encoding: 'utf8', maxBuffer: 40 * 1024 * 1024, env: claudeChildEnv()
   });
   const map = {};
   out.split('\n').forEach((line) => {

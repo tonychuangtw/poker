@@ -4,6 +4,7 @@
    單次最多補 60 條（其餘隔日輪到）。 */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { claudeChildEnv } from './claude-child-env.mjs';
 
 const LANGS = ['zh-CN', 'en', 'ja', 'ko', 'es', 'pt-BR', 'fr', 'de', 'ru', 'vi', 'th'];
 const GROUPS = [['zh-CN', 'en', 'ja', 'ko'], ['es', 'pt-BR', 'fr', 'de'], ['ru', 'vi', 'th']];
@@ -42,7 +43,8 @@ ${JSON.stringify(groupMissing)}`;
   try {
     const out = execFileSync('claude',
       ['--print', '--model', 'haiku', '--dangerously-skip-permissions', prompt],
-      { encoding: 'utf8', timeout: 600000, maxBuffer: 32 * 1024 * 1024 });
+      // env: 見 claude-child-env.mjs —— 不清掉 TELEGRAM_STATE_DIR 會搶走該線的 bot token
+      { encoding: 'utf8', timeout: 600000, maxBuffer: 32 * 1024 * 1024, env: claudeChildEnv() });
     const jsonStr = out.slice(out.indexOf('{'), out.lastIndexOf('}') + 1);
     const res = JSON.parse(jsonStr);
     for (const l of group) {
