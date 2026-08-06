@@ -233,6 +233,9 @@ select {
   background-repeat: no-repeat;
   background-position: right 12px center;
 }
+/* 下拉清單由瀏覽器畫，不吃 select 的半透明底色：不明講的話桌機 Chrome
+   會給白底配我們的淺色字＝看不見（2026-08-06 踩過），這裡把底色/字色寫死。 */
+select option { background-color: var(--bg2); color: var(--text); }
 input[type="date"] { -webkit-appearance: none; appearance: none; }
 textarea { font-family: inherit; resize: vertical; }
 input:focus, select:focus, textarea:focus {
@@ -562,7 +565,8 @@ a.ev-name:hover { text-decoration: underline; }
   position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0;
   opacity: 0; -webkit-appearance: none; appearance: none;
   margin: 0; padding: 0; border: 0; border-radius: inherit;
-  background: transparent; color: var(--text); font: inherit; cursor: pointer;
+  /* select 本身看不到（opacity 0），但桌機的下拉清單會沿用它的底色，所以給實色 */
+  background: var(--bg2); color: var(--text); font: inherit; cursor: pointer;
 }
 /* 鍵盤 focus 時仍看得出選到哪顆 chip */
 .icon-chip:focus-within {
