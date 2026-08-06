@@ -614,7 +614,10 @@ a.ev-name:hover { text-decoration: underline; }
 /* 鎖住的卡片：留一小截模糊的預覽當廣告，其餘裁掉並蓋上解鎖卡 */
 .pro-locked {
   position: relative;
-  max-height: 240px; overflow: hidden;
+  /* min：矮卡片（只有一兩行內容）也要放得下鎖頭＋按鈕，否則會被裁掉
+     兩者都用 rem，字級放大時一起長 */
+  min-height: 11.5rem; max-height: 15rem;
+  overflow: hidden;
 }
 .pro-locked > *:not(.pro-lock-overlay) {
   filter: blur(3px); opacity: .5;
