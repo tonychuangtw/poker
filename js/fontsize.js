@@ -29,10 +29,15 @@
       cur = v;
       try { localStorage.setItem('poker.fontScale', cur); } catch (e) {}
       apply(cur);
+    },
+    {
+      /* 每一列用該級距的實際大小顯示，直接看得出差多少 */
+      labelStyle: function (label, value) {
+        label.style.fontSize = (13 * parseFloat(value)) + 'px';
+      }
     });
 
   chip.wrap.id = 'fontChip';
-  chip.sel.id = 'fontSel';
 
   /* 插在色系選單後面（語言 → 色系 → 字級） */
   var header = document.querySelector('.app-header');

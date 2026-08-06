@@ -74,7 +74,6 @@
       location.reload();
     });
     chip.wrap.id = 'langChip';
-    chip.sel.id = 'langSel';
     header.appendChild(chip.wrap);
   }
 

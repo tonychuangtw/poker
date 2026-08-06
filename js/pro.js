@@ -119,6 +119,17 @@
     later.addEventListener('click', closePaywall);
     box.appendChild(later);
 
+    /* Apple 會看付費畫面上有沒有這兩個連結 */
+    var links = el('p', 'paywall-links');
+    var pp = el('a', null, t('隱私政策'));
+    pp.href = 'privacy.html'; pp.target = '_blank'; pp.rel = 'noopener';
+    var sp = el('a', null, t('支援'));
+    sp.href = 'support.html'; sp.target = '_blank'; sp.rel = 'noopener';
+    links.appendChild(pp);
+    links.appendChild(document.createTextNode(' ｜ '));
+    links.appendChild(sp);
+    box.appendChild(links);
+
     back.appendChild(box);
     document.body.appendChild(back);
     document.body.style.overflow = 'hidden';

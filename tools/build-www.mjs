@@ -13,7 +13,7 @@ mkdirSync(out, { recursive: true });
 for (const dir of ['css', 'js', 'data', 'icons']) {
   cpSync(join(root, dir), join(out, dir), { recursive: true });
 }
-for (const f of ['index.html', 'manifest.json']) {
+for (const f of ['index.html', 'manifest.json', 'privacy.html', 'support.html']) {
   copyFileSync(join(root, f), join(out, f));
 }
 
