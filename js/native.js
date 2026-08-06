@@ -53,7 +53,8 @@
       var startDay = new Date(ev.start + 'T09:00:00'); /* 當地時間上午 9 點 */
       var pre3 = new Date(ev.start + 'T10:00:00');
       pre3.setDate(pre3.getDate() - 3);
-      var place = (ev.country || '') + (ev.city ? ' · ' + ev.city : '');
+      /* 只講城市與場館，不提國家（主權敏感地區的名稱爭議一律避開） */
+      var place = (ev.city ? t(ev.city) : '') + (ev.venue ? ' · ' + ev.venue : '');
       [
         { at: pre3, id: base * 2, body: ev.series + t(' 將於 3 天後（') + ev.start + t('）開賽 ｜ ') + place },
         { at: startDay, id: base * 2 + 1, body: ev.series + t(' 今天開賽 ｜ ') + place }

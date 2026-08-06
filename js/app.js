@@ -2715,10 +2715,11 @@
 
   function renderEvents() {
     if (!evData) return;
-    var region = $('#evRegion').value, country = $('#evCountry').value;
+    /* 只用洲別＋城市，不顯示也不篩國家 —— 主權敏感地區的名稱爭議一律避開 */
+    var region = $('#evRegion').value, city = $('#evCity').value;
     var list = evData.events.filter(function (ev) {
       return (region === 'all' || ev.region === region) &&
-             (country === 'all' || ev.country === country);
+             (city === 'all' || ev.city === city);
     });
     /* 免費版只看 14 天內開賽的賽事，完整巡迴表是 Pro */
     var evHidden = 0;
@@ -2772,7 +2773,7 @@
         top.appendChild(name); top.appendChild(date);
         var sub = document.createElement('div');
         sub.className = 'ev-sub';
-        sub.textContent = t(ev.country) + ' · ' + t(ev.city) +
+        sub.textContent = t(ev.city) +
           (ev.venue ? ' · ' + ev.venue : '') +
           (ev.note ? t(' ｜ ') + t(ev.note) : '');
         item.appendChild(top); item.appendChild(sub);
@@ -2794,10 +2795,10 @@
   }
 
   function evFillFilters() {
-    var regions = {}, countries = {};
+    var regions = {}, cities = {};
     evData.events.forEach(function (ev) {
       regions[ev.region] = true;
-      countries[ev.country] = true;
+      if (ev.city) cities[ev.city] = true;
     });
     function fill(sel, keys) {
       var cur = sel.value;
@@ -2810,7 +2811,7 @@
       sel.value = cur && (cur === 'all' || keys[cur]) ? cur : 'all';
     }
     fill($('#evRegion'), regions);
-    fill($('#evCountry'), countries);
+    fill($('#evCity'), cities);
   }
 
   function loadEvents() {
@@ -2840,7 +2841,7 @@
       });
   }
   $('#evRegion').addEventListener('change', renderEvents);
-  $('#evCountry').addEventListener('change', renderEvents);
+  $('#evCity').addEventListener('change', renderEvents);
   /* 賽事卡片預設收合兩行說明，點卡片展開全文（點連結不算） */
   $('#evList').addEventListener('click', function (e) {
     if (e.target.closest('a')) return;
