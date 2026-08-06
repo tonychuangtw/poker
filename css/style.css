@@ -106,8 +106,11 @@ html, body {
                "Microsoft JhengHei", sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
-/* 底部留白用 rem，字級放大時 tab bar 變高也不會蓋住內容 */
-main { max-width: 640px; margin: 0 auto; padding: 4px 14px calc(5.4rem + env(safe-area-inset-bottom, 0px)); }
+/* 底部留白跟著 tab bar 的成長上限走（bar 用 clamp，最多長到 ~104px） */
+main {
+  max-width: 640px; margin: 0 auto;
+  padding: 4px 14px calc(clamp(86px, 5.4rem, 104px) + env(safe-area-inset-bottom, 0px));
+}
 
 /* iOS 原生殼 safe-area：瀏海下的狀態列鋪一條同色模糊底，內容從 inset 下開始 */
 body { padding-top: env(safe-area-inset-top, 0px); }
@@ -183,19 +186,48 @@ body::before {
   border-top: 1px solid rgba(255, 255, 255, .07);
 }
 .tab-btn {
+  position: relative;
   flex: 1; min-width: 0;
   display: flex; flex-direction: column; align-items: center; gap: 3px;
   padding: 5px 0 3px;
   background: none; border: none; border-radius: 10px;
-  color: #7c837a; font-size: .64rem; font-weight: 500;
+  color: #7c837a; font-weight: 500;
+  /* clamp：字級放大時 tab 列只跟著長一點點，7 顆才不會擠爆 */
+  font-size: clamp(10px, .64rem, 12.5px);
   letter-spacing: .02em; cursor: pointer; white-space: nowrap;
-  transition: color .18s;
+  transition: color .18s, transform .18s;
+  -webkit-tap-highlight-color: transparent;
 }
-.tab-btn svg { width: 23px; height: 23px; display: block; flex-shrink: 0; }
-.tab-btn span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
-.tab-btn:hover { color: var(--accent2); }
+.tab-btn svg {
+  width: clamp(22px, 1.44rem, 26px); height: clamp(22px, 1.44rem, 26px);
+  display: block; flex-shrink: 0;
+  position: relative; z-index: 1;
+  transition: transform .24s cubic-bezier(.34, 1.4, .64, 1), filter .18s;
+}
+.tab-btn span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; position: relative; z-index: 1; }
+/* 選中 / 滑過時圖示後面浮出膠囊底，圖示微微上浮放大 */
+.tab-btn::before {
+  content: "";
+  position: absolute; top: 2px; left: 50%;
+  width: 44px; height: 30px; margin-left: -22px;
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb), .13);
+  opacity: 0; transform: scale(.6);
+  transition: opacity .2s, transform .28s cubic-bezier(.34, 1.4, .64, 1);
+}
+.tab-btn.active::before { opacity: 1; transform: none; }
+/* 只在真的有滑鼠的裝置給 hover：手機點完 :hover 會黏著不放 */
+@media (hover: hover) {
+  .tab-btn:hover::before { opacity: 1; transform: none; }
+  .tab-btn:hover { color: var(--accent2); }
+  .tab-btn:hover svg { transform: translateY(-2px) scale(1.14); }
+}
+.tab-btn:active { transform: scale(.94); }
 .tab-btn.active { color: var(--accent2); font-weight: 600; }
-.tab-btn.active svg { filter: drop-shadow(0 0 6px rgba(var(--accent-rgb), .45)); }
+.tab-btn.active svg {
+  transform: translateY(-1px) scale(1.08);
+  filter: drop-shadow(0 0 6px rgba(var(--accent-rgb), .45));
+}
 .tab-panel { display: none; }
 .tab-panel.active { display: block; animation: fadeUp .28s cubic-bezier(.22, .8, .36, 1); }
 @keyframes fadeUp {
@@ -626,6 +658,7 @@ a.ev-name:hover { text-decoration: underline; }
     transition-duration: .01ms !important;
   }
   .card:hover, .deck-card:hover, .nash-cell:hover { transform: none; }
+  .tab-btn:hover svg, .tab-btn.active svg, .tab-btn:active { transform: none; }
 }
 
 /* ---- RFI top-X% 滑桿 ---- */
