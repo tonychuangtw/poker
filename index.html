@@ -12,8 +12,8 @@ try {
   if (fs >= 0.9 && fs <= 2) document.documentElement.style.fontSize = (16 * fs) + 'px';
 } catch (e) {}</script>
 <title>撲克工具箱 — 記帳 / EV / ICM</title>
-<link rel="stylesheet" href="css/style.css?v=30">
-<link rel="manifest" href="manifest.json?v=30">
+<link rel="stylesheet" href="css/style.css?v=31">
+<link rel="manifest" href="manifest.json?v=31">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
@@ -108,12 +108,12 @@ try {
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-pro="plchart">
     <h2>累積盈虧</h2>
     <canvas id="plChart" height="220"></canvas>
   </div>
 
-  <div class="card">
+  <div class="card" data-pro="advstats">
     <h2>進階統計</h2>
     <div class="stats-table-wrap">
       <table class="stats-table" id="advStatsTable"></table>
@@ -121,7 +121,7 @@ try {
     <p class="hint" id="advStatsHint"></p>
   </div>
 
-  <div class="card">
+  <div class="card" data-pro="tagstats">
     <h2>標籤分析</h2>
     <div class="stats-table-wrap">
       <table class="stats-table" id="tagStatsTable"></table>
@@ -129,7 +129,7 @@ try {
     <p class="hint" id="tagStatsHint"></p>
   </div>
 
-  <div class="card">
+  <div class="card" data-pro="monthly">
     <h2>月報</h2>
     <div class="stats-table-wrap">
       <table class="stats-table" id="monthlyTable"></table>
@@ -138,7 +138,7 @@ try {
     <p class="hint" id="monthlyHint"></p>
   </div>
 
-  <div class="card">
+  <div class="card" data-pro="tilt">
     <h2>傾斜偵測</h2>
     <div class="hint" id="tiltInsight"></div>
   </div>
@@ -219,7 +219,7 @@ try {
     <div class="ev-result" id="evResult">先計算勝率，再輸入底池與跟注金額。</div>
   </div>
 
-  <div class="card">
+  <div class="card" data-pro="rvh">
     <h2>Range vs 手牌</h2>
     <p class="hint">用上方選好的 Hero 手牌與公牌，對上對手的整個 range（含 blocker 效應）。
       range 可用記號（例：22+ ATs+ KQo）或「前 X%」。</p>
@@ -239,7 +239,7 @@ try {
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-pro="rvr">
     <h2>Range vs Range（翻前 / 翻後）</h2>
     <p class="hint">兩邊 range 可用記號（例：QQ+ AKs）或「前 X%」。
       公牌留空 = 翻前，用 169×169 翻前勝率表加權（忽略 blocker，近似值）；
@@ -279,7 +279,7 @@ try {
 </section>
 
 <!-- ============ Tab 3: 錦標賽 ICM ============ -->
-<section id="tab-icm" class="tab-panel">
+<section id="tab-icm" class="tab-panel" data-pro="icm">
   <div class="card">
     <h2>獎金結構</h2>
     <p class="hint">最多計算前 6 名獎金。</p>
@@ -421,7 +421,7 @@ try {
     <div class="nash-grid-wrap"><div id="rfiGrid" class="nash-grid"></div></div>
   </div>
 
-  <div class="card">
+  <div class="card" data-pro="def">
     <h2>面對開牌（3-bet / 防守）</h2>
     <p class="hint">前面有人開牌時的應對 range（預設 100bb，可拉滑桿試算 10–300bb；簡化 GTO 近似）。
       6-max 15 個情境為完整覆蓋；9-max Full Ring 36 個情境為<b>現場取向</b>——
@@ -454,7 +454,7 @@ try {
     <div class="nash-grid-wrap"><div id="defGrid" class="nash-grid"></div></div>
   </div>
 
-  <div class="card">
+  <div class="card" data-pro="v3b">
     <h2>被 3-bet（4-bet / 跟注 / 棄牌）</h2>
     <p class="hint">自己在翻前開牌後被 3-bet 的應對 range（預設 100bb，可拉滑桿試算 10–300bb）。
       9-max 那組是現場取向：那邊的 3-bet range 很緊很偏價值，所以續玩要比 6-max 收得多。
@@ -481,7 +481,7 @@ try {
     <div class="nash-grid-wrap"><div id="v3bGrid" class="nash-grid"></div></div>
   </div>
 
-  <div class="card">
+  <div class="card" data-pro="cold">
     <h2>冷 4-bet / 冷跟（前面開牌 + 有人 3-bet）</h2>
     <p class="hint">第四種翻前局面：<b>別人開牌、第三家 3-bet，而你還沒行動</b>。
       <span class="legend-tb">紅</span> = 冷 4-bet、<span class="legend-call">綠</span> = 冷跟、灰 = 蓋牌。</p>
@@ -623,14 +623,14 @@ try {
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-pro="mastery">
     <h2>熟練度（滾動 30 題）</h2>
     <p class="hint">在本分頁作答測驗即可累積；最近 30 題正確率 ≥ 90% 獲得 🏆。
       六種題型各自獨立計算。</p>
     <div id="masteryBars" class="bar-chart"></div>
   </div>
 
-  <div class="card">
+  <div class="card" data-pro="srs">
     <h2>錯題本（間隔重複）</h2>
     <p class="hint" id="mistakeCountTxt"></p>
     <button class="btn primary full" id="btnDrillStart">錯題重練</button>
@@ -653,7 +653,7 @@ try {
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" data-pro="weekly">
     <h2>週報（近 7 天）</h2>
     <div id="weekChart" class="bar-chart"></div>
     <p class="hint" id="weekTotals"></p>
@@ -662,7 +662,7 @@ try {
 
 <!-- ============ Tab 5b: 關鍵手牌複盤 ============ -->
 <section id="tab-hands" class="tab-panel">
-  <div class="card">
+  <div class="card" data-pro="leak">
     <h2>Leak 清單</h2>
     <div class="stats-table-wrap">
       <table class="stats-table" id="leakTable"></table>
@@ -746,24 +746,25 @@ try {
 
 <footer class="app-footer">純前端計算，資料存在此裝置的瀏覽器；右上角 Google 登入可跨裝置同步。</footer>
 
-<script src="js/i18n-dict.js?v=30"></script>
-<script src="js/chip.js?v=30"></script>
-<script src="js/i18n.js?v=30"></script>
-<script src="js/theme.js?v=30"></script>
-<script src="js/fontsize.js?v=30"></script>
-<script src="js/evaluator.js?v=30"></script>
-<script src="js/equity.js?v=30"></script>
-<script src="js/icm.js?v=30"></script>
-<script src="js/tracker-stats.js?v=30"></script>
-<script src="js/preflop-table.js?v=30"></script>
-<script src="js/pushfold.js?v=30"></script>
-<script src="js/ranges.js?v=30"></script>
-<script src="js/postflop.js?v=30"></script>
-<script src="js/hands.js?v=30"></script>
-<script src="js/nash.js?v=30"></script>
-<script src="js/app.js?v=30"></script>
-<script src="js/training.js?v=30"></script>
-<script src="js/sync.js?v=30"></script>
-<script src="js/native.js?v=30"></script>
+<script src="js/i18n-dict.js?v=31"></script>
+<script src="js/chip.js?v=31"></script>
+<script src="js/i18n.js?v=31"></script>
+<script src="js/theme.js?v=31"></script>
+<script src="js/fontsize.js?v=31"></script>
+<script src="js/pro.js?v=31"></script>
+<script src="js/evaluator.js?v=31"></script>
+<script src="js/equity.js?v=31"></script>
+<script src="js/icm.js?v=31"></script>
+<script src="js/tracker-stats.js?v=31"></script>
+<script src="js/preflop-table.js?v=31"></script>
+<script src="js/pushfold.js?v=31"></script>
+<script src="js/ranges.js?v=31"></script>
+<script src="js/postflop.js?v=31"></script>
+<script src="js/hands.js?v=31"></script>
+<script src="js/nash.js?v=31"></script>
+<script src="js/app.js?v=31"></script>
+<script src="js/training.js?v=31"></script>
+<script src="js/sync.js?v=31"></script>
+<script src="js/native.js?v=31"></script>
 </body>
 </html>

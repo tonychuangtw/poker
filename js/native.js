@@ -120,6 +120,12 @@
     setStatus(status, cb.checked);
 
     cb.addEventListener('change', function () {
+      /* 開賽提醒是 Pro 功能 */
+      if (cb.checked && window.Pro && !Pro.has()) {
+        cb.checked = false;
+        Pro.hitLimit(t('開賽提醒是 Pro 功能。'));
+        return;
+      }
       if (cb.checked) {
         P.LocalNotifications.requestPermissions().then(function (res) {
           if (res && res.display === 'granted') {

@@ -610,6 +610,81 @@ a.ev-name:hover { text-decoration: underline; }
 }
 .inline-select { min-height: 0; }
 
+/* ===== Pro 鎖定區塊與付費牆 ===== */
+/* 鎖住的卡片：留一小截模糊的預覽當廣告，其餘裁掉並蓋上解鎖卡 */
+.pro-locked {
+  position: relative;
+  max-height: 240px; overflow: hidden;
+}
+.pro-locked > *:not(.pro-lock-overlay) {
+  filter: blur(3px); opacity: .5;
+  pointer-events: none; user-select: none;
+}
+.pro-lock-overlay {
+  position: absolute; inset: 0; z-index: 3;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, rgba(11, 14, 13, .55), rgba(11, 14, 13, .92));
+  border-radius: inherit;
+}
+:root[data-theme="light"] .pro-lock-overlay {
+  background: linear-gradient(180deg, rgba(242, 239, 232, .6), rgba(242, 239, 232, .94));
+}
+.pro-lock-card { text-align: center; padding: 12px; }
+.pro-lock-icon { font-size: 1.6rem; line-height: 1; }
+.pro-lock-title {
+  margin: 6px 0 10px; font-weight: 700; font-size: .92rem;
+  color: var(--accent2); letter-spacing: .04em;
+}
+.pro-more { margin-top: 12px; }
+
+.paywall-backdrop {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px calc(16px + env(safe-area-inset-right, 0px))
+           calc(20px + env(safe-area-inset-bottom, 0px))
+           calc(16px + env(safe-area-inset-left, 0px));
+  background: rgba(0, 0, 0, .62);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  animation: fadeUp .22s cubic-bezier(.22, .8, .36, 1);
+  overflow-y: auto;
+}
+.paywall {
+  width: 100%; max-width: 420px;
+  background: var(--bg2); border: 1px solid rgba(var(--accent-rgb), .3);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 20px 18px 14px;
+}
+.paywall-badge {
+  display: inline-block; padding: 4px 12px; border-radius: 999px;
+  background: var(--gold-grad); color: var(--on-accent);
+  font-weight: 800; font-size: .74rem; letter-spacing: .1em;
+}
+.paywall-reason { margin: 12px 0 0; color: var(--text); font-size: .92rem; line-height: 1.5; }
+.paywall h3 {
+  margin: 14px 0 8px; font-size: .78rem; color: var(--accent);
+  letter-spacing: .14em; font-weight: 600;
+}
+.paywall-list { margin: 0 0 14px; padding-left: 0; list-style: none; }
+.paywall-list li {
+  position: relative; padding: 5px 0 5px 22px;
+  font-size: .88rem; line-height: 1.45; color: var(--text);
+}
+.paywall-list li::before {
+  content: "✓"; position: absolute; left: 2px; top: 5px;
+  color: var(--accent2); font-weight: 700;
+}
+.paywall-price {
+  margin: 0 0 12px; text-align: center;
+  font-size: .9rem; font-weight: 700; color: var(--accent2);
+}
+.paywall .btn + .btn { margin-top: 8px; }
+.btn-link {
+  display: block; width: 100%; margin-top: 10px; padding: 8px;
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); font-size: .82rem; font-family: inherit;
+}
+.btn-link:hover { color: var(--text); }
+
 /* ---- cloud sync ---- */
 .sync-ui { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .sync-chip { width: 32px; padding: 0; font-weight: 700; transition: background .18s, box-shadow .18s; }

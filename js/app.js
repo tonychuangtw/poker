@@ -55,6 +55,10 @@
   $('#fDate').value = new Date().toISOString().slice(0, 10);
   $('#sessionForm').addEventListener('submit', function (e) {
     e.preventDefault();
+    if (sessions.length >= Pro.limit('records')) {
+      Pro.hitLimit(t('免費版最多記 10 筆，升級 Pro 可無限記錄。'));
+      return;
+    }
     var rec = {
       id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
       date: $('#fDate').value,
@@ -505,9 +509,13 @@
     download('poker-sessions.csv', csv, 'text/csv;charset=utf-8');
   });
   $('#btnExportJson').addEventListener('click', function () {
+    if (!Pro.has()) { Pro.hitLimit(t('JSON 匯出入是 Pro 功能，免費版可以匯出 CSV。')); return; }
     download('poker-sessions.json', JSON.stringify(sessions, null, 2), 'application/json');
   });
-  $('#btnImportJson').addEventListener('click', function () { $('#importFile').click(); });
+  $('#btnImportJson').addEventListener('click', function () {
+    if (!Pro.has()) { Pro.hitLimit(t('JSON 匯出入是 Pro 功能，免費版可以匯出 CSV。')); return; }
+    $('#importFile').click();
+  });
   $('#importFile').addEventListener('change', function () {
     var f = this.files[0];
     if (!f) return;
@@ -656,6 +664,10 @@
 
   $('#btnAddVillain').addEventListener('click', function () {
     if (villainCount >= MAX_VILLAINS) return;
+    if (villainCount >= Pro.limit('villains')) {
+      Pro.hitLimit(t('多人（2 位以上對手）勝率是 Pro 功能。'));
+      return;
+    }
     villainCount++;
     renderVillainRows();
   });
@@ -2022,6 +2034,14 @@
 
   var quizCur = null;
   function quizNext() {
+    if (!Pro.quizLeft()) {
+      /* 額度用完就收回測驗畫面，免得停在一題答不下去的狀態 */
+      $('#quizRun').hidden = true;
+      $('#quizIdle').hidden = false;
+      Pro.hitLimit(t('免費版每天 10 題，升級 Pro 無限練習。'));
+      return;
+    }
+    Pro.quizBump();
     if (quizMode === 'pf') {
       var S = 2 + Math.floor(Math.random() * 14); // 2–15 bb
       quizCur = { mode: 'pf', S: S, idx: randHandIdx() };
@@ -2495,6 +2515,10 @@
   }
 
   $('#btnSaveHand').addEventListener('click', function () {
+    if (handRecords.length >= Pro.limit('hands')) {
+      Pro.hitLimit(t('免費版最多存 5 手，升級 Pro 無限複盤。'));
+      return;
+    }
     var heroCards;
     try { heroCards = HANDS.parseCards($('#hHero').value, 2); }
     catch (err) { alert('手牌錯誤：' + err.message); return; }
@@ -2696,6 +2720,14 @@
       return (region === 'all' || ev.region === region) &&
              (country === 'all' || ev.country === country);
     });
+    /* 免費版只看 14 天內開賽的賽事，完整巡迴表是 Pro */
+    var evHidden = 0;
+    if (!Pro.has()) {
+      var cutoff = new Date(Date.now() + Pro.limits.eventDays * 864e5).toISOString().slice(0, 10);
+      var full = list.length;
+      list = list.filter(function (ev) { return ev.start && ev.start <= cutoff; });
+      evHidden = full - list.length;
+    }
     // 依開始日排序，無日期排最後
     list.sort(function (a, b) {
       if (!a.start) return 1;
@@ -2706,6 +2738,7 @@
     box.innerHTML = '';
     if (!list.length) {
       box.innerHTML = t('<p class="empty-msg">此篩選條件下沒有賽事</p>');
+      if (evHidden) evAppendProMore(box, evHidden);
       return;
     }
     var byRegion = {};
@@ -2746,6 +2779,18 @@
         box.appendChild(item);
       });
     });
+    if (evHidden) evAppendProMore(box, evHidden);
+  }
+
+  /* 被 14 天限制擋掉的賽事 → 列表尾巴放一顆升級鈕 */
+  function evAppendProMore(box, hidden) {
+    var more = document.createElement('button');
+    more.className = 'btn full pro-more';
+    more.textContent = '🔒 +' + hidden + '　' + t('完整巡迴表是 Pro 功能');
+    more.addEventListener('click', function () {
+      Pro.paywall(t('免費版只看 14 天內的賽事。'));
+    });
+    box.appendChild(more);
   }
 
   function evFillFilters() {
