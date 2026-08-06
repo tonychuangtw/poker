@@ -65,26 +65,17 @@
     });
   }
 
-  /* 語言切換器（header 右側） */
+  /* 語言切換器（header 右側）：收合成 🌐 圖示，語言名稱留在下拉選單 */
   function addPicker() {
     var header = document.querySelector('.app-header');
     if (!header) return;
-    var sel = document.createElement('select');
-    sel.id = 'langSel';
-    sel.className = 'lang-sel';
-    sel.setAttribute('aria-label', 'Language');
-    LANGS.forEach(function (l) {
-      var o = document.createElement('option');
-      o.value = l[0];
-      o.textContent = l[1];
-      if (l[0] === lang) o.selected = true;
-      sel.appendChild(o);
-    });
-    sel.addEventListener('change', function () {
-      try { localStorage.setItem('poker.lang', sel.value); } catch (e) {}
+    var chip = window.makeIconChip('🌐', 'Language', LANGS, lang, function (v) {
+      try { localStorage.setItem('poker.lang', v); } catch (e) {}
       location.reload();
     });
-    header.appendChild(sel);
+    chip.wrap.id = 'langChip';
+    chip.sel.id = 'langSel';
+    header.appendChild(chip.wrap);
   }
 
   translateDom();

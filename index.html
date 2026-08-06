@@ -4,8 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0b0e0d">
-<script>/* 首繪前套用已存的色系，避免閃爍 */
-try { var th = localStorage.getItem('poker.theme'); if (th) document.documentElement.setAttribute('data-theme', th); } catch (e) {}</script>
+<script>/* 首繪前套用已存的色系與字級，避免閃爍 */
+try {
+  var th = localStorage.getItem('poker.theme');
+  if (th) document.documentElement.setAttribute('data-theme', th);
+  var fs = parseFloat(localStorage.getItem('poker.fontScale'));
+  if (fs >= 0.9 && fs <= 1.45) document.documentElement.style.fontSize = (16 * fs) + 'px';
+} catch (e) {}</script>
 <title>撲克工具箱 — 記帳 / EV / ICM</title>
 <link rel="stylesheet" href="css/style.css">
 <link rel="manifest" href="manifest.json">
@@ -742,8 +747,10 @@ try { var th = localStorage.getItem('poker.theme'); if (th) document.documentEle
 <footer class="app-footer">純前端計算，資料存在此裝置的瀏覽器；右上角 Google 登入可跨裝置同步。</footer>
 
 <script src="js/i18n-dict.js"></script>
+<script src="js/chip.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/theme.js"></script>
+<script src="js/fontsize.js"></script>
 <script src="js/evaluator.js"></script>
 <script src="js/equity.js"></script>
 <script src="js/icm.js"></script>

@@ -32,27 +32,21 @@
 
   function addPicker() {
     var header = document.querySelector('.app-header');
-    var langSel = document.getElementById('langSel');
+    var langChip = document.getElementById('langChip');
     if (!header) return;
-    var sel = document.createElement('select');
-    sel.id = 'themeSel';
-    sel.className = 'theme-sel';
-    sel.setAttribute('aria-label', 'Theme');
-    THEMES.forEach(function (th) {
-      var o = document.createElement('option');
-      o.value = th[0];
-      o.textContent = '🎨 ' + t(th[1]);
-      if (th[0] === cur) o.selected = true;
-      sel.appendChild(o);
-    });
-    sel.addEventListener('change', function () {
-      cur = sel.value;
-      try { localStorage.setItem('poker.theme', cur); } catch (e) {}
-      apply(cur);
-    });
+    /* 只露調色盤圖示，色系名稱留在下拉選單裡（手機頂欄放不下字） */
+    var chip = window.makeIconChip('🎨', t('色系'),
+      THEMES.map(function (th) { return [th[0], t(th[1])]; }), cur,
+      function (v) {
+        cur = v;
+        try { localStorage.setItem('poker.theme', cur); } catch (e) {}
+        apply(cur);
+      });
+    chip.wrap.id = 'themeChip';
+    chip.sel.id = 'themeSel';
     /* 插在語言選單後面 */
-    if (langSel && langSel.nextSibling) header.insertBefore(sel, langSel.nextSibling);
-    else header.appendChild(sel);
+    if (langChip && langChip.nextSibling) header.insertBefore(chip.wrap, langChip.nextSibling);
+    else header.appendChild(chip.wrap);
   }
 
   apply(cur);

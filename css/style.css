@@ -91,7 +91,8 @@
 :root[data-theme="light"] .card-slot { background: rgba(0, 0, 0, .03); border-color: #c9c2b0; color: #a6a292; }
 :root[data-theme="light"] .quiz-board { color: #26241d; }
 * { box-sizing: border-box; }
-html { color-scheme: dark; }
+/* 全站尺寸以 rem 為主，改這個 font-size 就等於改字級（js/fontsize.js 會覆寫成 16×倍率） */
+html { color-scheme: dark; font-size: 16px; }
 html, body {
   margin: 0; padding: 0;
   accent-color: var(--accent);
@@ -103,10 +104,10 @@ html, body {
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC",
                "Microsoft JhengHei", sans-serif;
-  font-size: 16px;
   -webkit-tap-highlight-color: transparent;
 }
-main { max-width: 640px; margin: 0 auto; padding: 4px 14px calc(86px + env(safe-area-inset-bottom, 0px)); }
+/* 底部留白用 rem，字級放大時 tab bar 變高也不會蓋住內容 */
+main { max-width: 640px; margin: 0 auto; padding: 4px 14px calc(5.4rem + env(safe-area-inset-bottom, 0px)); }
 
 /* iOS 原生殼 safe-area：瀏海下的狀態列鋪一條同色模糊底，內容從 inset 下開始 */
 body { padding-top: env(safe-area-inset-top, 0px); }
@@ -136,13 +137,14 @@ body::before {
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent; color: transparent;
 }
-/* header 右側 chips（語言 / 色系 / 登入）統一尺寸，杜絕忽大忽小 */
-.hdr-chip, .lang-sel, .theme-sel, .sync-login, .sync-chip {
+/* header 右側 chips（語言 / 色系 / 字級 / 登入）統一尺寸，杜絕忽大忽小。
+   字級用 px 不用 rem：頂欄是外框，放大字體時不該跟著撐開。 */
+.hdr-chip, .icon-chip, .sync-login, .sync-chip {
   box-sizing: border-box;
   height: 32px; min-height: 0;
   display: inline-flex; align-items: center; justify-content: center;
   padding: 0 12px; margin: 0;
-  font-size: .78rem; line-height: 1; letter-spacing: 0;
+  font-size: 12.5px; line-height: 1; letter-spacing: 0;
   color: var(--accent2);
   background: rgba(var(--accent-rgb), .07);
   border: 1px solid rgba(var(--accent-rgb), .3);
@@ -552,10 +554,21 @@ a.ev-name:hover { text-decoration: underline; }
 .dyn-row input { margin: 0; }
 .dyn-row .del-btn { flex-shrink: 0; }
 
-/* ---- 語言 / 色系切換器（尺寸統一在 .hdr-chip 群組規則） ---- */
-.lang-sel { width: auto; padding-right: 26px; background-position: right 9px center; }
-/* 主題選單收合成只露 🎨，下拉才看得到全名 */
-.theme-sel { width: 38px; padding: 0 0 0 10px; background-image: none; overflow: hidden; }
+/* ---- 語言 / 色系 / 字級 圖示 chip（尺寸統一在 .hdr-chip 群組規則） ----
+   只露一個字元，原生 select 透明疊在整顆 chip 上，點下去照樣是系統選單。 */
+.icon-chip { position: relative; width: 32px; padding: 0; overflow: hidden; }
+.icon-chip .icon-chip-glyph { font-size: 15px; line-height: 1; pointer-events: none; }
+.icon-chip select {
+  position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0;
+  opacity: 0; -webkit-appearance: none; appearance: none;
+  margin: 0; padding: 0; border: 0; border-radius: inherit;
+  background: transparent; color: var(--text); font: inherit; cursor: pointer;
+}
+/* 鍵盤 focus 時仍看得出選到哪顆 chip */
+.icon-chip:focus-within {
+  border-color: rgba(var(--accent-rgb), .7);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .14);
+}
 .inline-select { min-height: 0; }
 
 /* ---- cloud sync ---- */
