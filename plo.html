@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e0d">
+<meta name="robots" content="noindex, nofollow">
+<title>低階 PLO 打法筆記 — 一清</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  main { max-width: 760px; padding-bottom: 60px; }
+  .lead { color: var(--muted); font-size: .88rem; line-height: 1.7; }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
+  .toc a {
+    padding: 7px 13px; border-radius: 999px; text-decoration: none;
+    background: rgba(var(--accent-rgb), .07); color: var(--accent2);
+    border: 1px solid rgba(var(--accent-rgb), .3); font-size: .8rem;
+  }
+  .toc a:hover { background: rgba(var(--accent-rgb), .16); }
+  .sec h2 { font-size: .82rem; }
+  .pos { margin: 0 0 16px; padding: 0 0 16px; border-bottom: 1px solid var(--border-soft); }
+  .pos:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .pos-name {
+    display: inline-block; margin-bottom: 8px; padding: 3px 12px; border-radius: 999px;
+    background: var(--gold-grad); color: var(--on-accent);
+    font-weight: 800; font-size: .76rem; letter-spacing: .06em;
+  }
+  .hands {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .88rem; line-height: 1.9; color: var(--text);
+    background: rgba(var(--accent-rgb), .05);
+    border-left: 2px solid rgba(var(--accent-rgb), .45);
+    border-radius: 0 8px 8px 0;
+    padding: 10px 12px; margin: 8px 0;
+    overflow-x: auto;
+  }
+  .note { color: var(--muted); font-size: .86rem; line-height: 1.7; margin: 6px 0 0; }
+  .warn {
+    margin: 10px 0 0; padding: 10px 12px;
+    background: rgba(232, 89, 106, .09);
+    border: 1px solid rgba(232, 89, 106, .28);
+    border-radius: var(--radius-sm);
+    font-size: .86rem; line-height: 1.7;
+  }
+  .quote {
+    margin: 10px 0; padding: 10px 14px;
+    border-left: 3px solid rgba(var(--accent-rgb), .5);
+    color: var(--text); font-size: .88rem; line-height: 1.75;
+  }
+  .quote .who { display: block; margin-top: 6px; color: var(--muted); font-size: .76rem; }
+  .num-table td { padding: 7px 10px; font-size: .86rem; }
+  .num-table td:first-child { color: var(--muted); white-space: nowrap; }
+  .num-table td:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent2); }
+  .num-table tr + tr td { border-top: 1px solid var(--border-soft); }
+  .gloss dt { margin-top: 10px; font-weight: 700; color: var(--accent2); font-size: .86rem; }
+  .gloss dd { margin: 3px 0 0; color: var(--muted); font-size: .85rem; line-height: 1.65; }
+  .doc-foot { text-align: center; color: var(--muted); font-size: .78rem; margin-top: 24px; }
+  .doc-foot a { color: var(--accent2); }
+</style>
+</head>
+<body>
+<header class="app-header">
+  <h1>♠ 低階 PLO 打法筆記</h1>
+</header>
+
+<main>
+<div class="card">
+  <p class="lead">
+    這頁整理自 <strong>一清（ngarina）</strong> 的 PLO 心得，內容針對 <strong>PLO25 以下</strong> 的低階牌局。
+    原文是聊天紀錄，這裡只做分段與排版，牌組寫法與判斷都保留原樣，沒有改動他的結論。
+    看不懂的縮寫可以直接跳到最下面的<a href="#gloss">名詞小抄</a>。
+  </p>
+  <div class="toc">
+    <a href="#open">翻前開牌</a>
+    <a href="#stats">目標數據</a>
+    <a href="#why">為什麼這樣好打</a>
+    <a href="#set">Set 的陷阱</a>
+    <a href="#flop">被 Flop Raise 之後</a>
+    <a href="#spr">SPR 與慢打</a>
+    <a href="#threeb">3-bet 之後</a>
+    <a href="#gloss">名詞小抄</a>
+  </div>
+</div>
+
+<!-- ============ 翻前 ============ -->
+<div class="card sec" id="open">
+  <h2>翻前開牌（依位置）</h2>
+
+  <div class="pos">
+    <span class="pos-name">EP / UTG</span>
+    <div class="hands">6789 dbs ～ 89TQ(Qs)　（789J、789Q、89TK dbs+）
+AAxx（AA27 no suited 也許可以不開）
+KKxx（xx 要 sc、要有 suited，例如最爛大概是 KKs57，7s 可能可以放棄）
+QQTJ、QQ89（要有 Qs，剩下兩張都要跟 Q 有關聯）、QQ dbs+
+JJT9 dbs（只有一個 suited 的話，或許可以不開）
+AKQJT 任選四張，有 suited 應該就可以開
+AKQ Ks+（類似 AKQ4，EP 還是開 As+）
+AQJ As+　／　ATJ As+
+AQQT Qs+　／　AKKT Ks+　／　AJJ8 As
+A+Q dbs+
+兩大對：99TT+</div>
+    <p class="note">3388 沒 suited 可能可以丟棄。</p>
+    <p class="note">
+      5566 dbs 看起來是很好的牌，但在 UTG、又是剛開始玩這個打法的階段，
+      一清認為不太妥，直接棄掉無妨。
+    </p>
+  </div>
+
+  <div class="pos">
+    <span class="pos-name">MP / UTG+1</span>
+    <p class="note">比 EP 鬆一點點：</p>
+    <div class="hands">QQ → 可以變 JJ
+JJ → 可以變 TT
+AKQ Ks → 可以變 Qs
+（以此類推）</div>
+    <p class="note">
+      但 ATJ Js 的話，最後一張要是 7～9，例如 ATJ7、ATJ8 Js。
+      這類看起來相對差一點的牌，如果 BTN 跟 CO 很機歪，可以不開。
+    </p>
+  </div>
+
+  <div class="pos">
+    <span class="pos-name">CO</span>
+    <p class="note">
+      看 BTN 是什麼人。沒人 open 的情況下：<br>
+      · BTN 鬆 → open range 跟 MP 一樣<br>
+      · BTN 緊 → 我們就快要是 BTN 的 steal range 了
+    </p>
+  </div>
+
+  <div class="pos">
+    <span class="pos-name">BTN</span>
+    <p class="note">
+      沒人 open 的話，基本上自己覺得是好牌就可以 steal。
+      一清的例子：像 2336（2s）他都 open；被 3-bet 就看對手是什麼人，可以選擇性蓋牌。
+    </p>
+  </div>
+
+  <div class="pos">
+    <span class="pos-name">SB</span>
+    <p class="note">
+      一開始能不玩就不玩。爛 AA 用跟的、或直接 fold 都無妨——OOP 很難打。
+    </p>
+    <div class="hands">3-bet：只 3-bet J+ dbs hands，且對手在兩個以下
+對很多人（squeeze）：只能是 Q+ dbs，而且最好要有 As</div>
+    <p class="note">
+      「最好要有 As」這件事，跟 flop 之後能不能「大膽」繼續有很大的關係。
+    </p>
+  </div>
+
+  <div class="pos">
+    <span class="pos-name">BB</span>
+    <p class="note">
+      最後一個做決定，很多牌都可以 call 2BB 內進去。
+      自己覺得很難拿捏的牌（例如 4456 6s、JJ67 7s、3457 7s）fold 無妨——
+      特別是還不太會打 3-bet pot 的時候。
+    </p>
+  </div>
+</div>
+
+<!-- ============ 數據 ============ -->
+<div class="card sec" id="stats">
+  <h2>照這樣打，數據會長什麼樣</h2>
+  <table class="num-table stats-table">
+    <tr><td>VPIP（BTN 與 CO 有掌握住 steal）</td><td>約 20%</td></tr>
+    <tr><td>PFR（3-bet 很低、當個孬孬 PLO 初期玩家）</td><td>約 13%</td></tr>
+  </table>
+  <p class="note">一清的說法是：這樣在 PLO25 以下應該是輕鬆撿。</p>
+</div>
+
+<!-- ============ 為什麼 ============ -->
+<div class="card sec" id="why">
+  <h2>為什麼這套 range 好打</h2>
+  <p class="note">
+    這樣的 range 跟玩 hold'em 初期很像，而且可能更輕鬆。
+    我們選擇的手牌在 flop 有 draw 的情況下，都可以很無腦地打完——
+    因為我們的 draw 都會是大 draw，比較不會犯錯。
+  </p>
+  <div class="quote">PLO 的 draw 比 set 好打。<span class="who">— 一清</span></div>
+</div>
+
+<!-- ============ SET ============ -->
+<div class="card sec" id="set">
+  <h2>Set 的陷阱：新手輸最多錢的地方</h2>
+  <p class="note">
+    初期新手 set 會輸很多錢，原因是 PLO 沒有 redraw 的 set（side card 沒用）。
+    自己 flop nuts 的狀況下，遇到肯跟我們繼續的牌組，一清估的總勝率大約是：
+  </p>
+  <table class="num-table stats-table">
+    <tr><td>Flop 頂 set vs 願意繼續的牌</td><td>55 / 45</td></tr>
+    <tr><td>Turn 之後（對手買到、或還在買）</td><td>36 / 64</td></tr>
+    <tr><td>對手買到時，set 只剩</td><td>20%</td></tr>
+    <tr><td>對手沒買到時，set 有</td><td>50–60%</td></tr>
+  </table>
+  <p class="note">
+    因為太多 draw 在 turn 上有 40–60% 的勝率，有一些 draw 在 turn 上甚至是領先 nuts 的。
+  </p>
+  <p class="note">
+    例子：<strong>QsTs6c4c</strong> vs <strong>7s8s9cJc</strong> —— 後者應該是領先 QQ 一點；
+    789J 沒得買花，也有 46% 對上所有的 QQ。
+  </p>
+  <div class="warn">
+    <strong>所以一開始 set 要小心玩</strong>，尤其 OOP 的 set 沒有 redraw，
+    不要一開始就丟太多錢進去。一清自己的話：「我兩三年前輸很多錢在這了。」
+  </div>
+</div>
+
+<!-- ============ FLOP ============ -->
+<div class="card sec" id="flop">
+  <h2>被 Flop Raise 之後，可以打完的牌</h2>
+  <div class="hands">AX 中一個胚，可以買 A 花（前提：flop 沒有順）
+KK + FD
+wrap 帶 Q 花以上
+雙頭帶 K 花
+中洞帶 A 花
+有順在上面的話，我們 set 帶買花</div>
+  <p class="note">
+    Over pair 買 set 會贏、又有一點點 draw：100BB 內的 3-bet pot 幾乎都能去。
+  </p>
+  <p class="note">
+    反過來，AQKJ 這類的牌，你在 EP／MP 被 3-bet，如果你不是 A 的同花聽牌、
+    對手 3-bet 頻率也不算高，其實直接扔掉無妨。
+  </p>
+  <div class="quote">
+    在低階 PLO 選牌是最重要的。另外，有位置可以玩更多的牌，甚至在 BTN limp in 也 OK。
+    <span class="who">— 一清</span>
+  </div>
+</div>
+
+<!-- ============ SPR ============ -->
+<div class="card sec" id="spr">
+  <h2>SPR 對的話，基本上不慢打</h2>
+  <p class="note">下面是一清舉的實例，說明慢打在 PLO 為什麼容易出事：</p>
+  <div class="quote">
+    3BB open，flop 是 <strong>69Q 兩張紅心</strong>，我們拿裸 <strong>QQAK</strong>、沒有紅心，
+    翻前有兩個 call。<br><br>
+    Flop 底池 10.5BB，我們 OOP 頂多 bet 10.5。<br>
+    Turn 開紅心，或是 5、7、8、T、J、K 這些牌，基本上動彈不得——尤其是紅心 K。
+    我們甚至連買葫蘆都沒得玩了。
+    <span class="who">— 一清</span>
+  </div>
+  <p class="note">結論是：牌面爛到這種程度，你反而沒必要閃，因為底池已經太多錢了。</p>
+  <div class="quote">
+    假設你頂 set 被 flop raise，你 re-raise all in 打完，
+    你的 equity 長期走下來是對的。<br>
+    但如果你 bet 被 raise、閃一隻，turn 開 7 打完，結果對手真的是順子——
+    這樣你的 equity 就是錯的，你打得就不理想。
+    <span class="who">— 一清</span>
+  </div>
+</div>
+
+<!-- ============ 3B ============ -->
+<div class="card sec" id="threeb">
+  <h2>3-bet 之後不怕 4-bet、可以 call 下來看 flop 的兩種牌</h2>
+  <div class="hands">1. 像 AAxx
+2. 像 78TQ ss 這種沒有 A、不會被 dominate 的牌</div>
+  <p class="note">
+    兩 suited 又不到 A 的牌，比較不怕被 4-bet call 了被當（dominate）。
+    也就是 3-bet、call 4-bet，flop 可以打完。
+  </p>
+</div>
+
+<!-- ============ 名詞 ============ -->
+<div class="card sec" id="gloss">
+  <h2>名詞小抄（非原文，方便對照）</h2>
+  <dl class="gloss">
+    <dt>dbs / ds（double suited）</dt>
+    <dd>四張牌剛好是兩組同花色，例如 A♠K♠Q♥J♥。dbs+ 表示這個等級或更好。</dd>
+    <dt>Xs（例如 Qs、As）</dt>
+    <dd>指那張牌帶著同花花色，例如「QQTJ 要有 Qs」＝要有一張 Q 跟別的牌同花。</dd>
+    <dt>sc（suited connector）</dt>
+    <dd>同花連牌，例如 KK 後面那兩張要能連、又要同花。</dd>
+    <dt>FD（flush draw）</dt>
+    <dd>同花聽牌。A 花＝聽最大的同花（nut flush draw）。</dd>
+    <dt>wrap</dt>
+    <dd>PLO 特有的多面順子聽牌，出牌數遠多於 hold'em 的兩頭順，常常 13～20 張 outs。</dd>
+    <dt>雙頭 / 中洞</dt>
+    <dd>兩頭順（open-ended）／內張順（gutshot）。</dd>
+    <dt>redraw</dt>
+    <dd>已經成牌之後，還能再往更大牌型進化的機會。PLO 的 set 沒有 redraw 就是這裡說的弱點。</dd>
+    <dt>SPR（stack-to-pot ratio）</dt>
+    <dd>有效籌碼 ÷ 底池。SPR 低＝口袋淺，成牌就該直接把錢放進去，不用慢打。</dd>
+    <dt>squeeze</dt>
+    <dd>前面有人 open、又有人 call 之後才 3-bet，把中間的人夾在中間。</dd>
+    <dt>dominate（被當）</dt>
+    <dd>牌型被對手的同型態壓制，例如同樣聽花但你的花比較小。</dd>
+    <dt>VPIP / PFR</dt>
+    <dd>主動投錢入池的手數比例／翻前加注的手數比例，是判斷鬆緊的兩個基本統計。</dd>
+  </dl>
+</div>
+
+<p class="doc-foot">
+  內容：一清（ngarina）　排版整理：撲克工具箱<br>
+  <a href="./">← 回到撲克工具箱</a>
+</p>
+</main>
+</body>
+</html>
