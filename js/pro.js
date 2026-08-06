@@ -173,8 +173,15 @@
   }
 
   function boot() {
-    /* ?pro=dev：本機測試用，正式購買由原生殼寫入旗標 */
-    if (/[?&]pro=dev/.test(location.search)) write(KEY, '1');
+    /* ?pro=dev 解鎖、?pro=off 還原 —— 只給網頁版試看用。
+       原生殼一律忽略，免得有人靠網址就解鎖 App Store 買來的東西。
+       上架前這段要拿掉或改成不可猜的字串。 */
+    var native = window.Capacitor && window.Capacitor.isNativePlatform &&
+                 window.Capacitor.isNativePlatform();
+    if (!native) {
+      if (/[?&]pro=dev/.test(location.search)) write(KEY, '1');
+      if (/[?&]pro=off/.test(location.search)) { try { localStorage.removeItem(KEY); } catch (e) {} }
+    }
     if (has()) return;
     var nodes = document.querySelectorAll('[data-pro]');
     for (var i = 0; i < nodes.length; i++) lock(nodes[i]);

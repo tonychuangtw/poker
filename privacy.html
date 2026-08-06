@@ -14,6 +14,16 @@
   .doc .updated { color: var(--muted); font-size: .82rem; }
   .doc hr { border: none; border-top: 1px solid var(--border-soft); margin: 32px 0; }
   .doc a { color: var(--accent2); }
+  .lang-switch { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 6px; }
+  .lang-switch button {
+    padding: 6px 14px; border-radius: 999px; cursor: pointer;
+    background: rgba(var(--accent-rgb), .07); color: var(--accent2);
+    border: 1px solid rgba(var(--accent-rgb), .3);
+    font-family: inherit; font-size: .78rem;
+  }
+  .lang-switch button.on { background: var(--gold-grad); color: var(--on-accent); border-color: transparent; }
+  .doc-sec[hidden] { display: none; }
+
 </style>
 </head>
 <body>
@@ -23,7 +33,12 @@
 
 <main>
 <div class="card doc">
-  <p class="updated">最後更新：2026-08-06</p>
+  <div class="lang-switch">
+    <button type="button" data-lang="zh" class="on">繁體中文</button>
+    <button type="button" data-lang="en">English</button>
+  </div>
+<div class="doc-sec" data-lang="zh">
+<p class="updated">最後更新：2026-08-06</p>
 
   <p>「撲克工具箱（Poker Toolbox）」是一款單機為主的撲克記帳與計算工具。
      這份政策說明這個 App 與網頁版會處理哪些資料。</p>
@@ -75,9 +90,9 @@
   <p>對隱私有任何疑問，或想刪除雲端備份，請聯絡：<br>
      <strong>[聯絡信箱待填]</strong></p>
 
-  <hr>
-
-  <h2 id="en">Privacy Policy (English)</h2>
+  </div>
+<div class="doc-sec" data-lang="en" hidden>
+<h2 id="en">Privacy Policy (English)</h2>
   <p class="updated">Last updated: 2026-08-06</p>
   <p>Poker Toolbox is a primarily offline poker tracking and calculation tool.</p>
   <ul>
@@ -95,8 +110,26 @@
   </ul>
   <p>Questions or deletion requests: <strong>[contact email TBD]</strong></p>
 </div>
+</div>
 
 <p class="hint" style="text-align:center"><a href="./">← 回到撲克工具箱</a></p>
 </main>
+<script>
+/* 這兩頁只寫繁中與英文兩種（法律文件寫太多語系反而容易翻錯）。
+   預設跟 App 的語言偏好走，中文以外一律顯示英文，仍可手動切換。 */
+(function () {
+  var pref = 'en';
+  try { pref = (localStorage.getItem('poker.lang') || navigator.language || 'en'); } catch (e) {}
+  var zh = /^zh/i.test(pref);
+  var btns = document.querySelectorAll('.lang-switch button');
+  function show(lang) {
+    document.querySelectorAll('.doc-sec').forEach(function (s) { s.hidden = s.dataset.lang !== lang; });
+    btns.forEach(function (b) { b.classList.toggle('on', b.dataset.lang === lang); });
+    document.documentElement.lang = lang === 'zh' ? 'zh-TW' : 'en';
+  }
+  btns.forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.lang); }); });
+  show(zh ? 'zh' : 'en');
+})();
+</script>
 </body>
 </html>

@@ -12,6 +12,16 @@
   .doc p, .doc li { line-height: 1.7; font-size: .92rem; }
   .doc ul { padding-left: 20px; }
   .doc a { color: var(--accent2); }
+  .lang-switch { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 6px; }
+  .lang-switch button {
+    padding: 6px 14px; border-radius: 999px; cursor: pointer;
+    background: rgba(var(--accent-rgb), .07); color: var(--accent2);
+    border: 1px solid rgba(var(--accent-rgb), .3);
+    font-family: inherit; font-size: .78rem;
+  }
+  .lang-switch button.on { background: var(--gold-grad); color: var(--on-accent); border-color: transparent; }
+  .doc-sec[hidden] { display: none; }
+
   .doc hr { border: none; border-top: 1px solid var(--border-soft); margin: 32px 0; }
 </style>
 </head>
@@ -22,7 +32,12 @@
 
 <main>
 <div class="card doc">
-  <h2>常見問題</h2>
+  <div class="lang-switch">
+    <button type="button" data-lang="zh" class="on">繁體中文</button>
+    <button type="button" data-lang="en">English</button>
+  </div>
+<div class="doc-sec" data-lang="zh">
+<h2>常見問題</h2>
 
   <p><strong>資料存在哪裡？換手機會不見嗎？</strong><br>
      預設存在你這台裝置上。要換裝置，可以先用「匯出 JSON」備份（Pro 功能），
@@ -51,9 +66,9 @@
      <strong>[聯絡信箱待填]</strong><br>
      回覆時間通常在 2 個工作天內。</p>
 
-  <hr>
-
-  <h2 id="en">Support (English)</h2>
+  </div>
+<div class="doc-sec" data-lang="en" hidden>
+<h2 id="en">Support (English)</h2>
   <ul>
     <li><strong>Where is my data?</strong> On your device by default. Export JSON (Pro) or sign in
         with Google to sync across devices.</li>
@@ -67,8 +82,26 @@
   </ul>
   <p>Contact: <strong>[contact email TBD]</strong></p>
 </div>
+</div>
 
 <p class="hint" style="text-align:center"><a href="./">← 回到撲克工具箱</a> ｜ <a href="privacy.html">隱私政策</a></p>
 </main>
+<script>
+/* 這兩頁只寫繁中與英文兩種（法律文件寫太多語系反而容易翻錯）。
+   預設跟 App 的語言偏好走，中文以外一律顯示英文，仍可手動切換。 */
+(function () {
+  var pref = 'en';
+  try { pref = (localStorage.getItem('poker.lang') || navigator.language || 'en'); } catch (e) {}
+  var zh = /^zh/i.test(pref);
+  var btns = document.querySelectorAll('.lang-switch button');
+  function show(lang) {
+    document.querySelectorAll('.doc-sec').forEach(function (s) { s.hidden = s.dataset.lang !== lang; });
+    btns.forEach(function (b) { b.classList.toggle('on', b.dataset.lang === lang); });
+    document.documentElement.lang = lang === 'zh' ? 'zh-TW' : 'en';
+  }
+  btns.forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.lang); }); });
+  show(zh ? 'zh' : 'en');
+})();
+</script>
 </body>
 </html>
