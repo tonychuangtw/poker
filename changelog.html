@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e0d">
+<meta name="robots" content="noindex, nofollow">
+<title>Poker 站台總覽 — 網頁清單與版本沿革</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 60px; }
+  h1 { font-size: 1.25rem; color: var(--accent2); margin: 0 0 4px; }
+  .lead { color: var(--muted); font-size: .85rem; line-height: 1.7; margin: 0 0 20px; }
+  h2 { font-size: .95rem; color: var(--accent); border-bottom: 1px solid var(--border-soft);
+       padding-bottom: 8px; margin: 32px 0 14px; }
+  .page-card {
+    background: var(--bg2); border: 1px solid var(--border-soft); border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 10px;
+  }
+  .page-card a.url { color: var(--accent2); font-size: .9rem; font-weight: 700; text-decoration: none; }
+  .page-card a.url:hover { text-decoration: underline; }
+  .page-card p { color: var(--muted); font-size: .8rem; line-height: 1.65; margin: 6px 0 0; }
+  .tags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag {
+    font-size: .68rem; padding: 2px 9px; border-radius: 999px;
+    background: rgba(var(--accent-rgb), .08); color: var(--accent2);
+    border: 1px solid rgba(var(--accent-rgb), .25);
+  }
+  .tag.dim { background: none; color: var(--muted); border-color: var(--border-soft); }
+  .timeline { list-style: none; margin: 0; padding: 0; }
+  .timeline li {
+    position: relative; padding: 0 0 18px 22px; border-left: 2px solid var(--border-soft);
+    margin-left: 6px;
+  }
+  .timeline li::before {
+    content: ""; position: absolute; left: -6px; top: 4px; width: 10px; height: 10px;
+    border-radius: 50%; background: var(--accent); border: 2px solid var(--bg);
+  }
+  .timeline .d { font-family: ui-monospace, monospace; font-size: .78rem; color: var(--accent2); font-weight: 700; }
+  .timeline .t { color: var(--text); font-size: .84rem; line-height: 1.7; margin-top: 2px; }
+  .timeline .t small { color: var(--muted); }
+  .note {
+    background: rgba(var(--accent-rgb), .06); border: 1px solid rgba(var(--accent-rgb), .2);
+    border-radius: 10px; padding: 10px 14px; font-size: .78rem; color: var(--muted); line-height: 1.7;
+  }
+  ul.plain { margin: 0; padding-left: 18px; color: var(--muted); font-size: .8rem; line-height: 1.8; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Poker 站台總覽</h1>
+  <p class="lead">
+    Tony 的 poker 相關網頁清單與版本沿革備忘。此頁獨立存在、不從任何頁面連入，
+    之後每有新頁面或重要更新都記錄在這裡。（2026-08-08 建立）
+  </p>
+
+  <h2>網頁清單</h2>
+
+  <div class="page-card">
+    <a class="url" href="https://tonychuangtw.github.io/poker/">tonychuangtw.github.io/poker/</a>
+    <p>主 App「德州撲克工具箱」（PWA）：記帳、EV／ICM 計算、翻前翻後圖表、訓練測驗、
+       世界賽事行事曆、關鍵手牌複盤、雲端同步。iOS App（Capacitor 包殼）也是包這一份。</p>
+    <div class="tags">
+      <span class="tag">主 App</span><span class="tag">12 語系</span>
+      <span class="tag">5 色系</span><span class="tag">Pro 免費上限</span>
+    </div>
+  </div>
+
+  <div class="page-card">
+    <a class="url" href="https://tonychuangtw.github.io/poker/sng.html">…/poker/sng.html</a>
+    <p>「TONY的初階SNG課程」講義：六章互動教材（核心思維、位置與範圍、偷盲、ICM、
+       錢圈與單挑、測驗），含真 ICM 模擬器與 10 題測驗。課程學生專用。</p>
+    <div class="tags">
+      <span class="tag">課程講義</span><span class="tag dim">繁中</span>
+      <span class="tag dim">不連入 App</span><span class="tag dim">noindex</span>
+    </div>
+  </div>
+
+  <div class="page-card">
+    <a class="url" href="https://tonychuangtw.github.io/poker/woa.html">…/poker/woa.html</a>
+    <p>WizardOfAhhs 的 CAP 打法指南（2011，第三方著作）：英文原文內嵌，
+       12 語系切換（翻譯檔在 data/woa/）。</p>
+    <div class="tags">
+      <span class="tag">第三方教材</span><span class="tag">12 語系</span>
+      <span class="tag dim">不連入 App</span><span class="tag dim">noindex</span>
+    </div>
+  </div>
+
+  <div class="page-card">
+    <a class="url" href="https://tonychuangtw.github.io/poker/plo.html">…/poker/plo.html</a>
+    <p>一清的低階 PLO 打法筆記：聊天紀錄整理成單頁，附名詞小抄，內容保留原樣。</p>
+    <div class="tags">
+      <span class="tag">第三方教材</span><span class="tag dim">繁中</span>
+      <span class="tag dim">不連入 App</span><span class="tag dim">noindex</span>
+    </div>
+  </div>
+
+  <div class="page-card">
+    <a class="url" href="https://tonychuangtw.github.io/poker/privacy.html">…/poker/privacy.html</a>
+    ／ <a class="url" href="https://tonychuangtw.github.io/poker/support.html">…/poker/support.html</a>
+    <p>iOS 上架用的隱私權政策與支援頁（zh／en）。</p>
+    <div class="tags"><span class="tag dim">上架文件</span></div>
+  </div>
+
+  <div class="page-card">
+    <a class="url" href="https://tonychuangtw.github.io/poker/changelog.html">…/poker/changelog.html</a>
+    <p>本頁。網頁清單與版本沿革的備忘錄。</p>
+    <div class="tags"><span class="tag dim">內部備忘</span></div>
+  </div>
+
+  <h2>背後的自動化</h2>
+  <ul class="plain">
+    <li>世界賽事資料（App 的賽事分頁）：每兩天台北 08:07 自動改寫 <code>data/tournaments.json</code>。</li>
+    <li>賽事提醒：每日台北 08:40 檢查 3 天內開賽的賽事，發 Telegram 提醒卡片。</li>
+    <li>網址不分大小寫：打錯大小寫由 404 頁自動導向正確網址（新頁面要重跑 gen404）。</li>
+  </ul>
+
+  <h2>版本沿革</h2>
+  <ul class="timeline">
+    <li>
+      <div class="d">2026-08-08</div>
+      <div class="t">建立本頁（站台總覽與沿革備忘）。</div>
+    </li>
+    <li>
+      <div class="d">2026-08-07</div>
+      <div class="t">sng.html 上線：SNG 課程講義，隨後全面校對——ICM 模擬器換成真 Malmuth-Harville、
+        盲注蠶食算術修正、Nash 驗證測驗題、5/10 與 3/6 原則改用有效籌碼。
+        WOA 的 11 個語系翻譯檔補上線。全站網址改為不分大小寫（404 自動導向）。</div>
+    </li>
+    <li>
+      <div class="d">2026-08-06</div>
+      <div class="t">Pro 收費層上線（免費上限：記帳 10 筆、複盤 5 手、每日 10 題、EV 對手 1 位、
+        賽事 14 天；金流未接）。字級調整（最大 2×）。靜態資源版本戳部署機制。
+        政策頁 zh／en。woa.html 與 plo.html 上線。</div>
+    </li>
+    <li>
+      <div class="d">2026-08-05</div>
+      <div class="t">Phase 3（iOS 上架）開案：Capacitor 包殼、原生質感（safe-area、Haptics、推播提醒）。
+        UI 重塑成 app 級：底部 tab bar、卡片化、5 色系主題、12 語系 i18n。
+        <small>卡在 Apple Developer 與 Codemagic 帳號開通。</small></div>
+    </li>
+    <li>
+      <div class="d">2026-07-30 ～ 31</div>
+      <div class="t">訓練大擴充：被 3-bet 測驗、10–300bb 籌碼深度滑桿、翻後訓練與混合頻率圖表、
+        SRS 錯題本、9-max Full Ring 全覆蓋、cold 4-bet／cold call 圖表。</div>
+    </li>
+    <li>
+      <div class="d">2026-07-15 ～ 17</div>
+      <div class="t">RFI／vs-RFI 圖表與測驗、雲端同步（Google 登入）、關鍵手牌複盤分頁、
+        訓練分頁（30 日熟練度、每日任務）、ICM 分池計算器、金綠豪華主題改版。</div>
+    </li>
+    <li>
+      <div class="d">2026-07-09</div>
+      <div class="t">世界賽事分頁上線，<code>data/tournaments.json</code> 開始每日自動更新。</div>
+    </li>
+    <li>
+      <div class="d">2026-07-07 ～ 08</div>
+      <div class="t">Phase 1 完成：multiway all-in equity（2–6 人）、Nash push/fold 圖表與測驗、
+        錦標賽 push/fold $EV 工具、進階資金統計、range-vs-range equity、手牌筆記、PWA 離線支援。</div>
+    </li>
+    <li>
+      <div class="d">2026-07-05</div>
+      <div class="t">MVP 誕生：記帳（bankroll tracker）＋ heads-up equity ＋ ICM 計算機。</div>
+    </li>
+  </ul>
+
+  <p class="note" style="margin-top:24px">
+    維護規則：新增 poker 相關網頁、或主 App 有重要功能更新時，把這頁的「網頁清單」和
+    「版本沿革」補上一筆。細粒度的變更看 git log 即可，這裡只記里程碑。
+  </p>
+</main>
+</body>
+</html>
