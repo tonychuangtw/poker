@@ -14,6 +14,13 @@
             darkMode: 'class',
             theme: {
                 extend: {
+                    gridTemplateColumns: {
+                        '13': 'repeat(13, minmax(0, 1fr))'
+                    },
+                    fontSize: {
+                        '2xs': ['0.7rem', { lineHeight: '1rem' }],
+                        '3xs': ['0.625rem', { lineHeight: '0.85rem' }]
+                    },
                     colors: {
                         poker: {
                             felt: '#0f3c27',
@@ -162,7 +169,7 @@
                             <div class="bg-slate-900/80 p-3 rounded-lg">
                                 <span class="text-emerald-400 font-bold">Cash 遊戲：</span>
                                 <strong>Bet Pot 還是 Bet 1/2 Pot？</strong> <br>
-                                對手只要會跟注就會一直跟注，你只下注半池反反而錯失了最大價值 (Miss Value)。
+                                對手只要會跟注就會一直跟注，你只下注半池反而錯失了最大價值 (Miss Value)。
                             </div>
                             <div class="bg-slate-900/80 p-3 rounded-lg">
                                 <span class="text-amber-400 font-bold">SNG 泡沫期：</span>
@@ -590,13 +597,13 @@
                                 初始籌碼 1500。在不打牌情況下，隨盲注不斷蠶食：
                             </p>
                             <div class="space-y-1 font-mono text-2xs text-slate-400 bg-slate-900/60 p-3 rounded">
-                                <div>第 1 輪 (Lv 1 10/20) ➔ 剩 $1460</div>
-                                <div>第 2 輪 (Lv 3 25/50) ➔ 剩 $1385</div>
-                                <div>第 3 輪 (Lv 5 75/150) ➔ 剩 $1160</div>
-                                <div>第 4 輪 (Lv 7 100/200+Ante) ➔ 剩 $680</div>
+                                <div>第 1 輪 (Lv 1 10/20) ➔ 剩 $1470</div>
+                                <div>第 2 輪 (Lv 3 25/50) ➔ 剩 $1395</div>
+                                <div>第 3 輪 (Lv 5 75/150) ➔ 剩 $1170</div>
+                                <div>第 4 輪 (Lv 7 100/200+Ante 25) ➔ 剩 $645</div>
                             </div>
                             <div class="text-rose-300 font-bold text-xs">
-                                ❌ 僅 30 分鐘，籌碼已縮水至不足 3BB，毫無偷盲空間。
+                                ❌ 僅 30 分鐘，籌碼已縮水至僅約 3BB，毫無偷盲空間。
                             </div>
                         </div>
 
@@ -636,7 +643,7 @@
                             </div>
                             <div class="bg-slate-900 p-3 rounded border border-slate-800">
                                 <strong class="text-amber-400">2. 對手是否極害怕出局？</strong><br>
-                                If對手在泡沫期顯現出對金錢的渴望 (很苟)，你的 Shove 會獲得極大 Fold Equity。
+                                如果對手在泡沫期顯現出對金錢的渴望 (很苟)，你的 Shove 會獲得極大 Fold Equity。
                             </div>
                             <div class="bg-slate-900 p-3 rounded border border-slate-800">
                                 <strong class="text-amber-400">3. 後面還有幾個人未表態？</strong><br>
@@ -726,23 +733,23 @@
                     <p class="text-slate-300 leading-relaxed text-sm">
                         在現金桌中，你的 1,000 籌碼始終等於 $10 現金。但在 SNG/MTT 中，
                         <strong class="text-amber-400">籌碼的價值是非線性的 (Non-linear)。</strong>
-                        你桌上擁有的籌碼數量 and 其實際的現金期望值 ($EV) 呈現一條向下彎曲的曲線。
+                        你桌上擁有的籌碼數量與其實際的現金期望值 ($EV) 呈現一條向下彎曲的曲線。
                     </p>
 
                     <!-- EV Non-linear Slider Simulator -->
                     <div class="bg-poker-cardBg border border-poker-border p-6 rounded-xl space-y-5">
                         <div class="flex justify-between items-center border-b border-poker-border pb-3">
                             <h4 class="font-bold text-slate-200">📊 籌碼 vs 現金期望值 ($EV) 模擬器</h4>
-                            <span class="text-2xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded">模擬四人桌 (總碼 20000, 總獎金 $100)</span>
+                            <span class="text-2xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded">模擬四人桌 (總碼 20000, 總獎金 $100, 其餘三人均分剩餘籌碼)</span>
                         </div>
                         <p class="text-xs text-slate-400">拉動滑桿改變你的籌碼，觀測線性價值(Cash) 與非線性價值(SNG $EV) 的落差：</p>
 
                         <!-- Slider -->
                         <div class="space-y-2">
                             <div class="flex justify-between text-xs text-slate-400 font-mono">
-                                <span>起點 (0)</span>
-                                <span class="text-amber-400 font-bold">當前籌碼: <span id="sim-chips">5000</span></span>
-                                <span>極限 (20000)</span>
+                                <span>起點 (500)</span>
+                                <span class="text-amber-400 font-bold">當前籌碼: <span id="sim-chips">5300</span></span>
+                                <span>極限 (18000)</span>
                             </div>
                             <input type="range" id="chip-slider" min="500" max="18000" step="100" value="5300" oninput="updateICMSimulator(this.value)" class="w-full accent-amber-500 bg-slate-800 h-2 rounded-lg appearance-none cursor-pointer">
                         </div>
@@ -756,7 +763,7 @@
                             </div>
                             <div class="bg-slate-900 p-4 rounded-lg border-l-4 border-amber-500">
                                 <div class="text-3xs text-slate-400 uppercase">SNG 遊戲價值 (ICM 期望值)</div>
-                                <div id="sim-icm-val" class="text-xl font-bold font-mono text-amber-400 mt-1">$27.36</div>
+                                <div id="sim-icm-val" class="text-xl font-bold font-mono text-amber-400 mt-1">$25.95</div>
                                 <p class="text-3xs text-slate-500 mt-1">在泡沫階段綜合前三名概率算出</p>
                             </div>
                         </div>
@@ -905,7 +912,7 @@
                     <p class="text-slate-300 leading-relaxed text-sm">
                         恭喜你！只要踏進前三名，這意味著我們已經 ITM (In The Money)。
                         一旦脫離 Bubble，<strong class="text-emerald-400">泡沫係數將大幅下降，籌碼價值幾乎回歸線性。</strong>
-                        此時我們不需要再向之前那樣戰戰兢兢，必須轉而啟動瘋狂的壓制模式。
+                        此時我們不需要再像之前那樣戰戰兢兢，必須轉而啟動瘋狂的壓制模式。
                     </p>
 
                     <!-- Three handed rules -->
@@ -1066,7 +1073,7 @@
                 if (r === c) return true;
                 // Suited
                 if (r < c) {
-                    if (r === 0 && c <= 3) return true; // ATs+
+                    if (r === 0 && c <= 4) return true; // ATs+
                     if (r === 1 && c === 2) return true; // KQs
                     if (r === 2 && c === 3) return true; // QJs
                     if (r === 3 && c === 4) return true; // JTs
@@ -1089,8 +1096,8 @@
                 // Suited
                 if (r < c) {
                     if (r === 0) return true; // A2s+
-                    if (r === 1 && c <= 3) return true; // KTs+
-                    if (r === 2 && c <= 3) return true; // QTs+
+                    if (r === 1 && c <= 4) return true; // KTs+
+                    if (r === 2 && c <= 4) return true; // QTs+
                     if (r === 3 && c === 4) return true; // JTs
                     if (r === 4 && c === 5) return true; // T9s
                     if (r === 5 && c === 6) return true; // 98s
@@ -1169,7 +1176,7 @@
             },
             mp: {
                 title: "中游位 (MP1 - MP3) — 稍現曙光",
-                desc: `相較於 UTG，後面的玩家減少到 4~6 位，這意味著你的 FQ (Fold Equity) 增加、且手牌贏得底池的淨值也相對提升。但切記，<strong>SNG 前期真理：不要浪費籌碼。</strong> 不要因為位置稍微靠後就開始濫玩弱同花連牌。<br><br><span class="text-amber-400">★ 推薦範圍：22+, AQs+, KQs, JTs, AQo+</span>`,
+                desc: `相較於 UTG，後面的玩家減少到 4~6 位，這意味著你的 FE (Fold Equity) 增加、且手牌贏得底池的淨值也相對提升。但切記，<strong>SNG 前期真理：不要浪費籌碼。</strong> 不要因為位置稍微靠後就開始濫玩弱同花連牌。<br><br><span class="text-amber-400">★ 推薦範圍：22+, AQs+, KQs, JTs, AQo+</span>`,
                 activeBtnId: "btn-mp",
                 seatIds: ["seat-mp1", "seat-mp2", "seat-mp3"]
             },
@@ -1187,7 +1194,7 @@
             },
             bb: {
                 title: "大盲位 (BB) — 防衛與狙擊",
-                desc: `大盲位在 preflop 有被動入池的優勢。長期目標是將損失降低至 -100 bb/100 以上。<strong class="text-amber-400">你可以以欺負弱小、軟弱的 SB 玩家為樂。</strong> 如果對手風格很軟，你可以極大程度地寬頻防守 and 反擊。`,
+                desc: `大盲位在 preflop 有被動入池的優勢。長期目標是將損失降低至 -100 bb/100 以上。<strong class="text-amber-400">你可以以欺負弱小、軟弱的 SB 玩家為樂。</strong> 如果對手風格很軟，你可以極大程度地寬頻防守與反擊。`,
                 activeBtnId: "btn-co_btn", // Default fallback grid layout to CO/BTN for range illustration
                 seatIds: ["seat-bb"]
             }
@@ -1195,8 +1202,8 @@
 
         // Position Selection Handler
         function selectPosition(posKey) {
-            // Render grid
-            renderGrid(posKey);
+            // Render grid (BB has no open range of its own; show CO/BTN grid as illustration)
+            renderGrid(ranges[posKey] ? posKey : 'co_btn');
             
             // Get meta info
             const meta = positionMetas[posKey];
@@ -1330,7 +1337,7 @@
             },
             '13to30': {
                 title: "13 - 30 BB — 偷盲精華區",
-                desc: `<strong>操作守則：偷盲、再偷盲。</strong><br>此時你的手牌價值退居二線，而『折疊權益 (Fold Equity)』成為你的最核心武器。只要時機正確、位置完美，大盲手軟，哪怕你手持 27o，也完全可以進行 Open Steal。將這部分做好了，你的筹碼量將像雪球一般滾動，否則你將很快掉入尷羊圈。`
+                desc: `<strong>操作守則：偷盲、再偷盲。</strong><br>此時你的手牌價值退居二線，而『折疊權益 (Fold Equity)』成為你的最核心武器。只要時機正確、位置完美，大盲手軟，哪怕你手持 27o，也完全可以進行 Open Steal。將這部分做好了，你的籌碼量將像雪球一般滾動，否則你將很快掉入尷尬區。`
             },
             '10to13': {
                 title: "10 - 13 BB — Resteal 反偷狙擊槍",
@@ -1374,32 +1381,37 @@
         }
 
         // ICM Non-linear Curve Simulator Function
+        // Real ICM (Malmuth-Harville)：4 人桌、總碼 20000、獎金 $100 (50/30/20)，
+        // 其餘三人假設均分剩下的籌碼。
+        function icmEV(stacks, payouts) {
+            const ev = stacks.map(() => 0);
+            function walk(rem, place, prob) {
+                const tot = rem.reduce((a, p) => a + p.c, 0);
+                rem.forEach((p, i) => {
+                    const pr = prob * p.c / tot;
+                    ev[p.i] += pr * (payouts[place] || 0);
+                    if (place + 1 < payouts.length && rem.length > 1) {
+                        walk(rem.filter((_, j) => j !== i), place + 1, pr);
+                    }
+                });
+            }
+            walk(stacks.map((c, i) => ({ c, i })), 0, 1);
+            return ev;
+        }
+
         function updateICMSimulator(val) {
             const chips = parseInt(val);
             const simChipsEl = document.getElementById('sim-chips');
             if(simChipsEl) simChipsEl.innerText = chips;
 
-            // Simple calculation to represent non-linear curves matching PDF context:
-            // SNG total chips = 20000, total prize pool = $100
             // Linear cash value = chips / 20000 * 100
             const linearVal = (chips / 20000) * 100;
             const simLinearValEl = document.getElementById('sim-linear-val');
             if(simLinearValEl) simLinearValEl.innerText = '$' + linearVal.toFixed(2);
 
-            // SNG $EV non-linear value approximation:
-            // As stack grows, incremental $EV decreases. (e.g. at 5300/20000 (26.5% chips) EV is $27.36)
-            // Adjust scale to fit the exact reference point B: 5300 chips -> $27.36
-            const ratio = chips / 20000;
-            let sngEV = 0;
-            if (chips <= 2500) {
-                sngEV = (chips / 2500) * 15.96;
-            } else if (chips <= 5300) {
-                sngEV = 15.96 + ((chips - 2500) / 2800) * (27.36 - 15.96);
-            } else {
-                const remainingPot = 100 - 27.36;
-                const remainingRatio = (chips - 5300) / (20000 - 5300);
-                sngEV = 27.36 + remainingPot * Math.pow(remainingRatio, 0.65);
-            }
+            // SNG $EV：真實 ICM，其餘三人均分剩餘籌碼
+            const other = (20000 - chips) / 3;
+            const sngEV = icmEV([chips, other, other, other], [50, 30, 20])[0];
 
             const simIcmValEl = document.getElementById('sim-icm-val');
             if(simIcmValEl) simIcmValEl.innerText = '$' + sngEV.toFixed(2);
@@ -1465,7 +1477,7 @@
                     "直接 Fold，保留 11 BB 等待下一把拿到 AA。"
                 ],
                 correctAnswer: 2,
-                rationale: "10~13 BB 屬於中等偏短的尷尬區間。此時做小 Open 會讓你在翻牌後面臨進退兩難。採用 All-in or Fold 可以利用強大的 FQ（折疊權益）強行掠奪場上的盲注與前注（Ante），主動尋求生存氧氣。"
+                rationale: "10~13 BB 屬於中等偏短的尷尬區間。此時做小 Open 會讓你在翻牌後面臨進退兩難。採用 All-in or Fold 可以利用強大的 FE（折疊權益）強行掠奪場上的盲注與前注（Ante），主動尋求生存氧氣。"
             },
             {
                 id: 6,
@@ -1505,15 +1517,15 @@
             },
             {
                 id: 9,
-                question: "Q9: 進入單挑階段 (Heads-Up)，盲注為 300/600。你手持 K♦ 3♠ 暫居 SB (即 BTN 位置)，籌碼量剩 12 BB。前面動作到你，最合適的操作是什麼？",
+                question: "Q9: 進入單挑階段 (Heads-Up)，盲注為 300/600。你手持 K♦ 3♠ 暫居 SB (即 BTN 位置)，籌碼量剩 10 BB。前面動作到你，最合適的操作是什麼？",
                 options: [
                     "直接 Preflop 棄牌 (Fold)，因為 K3o 的點數過於邊緣，不值得入池。",
                     "選擇平跟入池 (Limp-in)，並在沒中 K 或是 3 時在翻牌後蓋牌。",
-                    "直接 Open Shove 全下。在 HU 且 12 BB 深度下，K-High 股權極強，必須用全下來最大化 Fold Equity 與底池權益。",
+                    "直接 Open Shove 全下。在 HU 且 10 BB 深度下，K-High 股權極強，必須用全下來最大化 Fold Equity 與底池權益。",
                     "做一個 2 BB 的小 Open，等對手 3-Bet 全下後再決定跟注。"
                 ],
                 correctAnswer: 2,
-                rationale: "在單挑 Heads-Up 賽制中玩家範圍極寬，K-High 是極強的領先手牌。在 12 BB 的極淺籌碼狀態下，Limp 或小 Open 容易在翻牌後陷入被動，直接 Open Shove 是獲得正期望值 (+EV) 最暴力的作法。"
+                rationale: "在單挑 Heads-Up 賽制中玩家範圍極寬，K-High 是極強的領先手牌。在 10 BB 的極淺籌碼狀態下 (K3o 的 Nash 全下門檻約 11.5 BB)，Limp 或小 Open 容易在翻牌後陷入被動，直接 Open Shove 是獲得正期望值 (+EV) 最暴力的作法。"
             },
             {
                 id: 10,
