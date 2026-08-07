@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-05",
+  "updated": "2026-08-07",
   "note": "每日自動更新（來源：各巡迴賽官網與撲克媒體公開行程），區間為即日起約 4 個月",
   "events": [
     {
@@ -23,17 +23,6 @@
       "end": "2026-08-10",
       "note": "濟州暑期系列，17 天賽程，總保證獎金約 KRW 20 億（約 US$1.5M）。K Poker Cup 段（7/25–8/4，共 53 場側賽）：#1 Jeju Opening（7/25–26，買入 90 萬 KRW，保證 1.8 億 KRW）、#5 Mystery Bounty（7/26–28）、#23 K Poker Cup 主賽（7/29–8/3，買入 130 萬 KRW，保證 8.8 億 KRW）、#26 High Roller（7/29–31，買入 700 萬 KRW，保證 4.4 億 KRW）、#49 Mega Stack（8/2–4）；King Poker Cup 段（8/1–8/10）含 King's 主賽（8/6–9，買入約 $15,000）與 Final Coronation Super High Roller（8/10，買入 $30,000）",
       "url": "https://www.pokernews.com/news/2026/06/k-poker-cup-king-poker-cup-new-details-jeju-festival-51466.htm"
-    },
-    {
-      "series": "NOIR Poker Series（Merit Poker）",
-      "region": "歐洲",
-      "country": "賽普勒斯（北賽普勒斯）",
-      "city": "凱里尼亞",
-      "venue": "Merit Royal Diamond Hotel & Casino",
-      "start": "2026-07-27",
-      "end": "2026-08-06",
-      "note": "Merit Poker 全新推出的高端系列，與 Triton 北賽普勒斯賽事同場地但為獨立品牌；全系列總保證獎金逾 $6,000,000，主賽事買入 $5,500，保證獎金 $3,000,000，另設買入 $7,500 高額賽",
-      "url": "https://www.pokernews.com/news/2026/07/merit-poker-classic-noir-series-full-schedule-51807.htm"
     },
     {
       "series": "APPT Manila 2026",
