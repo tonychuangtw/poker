@@ -188,7 +188,7 @@
                             SNG 目標設定：高 ROI% 的秘密
                         </h3>
                         <p class="text-xs text-slate-400">
-                            9人單桌高速SNG獎金分配為前三名：50% / 30% / 20%。
+                            9人單桌高速SNG獎金分配為前三名：50% / 30% / 20%（下方對比以各打 100 場、買入含約 8.5% 抽水計算）。
                             <strong class="text-amber-400">我們的目標是「冠軍極大化」，而非「勉強進錢圈」。</strong>
                         </p>
 
@@ -498,15 +498,15 @@
                         </span>
                         <div>
                             <h4 class="font-bold text-slate-200">口袋對子試圖中 Set：5和10原則</h4>
-                            <p class="text-2xs text-slate-400">專門用於決定前期拿到小對子時是否跟注 (Call Open)</p>
+                            <p class="text-2xs text-slate-400">前期拿到小對子時是否跟注 (Call Open)，以有效籌碼計算</p>
                         </div>
                     </div>
                     <p class="text-xs text-slate-300 leading-relaxed">
-                        口袋對子 (22~TT) 的核心價值是希望在 Flop 中 Set 來贏得對手的深籌碼。如果不中，很難打下去。此時必須計算跟注代價相對於你的總籌碼：
+                        口袋對子 (22~TT) 的核心價值是希望在 Flop 中 Set 來贏得對手的深籌碼。如果不中，很難打下去。此時必須計算跟注代價相對於有效籌碼（你與開池者兩人中較小的籌碼量——你能贏到的上限就是它）：
                     </p>
                     <ul class="text-xs space-y-1 text-slate-400 list-disc list-inside">
-                        <li>跟注代價 <strong class="text-emerald-400">低於 5% 總籌碼</strong> ➔ <span class="text-emerald-400 font-bold">愉快 Call 進入</span></li>
-                        <li>跟注代價 <strong class="text-rose-400">高於 10% 總籌碼</strong> ➔ <span class="text-rose-400 font-bold">果斷 Fold 放棄</span></li>
+                        <li>跟注代價 <strong class="text-emerald-400">低於有效籌碼 5%</strong> ➔ <span class="text-emerald-400 font-bold">愉快 Call 進入</span></li>
+                        <li>跟注代價 <strong class="text-rose-400">高於有效籌碼 10%</strong> ➔ <span class="text-rose-400 font-bold">果斷 Fold 放棄</span></li>
                         <li>介於 <strong class="text-amber-400">5% ~ 10% 之間</strong> ➔ 視位置、後方玩家激進度而定</li>
                     </ul>
 
@@ -515,7 +515,7 @@
                         <div class="text-xs font-bold text-slate-200">🧮 口袋對子跟注決策器</div>
                         <div class="grid grid-cols-2 gap-3">
                             <div>
-                                <label class="text-3xs text-slate-400 block mb-1">你的總籌碼量 (Chips)</label>
+                                <label class="text-3xs text-slate-400 block mb-1">有效籌碼量 (你與對手較小者)</label>
                                 <input type="number" id="calc-stack-pp" value="1500" class="w-full bg-poker-cardBg text-slate-200 border border-slate-700 rounded p-1.5 text-xs text-center focus:border-amber-500 focus:outline-none">
                             </div>
                             <div>
@@ -545,8 +545,8 @@
                         同花連牌在多人底池有很強的潛力。但因為色彩在翻牌太過明顯，同花的隱含賠率其實比 Set 來的低 (人們很容易提防同花，但不容易防備暗三條)，因此其入池規則更為嚴苛：
                     </p>
                     <ul class="text-xs space-y-1 text-slate-400 list-disc list-inside">
-                        <li>跟注代價 <strong class="text-emerald-400">低於 3% 總籌碼</strong> ➔ <span class="text-emerald-400 font-bold">Call 來看翻牌</span></li>
-                        <li>跟注代價 <strong class="text-rose-400">高於 6% 總籌碼</strong> ➔ <span class="text-rose-400 font-bold">直接棄牌 (Fold)</span></li>
+                        <li>跟注代價 <strong class="text-emerald-400">低於有效籌碼 3%</strong> ➔ <span class="text-emerald-400 font-bold">Call 來看翻牌</span></li>
+                        <li>跟注代價 <strong class="text-rose-400">高於有效籌碼 6%</strong> ➔ <span class="text-rose-400 font-bold">直接棄牌 (Fold)</span></li>
                         <li>介於 <strong class="text-amber-400">3% ~ 6% 之間</strong> ➔ 必須有絕佳的位置且後方無人威脅</li>
                     </ul>
 
@@ -555,7 +555,7 @@
                         <div class="text-xs font-bold text-slate-200">🧮 同花連牌跟注決策器</div>
                         <div class="grid grid-cols-2 gap-3">
                             <div>
-                                <label class="text-3xs text-slate-400 block mb-1">你的總籌碼量 (Chips)</label>
+                                <label class="text-3xs text-slate-400 block mb-1">有效籌碼量 (你與對手較小者)</label>
                                 <input type="number" id="calc-stack-sc" value="1500" class="w-full bg-poker-cardBg text-slate-200 border border-slate-700 rounded p-1.5 text-xs text-center focus:border-amber-500 focus:outline-none">
                             </div>
                             <div>
@@ -1188,13 +1188,13 @@
             },
             sb: {
                 title: "小盲位 (SB) — 戰術陷阱區",
-                desc: `小盲位在翻牌後永遠是最先行動的、最難受的位置，長期以來必然是負期望值 (-50 bb/100)。所以一般情況下 SB 應趨於保守。<strong class="text-amber-300">但是，當所有人折疊到你，且你的籌碼量偏低時，這裏就是你發動全下 (Shove) 掠奪大盲的最美福音。</strong><br><br><span class="text-amber-400">★ 推薦範圍：22+, A2s+, KTs+, QTs+, JTs, T9s, 98s, 87s, 76s, 65s, ATo+, KQo, QJo</span>`,
+                desc: `小盲位在翻牌後永遠是最先行動的、最難受的位置，長期必然是負期望值（每手都棄牌就是 -50 bb/100 的底線，打得好也只能把虧損縮小到約 -30 ~ -45 bb/100）。所以一般情況下 SB 應趨於保守。<strong class="text-amber-300">但是，當所有人折疊到你，且你的籌碼量偏低時，這裏就是你發動全下 (Shove) 掠奪大盲的最美福音。</strong><br><br><span class="text-amber-400">★ 推薦範圍：22+, A2s+, KTs+, QTs+, JTs, T9s, 98s, 87s, 76s, 65s, ATo+, KQo, QJo</span>`,
                 activeBtnId: "btn-sb",
                 seatIds: ["seat-sb"]
             },
             bb: {
                 title: "大盲位 (BB) — 防衛與狙擊",
-                desc: `大盲位在 preflop 有被動入池的優勢。長期目標是將損失降低至 -100 bb/100 以上。<strong class="text-amber-400">你可以以欺負弱小、軟弱的 SB 玩家為樂。</strong> 如果對手風格很軟，你可以極大程度地寬頻防守與反擊。`,
+                desc: `大盲位在 preflop 有被動入池的優勢。每手都棄牌是 -100 bb/100 的底線，防守得當可以把損失縮小到約 -30 ~ -50 bb/100。<strong class="text-amber-400">你可以以欺負弱小、軟弱的 SB 玩家為樂。</strong> 如果對手風格很軟，你可以極大程度地寬頻防守與反擊。`,
                 activeBtnId: "btn-co_btn", // Default fallback grid layout to CO/BTN for range illustration
                 seatIds: ["seat-bb"]
             }
@@ -1285,13 +1285,13 @@
 
             if (percentage < 5.0) {
                 colorClasses = "bg-emerald-950/50 border-emerald-500/40 text-emerald-400";
-                advice = `佔總籌碼 ${percentage.toFixed(1)}% (＜ 5%) ➔ <strong>絕對跟注 (Call)！</strong> 隱含賠率極高，看翻牌中 Set 極其划算。`;
+                advice = `佔有效籌碼 ${percentage.toFixed(1)}% (＜ 5%) ➔ <strong>絕對跟注 (Call)！</strong> 隱含賠率極高，看翻牌中 Set 極其划算。`;
             } else if (percentage > 10.0) {
                 colorClasses = "bg-rose-950/50 border-rose-500/40 text-rose-400";
-                advice = `佔總籌碼 ${percentage.toFixed(1)}% (＞ 10%) ➔ <strong>直接棄牌 (Fold)！</strong> 成本太昂貴，不值。`;
+                advice = `佔有效籌碼 ${percentage.toFixed(1)}% (＞ 10%) ➔ <strong>直接棄牌 (Fold)！</strong> 成本太昂貴，不值。`;
             } else {
                 colorClasses = "bg-amber-950/50 border-amber-500/40 text-amber-300";
-                advice = `佔總籌碼 ${percentage.toFixed(1)}% (介於 5%~10%) ➔ <strong>視情況跟注！</strong> 如果你有位置、或者後面玩家偏緊，可以 Call。`;
+                advice = `佔有效籌碼 ${percentage.toFixed(1)}% (介於 5%~10%) ➔ <strong>視情況跟注！</strong> 如果你有位置、或者後面玩家偏緊，可以 Call。`;
             }
 
             resultBox.className = `text-xs font-semibold p-2 border text-center rounded ${colorClasses}`;
@@ -1316,13 +1316,13 @@
 
             if (percentage < 3.0) {
                 colorClasses = "bg-emerald-950/50 border-emerald-500/40 text-emerald-400";
-                advice = `佔總籌碼 ${percentage.toFixed(1)}% (＜ 3%) ➔ <strong>安全跟注 (Call)！</strong> 籌碼成本安全，適合看翻牌。`;
+                advice = `佔有效籌碼 ${percentage.toFixed(1)}% (＜ 3%) ➔ <strong>安全跟注 (Call)！</strong> 籌碼成本安全，適合看翻牌。`;
             } else if (percentage > 6.0) {
                 colorClasses = "bg-rose-950/50 border-rose-500/40 text-rose-400";
-                advice = `佔總籌碼 ${percentage.toFixed(1)}% (＞ 6%) ➔ <strong>果斷棄牌 (Fold)！</strong> 同花連牌溢價過高，請勿硬跟。`;
+                advice = `佔有效籌碼 ${percentage.toFixed(1)}% (＞ 6%) ➔ <strong>果斷棄牌 (Fold)！</strong> 同花連牌溢價過高，請勿硬跟。`;
             } else {
                 colorClasses = "bg-amber-950/50 border-amber-500/40 text-amber-300";
-                advice = `佔總籌碼 ${percentage.toFixed(1)}% (介於 3%~6%) ➔ <strong>視情況而定！</strong> 如果手牌點數較高 (如 JTs/98s) 且具位置優勢才考慮跟入。`;
+                advice = `佔有效籌碼 ${percentage.toFixed(1)}% (介於 3%~6%) ➔ <strong>視情況而定！</strong> 如果手牌點數較高 (如 JTs/98s) 且具位置優勢才考慮跟入。`;
             }
 
             resultBox.className = `text-xs font-semibold p-2 border text-center rounded ${colorClasses}`;
@@ -1433,22 +1433,22 @@
             },
             {
                 id: 2,
-                question: "Q2: 在前期盲注極低時（15/30），你手持口袋對子 4♠ 4♦ 暫居槍口後一位（UTG+1），此時總籌碼量為 1,500。前位玩家 Open 到 60。根據 Tony 老師講授的『5/10原則』，你應該如何抉擇？",
+                question: "Q2: 在前期盲注極低時（15/30），你手持口袋對子 4♠ 4♦ 暫居槍口後一位（UTG+1），你與對手的有效籌碼皆為 1,500。前位玩家 Open 到 60。根據 Tony 老師講授的『5/10原則』，你應該如何抉擇？",
                 options: [
                     "直接 3-Bet 全下（Shove），以防止後續玩家壓榨進池。",
                     "果斷棄牌（Fold），因為在槍口位玩 44 很容易在 postflop 失去位置優勢而被擊潰。",
-                    "選擇跟注（Call），因為跟注代價 60 僅佔你總籌碼 1,500 的 4%（低於 5%），博取暗三條（Set）非常划算。",
+                    "選擇跟注（Call），因為跟注代價 60 僅佔有效籌碼 1,500 的 4%（低於 5%），博取暗三條（Set）非常划算。",
                     "選擇 Limp，等後方玩家跟注後再看翻牌。"
                 ],
                 correctAnswer: 2,
-                rationale: "符合口袋對子的『5/10原則』。入池費用（60）低於總籌碼（1,500）的 5%，此時跟注能獲得極佳的隱含賠率。一旦翻牌中 Set，你將有機會贏走對手的整條深籌碼。"
+                rationale: "符合口袋對子的『5/10原則』。入池費用（60）低於有效籌碼（1,500）的 5%，此時跟注能獲得極佳的隱含賠率。一旦翻牌中 Set，你將有機會贏走對手的整條深籌碼。"
             },
             {
                 id: 3,
-                question: "Q3: 同樣在前期深籌碼狀態下，你手持同花連牌 7♥ 8♥，面臨前面玩家的 Open（150），你當下的總籌碼是 1,500。根據『3/6原則』，你最正確的決定是？",
+                question: "Q3: 同樣在前期深籌碼狀態下，你手持同花連牌 7♥ 8♥，面臨前面玩家的 Open（150），你們的有效籌碼是 1,500。根據『3/6原則』，你最正確的決定是？",
                 options: [
                     "跟注來看翻牌，因為同花連牌的聽牌能力極強，適合在前期大撈一筆。",
-                    "果斷棄牌（Fold），因為跟注代價 150 已佔你總籌碼的 10%（遠高於 6% 的限制安全線）。",
+                    "果斷棄牌（Fold），因為跟注代價 150 已佔有效籌碼的 10%（遠高於 6% 的限制安全線）。",
                     "進行 3-Bet 施壓，用 78s 做強力的 preflop 詐唬反擊。",
                     "選擇 All-in，利用 78s 優秀的股權進行生死對決。"
                 ],
