@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>TONY的初階 SNG 戰術大師講義</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        poker: {
+                            felt: '#0f3c27',
+                            gold: '#d9a752',
+                            goldHover: '#c5933f',
+                            darkBg: '#090d16',
+                            cardBg: '#131926',
+                            border: '#1f293d'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for premium feel */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f293d;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d9a752;
+        }
+    </style>
+</head>
+<body class="bg-poker-darkBg text-slate-100 font-sans antialiased min-h-screen">
+
+    <!-- Header Section -->
+    <header class="border-b border-poker-border bg-poker-darkBg/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-gradient-to-br from-amber-400 to-amber-600 rounded-xl shadow-lg shadow-amber-500/10">
+                    <i data-lucide="crown" class="w-6 h-6 text-poker-darkBg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500">
+                        TONY的初階SNG課程
+                    </h1>
+                    <p class="text-xs text-slate-400 font-medium">Tony's Single Table Tournament Strategy Guide</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="px-3 py-1 text-xs font-semibold bg-emerald-950/80 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    課程學生專用 · 請勿轉載
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="bg-poker-cardBg/50 border-b border-poker-border sticky top-[73px] z-40 backdrop-blur-sm overflow-x-auto">
+        <div class="max-w-7xl mx-auto px-4 flex space-x-1 sm:space-x-2 py-2 min-w-max">
+            <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 text-amber-500 bg-poker-cardBg border border-poker-border">
+                <i data-lucide="book-open" class="w-4 h-4"></i>
+                第一章：單桌 SNG 核心思維
+            </button>
+            <button onclick="switchTab('preflop')" id="tab-preflop" class="tab-btn px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 text-slate-400 hover:text-slate-200">
+                <i data-lucide="grid-3x3" class="w-4 h-4"></i>
+                第二章：位置與 Preflop Range
+            </button>
+            <button onclick="switchTab('steal')" id="tab-steal" class="tab-btn px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 text-slate-400 hover:text-slate-200">
+                <i data-lucide="sword" class="w-4 h-4"></i>
+                第三章：偷盲與反偷盲戰術
+            </button>
+            <button onclick="switchTab('icm')" id="tab-icm" class="tab-btn px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 text-slate-400 hover:text-slate-200">
+                <i data-lucide="calculator" class="w-4 h-4"></i>
+                第四章：ICM 獨立籌碼模型
+            </button>
+            <button onclick="switchTab('itm')" id="tab-itm" class="tab-btn px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 text-slate-400 hover:text-slate-200">
+                <i data-lucide="trophy" class="w-4 h-4"></i>
+                第五章：錢圈、三人桌與單挑
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="tab-btn px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 text-slate-400 hover:text-slate-200">
+                <i data-lucide="help-circle" class="w-4 h-4 text-amber-400"></i>
+                第六章：互動式答題測驗
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Containers -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+
+        <!-- ==================== TAB 1: OVERVIEW & MINDSET ==================== -->
+        <section id="content-overview" class="tab-content space-y-8">
+            <!-- Mindset Intro -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <div class="lg:col-span-7 space-y-6">
+                    <h2 class="text-2xl font-bold flex items-center gap-2 text-amber-400">
+                        <i data-lucide="sparkles" class="w-6 h-6"></i>
+                        現金桌 vs 錦標賽：根本邏輯的碰撞
+                    </h2>
+                    <p class="text-slate-300 leading-relaxed text-base">
+                        許多玩家轉型時最容易犯的錯誤，就是將 Cash 模式照搬到 MTT/SNG。
+                        <strong class="text-amber-300">兩者表面上是相同的牌戲，核心大腦卻完全不同。</strong>
+                        我們用這堂課中最經典的「高山賣水理論」來徹底搞懂這個關鍵差異：
+                    </p>
+
+                    <!-- Analogy cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-gradient-to-b from-slate-800 to-poker-cardBg p-5 rounded-xl border border-poker-border">
+                            <div class="flex items-center gap-2 text-emerald-400 font-bold mb-3">
+                                <i data-lucide="dollar-sign" class="w-5 h-5"></i>
+                                Cash 邏輯：錢包永遠有水，看重單次價值
+                            </div>
+                            <p class="text-sm text-slate-300 leading-relaxed">
+                                在山上，有人賣 $20 的水，只要你渴了且口袋有足夠的錢，你就會買。買與不買取決於你對「此時此刻」價值的認定。
+                            </p>
+                            <div class="mt-4 pt-3 border-t border-slate-700/50 text-xs text-slate-400">
+                                只要對手認為手牌領先，不論你下注多大，他 Call 就是會 Call。
+                            </div>
+                        </div>
+
+                        <div class="bg-gradient-to-b from-slate-800 to-poker-cardBg p-5 rounded-xl border border-poker-border">
+                            <div class="flex items-center gap-2 text-amber-400 font-bold mb-3">
+                                <i data-lucide="heart" class="w-5 h-5"></i>
+                                SNG/MTT 邏輯：買下它，代表要「拿命去拼」
+                            </div>
+                            <p class="text-sm text-slate-300 leading-relaxed">
+                                山上的人口袋只有 $20。如果買了這瓶水卻不夠喝到山頂，他就會死。或者他不買，賭後面還有更便宜的水。
+                            </p>
+                            <div class="mt-4 pt-3 border-t border-slate-700/50 text-xs text-slate-400">
+                                在泡沫期或邊緣情況下，對手寧願留著籌碼生存，也不願在河牌冒着「出局」的風險做英雄跟注。
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Concrete Value Hand Example -->
+                    <div class="bg-amber-500/5 border border-amber-500/20 rounded-xl p-5 space-y-3">
+                        <h4 class="font-bold text-amber-300 flex items-center gap-2">
+                            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                            實戰經典範例（河牌的價值極大化）
+                        </h4>
+                        <p class="text-sm text-slate-300">
+                            你手持 <span class="text-emerald-400 font-bold">A♠ K♦</span>，對手持 <span class="text-blue-400 font-bold">A♥ Q♠</span>，籌碼相同。
+                            牌面開出 <span class="font-mono text-slate-300">A♣ 7♦ 2♥ 3♠ T♠</span> (Rainbow)。底池已達籌碼的 2/3。
+                        </p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 text-xs">
+                            <div class="bg-slate-900/80 p-3 rounded-lg">
+                                <span class="text-emerald-400 font-bold">Cash 遊戲：</span>
+                                <strong>Bet Pot 還是 Bet 1/2 Pot？</strong> <br>
+                                對手只要會跟注就會一直跟注，你只下注半池反反而錯失了最大價值 (Miss Value)。
+                            </div>
+                            <div class="bg-slate-900/80 p-3 rounded-lg">
+                                <span class="text-amber-400 font-bold">SNG 泡沫期：</span>
+                                <strong>下注 1/2 Pot 比全下更能成功收獲價值。</strong> <br>
+                                如果你 Bet Pot，對手可能因為「不想在錢圈前出局，毀掉 4 小時的努力」而直接棄牌。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROI Strategy Comparison (Conservative vs Aggressive) -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="bg-poker-cardBg border border-poker-border rounded-xl p-6 space-y-5 shadow-xl">
+                        <h3 class="text-lg font-bold text-slate-100 border-b border-poker-border pb-3 flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-5 h-5 text-amber-400"></i>
+                            SNG 目標設定：高 ROI% 的秘密
+                        </h3>
+                        <p class="text-xs text-slate-400">
+                            9人單桌高速SNG獎金分配為前三名：50% / 30% / 20%。
+                            <strong class="text-amber-400">我們的目標是「冠軍極大化」，而非「勉強進錢圈」。</strong>
+                        </p>
+
+                        <!-- Player Comparison -->
+                        <div class="space-y-4">
+                            <!-- Player A -->
+                            <div class="bg-slate-900 p-4 rounded-lg border-l-4 border-slate-500">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-slate-300">A君：泡沫期保守龜縮型</span>
+                                    <span class="text-sm font-mono text-slate-400">ITM: 50%</span>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 text-center text-xs my-2">
+                                    <div class="bg-amber-950/20 p-1.5 rounded">1等獎: <span class="text-amber-400 font-bold">5次</span></div>
+                                    <div class="bg-slate-800 p-1.5 rounded">2等獎: <span class="text-slate-300 font-bold">10次</span></div>
+                                    <div class="bg-slate-800 p-1.5 rounded">3等獎: <span class="text-slate-400 font-bold">35次</span></div>
+                                </div>
+                                <div class="text-xs text-slate-400 flex justify-between">
+                                    <span>打法：被動等待，籌碼被盲注蠶食</span>
+                                    <span class="text-rose-400 font-mono font-bold">ROI: +3.65%</span>
+                                </div>
+                            </div>
+
+                            <!-- Player B -->
+                            <div class="bg-slate-900 p-4 rounded-lg border-l-4 border-amber-500">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-amber-400">B君：泡沫期戰術施壓型</span>
+                                    <span class="text-sm font-mono text-amber-400">ITM: 40%</span>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 text-center text-xs my-2">
+                                    <div class="bg-amber-950/40 p-1.5 rounded">1等獎: <span class="text-amber-400 font-bold">15次</span></div>
+                                    <div class="bg-slate-800 p-1.5 rounded">2等獎: <span class="text-slate-300 font-bold">11次</span></div>
+                                    <div class="bg-slate-800 p-1.5 rounded">3等獎: <span class="text-slate-400 font-bold">14次</span></div>
+                                </div>
+                                <div class="text-xs text-slate-400 flex justify-between">
+                                    <span>打法：利用恐懼壓制，擁抱籌碼優勢</span>
+                                    <span class="text-emerald-400 font-mono font-bold">ROI: +12.78%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-emerald-950/20 border border-emerald-500/20 p-4 rounded-lg text-xs text-emerald-400 leading-relaxed">
+                            <strong>關鍵結論：</strong> B君雖然進錢圈次數較少，但由於在泡沫期激進掠奪籌碼，一旦ITM往往手握絕對深籌碼，奪冠機率暴增。這使得他的 <strong>ROI 高達 A君的 3.5 倍！</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ten Golden Rules -->
+            <div class="space-y-4">
+                <h3 class="text-xl font-bold text-center text-slate-100 flex items-center justify-center gap-2">
+                    <i data-lucide="shield-alert" class="text-amber-500"></i>
+                    SNG 十大不變真理
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <!-- Rule 1 -->
+                    <div class="bg-poker-cardBg border border-poker-border p-4 rounded-xl flex flex-col justify-between">
+                        <div>
+                            <div class="text-amber-500 font-bold text-lg mb-1">01</div>
+                            <h4 class="font-bold text-sm mb-2 text-slate-200">前期按兵不動</h4>
+                            <p class="text-xs text-slate-400">不在盲注極低的前期浪費寶貴的籌碼去玩弱手牌。</p>
+                        </div>
+                    </div>
+                    <!-- Rule 2 -->
+                    <div class="bg-poker-cardBg border border-poker-border p-4 rounded-xl flex flex-col justify-between">
+                        <div>
+                            <div class="text-amber-500 font-bold text-lg mb-1">02</div>
+                            <h4 class="font-bold text-sm mb-2 text-slate-200">絕不放過偷盲</h4>
+                            <p class="text-xs text-slate-400">時機正確、對手緊弱時，果斷執行偷盲任務。</p>
+                        </div>
+                    </div>
+                    <!-- Rule 3 -->
+                    <div class="bg-poker-cardBg border border-poker-border p-4 rounded-xl flex flex-col justify-between">
+                        <div>
+                            <div class="text-amber-500 font-bold text-lg mb-1">03</div>
+                            <h4 class="font-bold text-sm mb-2 text-slate-200">極致壓制優勢</h4>
+                            <p class="text-xs text-slate-400">當你是深籌碼時，利用其對中籌碼產生巨大威脅。</p>
+                        </div>
+                    </div>
+                    <!-- Rule 4 -->
+                    <div class="bg-poker-cardBg border border-poker-border p-4 rounded-xl flex flex-col justify-between">
+                        <div>
+                            <div class="text-amber-500 font-bold text-lg mb-1">04</div>
+                            <h4 class="font-bold text-sm mb-2 text-slate-200">避開深籌衝突</h4>
+                            <p class="text-xs text-slate-400">除非擁有絕對強牌，否則不與別的深籌玩家硬碰硬。</p>
+                        </div>
+                    </div>
+                    <!-- Rule 5 -->
+                    <div class="bg-poker-cardBg border border-poker-border p-4 rounded-xl flex flex-col justify-between">
+                        <div>
+                            <div class="text-amber-500 font-bold text-lg mb-1">05</div>
+                            <h4 class="font-bold text-sm mb-2 text-slate-200">提防極短籌碼</h4>
+                            <p class="text-xs text-slate-400">瀕臨出局的人什麼都做得出來，不要隨意去挑釁。</p>
+                        </div>
+                    </div>
+                    <!-- Rule 6 -->
+                    <div class="bg-poker-cardBg border border-poker-border p-4 rounded-xl flex flex-col justify-between">
+                        <div>
+                            <div class="text-amber-500 font-bold text-lg mb-1">06</div>
+                            <h4 class="font-bold text-sm mb-2 text-slate-200">狙擊中等籌碼</h4>
+                            <p class="text-xs text-slate-400">這類玩家戰術空間有限且最害怕出局，最易施壓。</p>
+                        </div>
+                    </div>
+                    <!-- Rule 7 -->
+                    <div class="bg-poker-cardBg border border-poker-border p-4 rounded-xl flex flex-col justify-between">
+                        <div>
+                            <div class="text-amber-500 font-bold text-lg mb-1">07</div>
+                            <h4 class="font-bold text-sm mb-2 text-slate-200">撕咬緊弱對手</h4>
+                            <p class="text-xs text-slate-400">那些不敢反抗、只想蹭進錢圈的人，就是你的ATM。</p>
+                        </div>
+                    </div>
+                    <!-- Rule 8 -->
+                    <div class="bg-poker-cardBg border border-poker-border p-4 rounded-xl flex flex-col justify-between">
+                        <div>
+                            <div class="text-amber-500 font-bold text-lg mb-1">08</div>
+                            <h4 class="font-bold text-sm mb-2 text-slate-200">短籌越要狂野</h4>
+                            <p class="text-xs text-slate-400">當你處於短籌碼時，你沒什麼好失去，必須極度激進。</p>
+                        </div>
+                    </div>
+                    <!-- Rule 9 -->
+                    <div class="bg-poker-cardBg border border-poker-border p-4 rounded-xl flex flex-col justify-between">
+                        <div>
+                            <div class="text-amber-500 font-bold text-lg mb-1">09</div>
+                            <h4 class="font-bold text-sm mb-2 text-slate-200">被針對即調整</h4>
+                            <p class="text-xs text-slate-400">一旦對手發現你的弱點並針對，必須立刻反向調整。</p>
+                        </div>
+                    </div>
+                    <!-- Rule 10 -->
+                    <div class="bg-poker-cardBg border border-poker-border p-4 rounded-xl flex flex-col justify-between">
+                        <div>
+                            <div class="text-amber-500 font-bold text-lg mb-1">10</div>
+                            <h4 class="font-bold text-sm mb-2 text-slate-200">正負 EV 全局觀</h4>
+                            <p class="text-xs text-slate-400">放棄正EV等同於負EV。反之不做負EV決定即是正軌。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Blind Structure Info Card -->
+            <div class="bg-poker-cardBg border border-poker-border rounded-xl p-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                    <div>
+                        <h4 class="text-lg font-bold text-slate-200">9人單桌高速 SNG 盲注結構表 (每5分鐘升盲)</h4>
+                        <p class="text-xs text-slate-400">單桌SNG最高盲注階段一般在 Level 11 即會進入決戰點。</p>
+                    </div>
+                    <span class="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-lg text-xs font-bold">
+                        ★ 核心分水嶺：Level 7 引入前注 (Ante)
+                    </span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-11 gap-3">
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-center">
+                        <div class="text-slate-500 text-2xs uppercase">Lv 1</div>
+                        <div class="text-sm font-bold mt-1">10 / 20</div>
+                    </div>
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-center">
+                        <div class="text-slate-500 text-2xs uppercase">Lv 2</div>
+                        <div class="text-sm font-bold mt-1">15 / 30</div>
+                    </div>
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-center">
+                        <div class="text-slate-500 text-2xs uppercase">Lv 3</div>
+                        <div class="text-sm font-bold mt-1">25 / 50</div>
+                    </div>
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-center">
+                        <div class="text-slate-500 text-2xs uppercase">Lv 4</div>
+                        <div class="text-sm font-bold mt-1">50 / 100</div>
+                    </div>
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-center">
+                        <div class="text-slate-500 text-2xs uppercase">Lv 5</div>
+                        <div class="text-sm font-bold mt-1">75 / 150</div>
+                    </div>
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-center">
+                        <div class="text-slate-500 text-2xs uppercase">Lv 6</div>
+                        <div class="text-sm font-bold mt-1">100 / 200</div>
+                    </div>
+                    <!-- Ante Starts here, highlighted -->
+                    <div class="bg-amber-950/40 p-2.5 rounded-lg border border-amber-500/40 text-center ring-2 ring-amber-500/20">
+                        <div class="text-amber-400 text-2xs font-bold uppercase">Lv 7</div>
+                        <div class="text-sm font-bold text-amber-300 mt-1">100 / 200</div>
+                        <div class="text-3xs text-amber-500 font-bold mt-0.5">Ante 25</div>
+                    </div>
+                    <div class="bg-amber-950/20 p-2.5 rounded-lg border border-amber-500/20 text-center">
+                        <div class="text-slate-400 text-2xs uppercase">Lv 8</div>
+                        <div class="text-sm font-bold mt-1">150 / 300</div>
+                        <div class="text-3xs text-amber-500/80">Ante 25</div>
+                    </div>
+                    <div class="bg-amber-950/20 p-2.5 rounded-lg border border-amber-500/20 text-center">
+                        <div class="text-slate-400 text-2xs uppercase">Lv 9</div>
+                        <div class="text-sm font-bold mt-1">200 / 400</div>
+                        <div class="text-3xs text-amber-500/80">Ante 25</div>
+                    </div>
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-center">
+                        <div class="text-slate-500 text-2xs uppercase">Lv 10</div>
+                        <div class="text-sm font-bold mt-1">300 / 600</div>
+                        <div class="text-3xs text-slate-400">Ante 50</div>
+                    </div>
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-center">
+                        <div class="text-slate-500 text-2xs uppercase">Lv 11</div>
+                        <div class="text-sm font-bold mt-1">400 / 800</div>
+                        <div class="text-3xs text-slate-400">Ante 50</div>
+                    </div>
+                </div>
+                <div class="mt-4 p-4 bg-slate-900/60 rounded-lg text-xs text-slate-400 leading-relaxed border border-poker-border">
+                    <span class="text-amber-400 font-bold">💡 思考點：</span>
+                    從 Level 7 開始增加了 Ante 25 (9人桌總共額外增加 225 籌碼)，這使得死錢大幅增加！這意味著從 Level 7 開始，偷盲的價值出現了質的飛躍。
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 2: PREFLOP & RANGE ==================== -->
+        <section id="content-preflop" class="tab-content space-y-8 hidden">
+            <!-- Position visualizer & Range explanation -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Left column: 9-max Poker Table Representation -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="bg-poker-cardBg border border-poker-border p-6 rounded-xl shadow-xl flex flex-col justify-between h-full">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2 mb-2">
+                                <i data-lucide="gamepad-2" class="text-amber-400"></i>
+                                互動牌桌與位置分析 (9人桌)
+                            </h3>
+                            <p class="text-xs text-slate-400 mb-6">點擊牌桌上的座位，即可連動下方「翻牌前範圍矩陣」並顯示戰略心法！</p>
+                            
+                            <!-- Virtual Poker Table Felt -->
+                            <div class="relative w-full aspect-[16/9] bg-gradient-to-b from-emerald-950 to-emerald-900 rounded-full border-[10px] border-slate-800 shadow-inner flex items-center justify-center p-4">
+                                <div class="absolute inset-4 rounded-full border border-emerald-500/20 flex items-center justify-center">
+                                    <span class="text-emerald-500/30 tracking-widest uppercase text-xs font-bold">Tony's Felt</span>
+                                </div>
+
+                                <!-- Seats absolute position -->
+                                <!-- UTG (Bottom Left) -->
+                                <button onclick="selectPosition('utg')" id="seat-utg" class="seat-btn absolute left-8 bottom-1/4 px-2.5 py-1.5 bg-rose-950/80 border border-rose-500 rounded-lg text-xs font-bold text-rose-200 hover:scale-105 transition-all">UTG</button>
+                                <!-- UTG+1 (Left) -->
+                                <button onclick="selectPosition('utg')" id="seat-utg1" class="seat-btn absolute left-4 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-rose-950/80 border border-rose-500 rounded-lg text-xs font-bold text-rose-200 hover:scale-105 transition-all">UTG+1</button>
+                                <!-- MP1 (Top Left) -->
+                                <button onclick="selectPosition('mp')" id="seat-mp1" class="seat-btn absolute left-12 top-1/4 px-2.5 py-1.5 bg-amber-950/60 border border-amber-500/50 rounded-lg text-xs font-bold text-amber-200 hover:scale-105 transition-all">MP1</button>
+                                <!-- MP2 (Top Center Left) -->
+                                <button onclick="selectPosition('mp')" id="seat-mp2" class="seat-btn absolute left-1/3 -top-2 px-2.5 py-1.5 bg-amber-950/60 border border-amber-500/50 rounded-lg text-xs font-bold text-amber-200 hover:scale-105 transition-all">MP2</button>
+                                <!-- MP3 (Top Center Right) -->
+                                <button onclick="selectPosition('mp')" id="seat-mp3" class="seat-btn absolute right-1/3 -top-2 px-2.5 py-1.5 bg-amber-950/60 border border-amber-500/50 rounded-lg text-xs font-bold text-amber-200 hover:scale-105 transition-all">MP3</button>
+                                <!-- CO (Top Right) -->
+                                <button onclick="selectPosition('co_btn')" id="seat-co" class="seat-btn absolute right-12 top-1/4 px-2.5 py-1.5 bg-emerald-950/60 border border-emerald-500/50 rounded-lg text-xs font-bold text-emerald-200 hover:scale-105 transition-all">CO</button>
+                                <!-- BTN (Right) -->
+                                <button onclick="selectPosition('co_btn')" id="seat-btn" class="seat-btn absolute right-4 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-emerald-950/60 border border-emerald-500/50 rounded-lg text-xs font-bold text-emerald-200 hover:scale-105 transition-all">BTN</button>
+                                <!-- SB (Bottom Right) -->
+                                <button onclick="selectPosition('sb')" id="seat-sb" class="seat-btn absolute right-12 bottom-1/4 px-2.5 py-1.5 bg-blue-950/60 border border-blue-500/50 rounded-lg text-xs font-bold text-blue-200 hover:scale-105 transition-all">SB</button>
+                                <!-- BB (Bottom Center) -->
+                                <button onclick="selectPosition('bb')" id="seat-bb" class="seat-btn absolute left-1/2 -translate-x-1/2 -bottom-2 px-3 py-1.5 bg-purple-950/60 border border-purple-500/50 rounded-lg text-xs font-bold text-purple-200 hover:scale-105 transition-all">BB</button>
+                            </div>
+                        </div>
+
+                        <!-- Location analysis message box -->
+                        <div id="position-info-box" class="bg-slate-900 p-4 rounded-lg mt-6 border border-poker-border">
+                            <!-- Dynamic text injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right column: Interactive 13x13 Range Grid -->
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="bg-poker-cardBg border border-poker-border p-6 rounded-xl shadow-xl">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                                    <i data-lucide="grid" class="text-amber-400"></i>
+                                    前期開池範圍矩陣 (Preflop Open Range)
+                                </h3>
+                                <p class="text-xs text-slate-400">右上方為同花(s)，左下方為非同花(o)，對角線為口袋對子。</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <button onclick="selectPosition('utg')" id="btn-btn-utg" class="range-selector-btn px-2.5 py-1.5 bg-rose-950/80 text-rose-300 rounded border border-rose-500/40">UTG & UTG+1</button>
+                                <button onclick="selectPosition('mp')" id="btn-mp" class="range-selector-btn px-2.5 py-1.5 bg-slate-800 text-slate-300 rounded border border-slate-700">MP1 - MP3</button>
+                                <button onclick="selectPosition('co_btn')" id="btn-co_btn" class="range-selector-btn px-2.5 py-1.5 bg-slate-800 text-slate-300 rounded border border-slate-700">CO & BTN</button>
+                                <button onclick="selectPosition('sb')" id="btn-sb" class="range-selector-btn px-2.5 py-1.5 bg-slate-800 text-slate-300 rounded border border-slate-700">SB</button>
+                            </div>
+                        </div>
+
+                        <!-- Swipe visual indicator for mobile -->
+                        <div class="text-right text-3xs text-slate-500 sm:hidden mb-1 flex items-center justify-end gap-1">
+                            <i data-lucide="arrow-left-right" class="w-3 h-3"></i> 左右滑動查看完整範圍
+                        </div>
+
+                        <div class="overflow-x-auto w-full pb-2">
+                            <!-- 13x13 hand grid container -->
+                            <div id="poker-range-grid" class="grid grid-cols-13 gap-0.5 min-w-[500px] aspect-square bg-slate-950 p-2 rounded-lg border border-poker-border">
+                                <!-- Generated by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Note about preflop opening hand balance -->
+                        <div class="mt-4 p-4 bg-slate-900 rounded-lg text-xs text-slate-300 flex items-start gap-3">
+                            <i data-lucide="lightbulb" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
+                            <div>
+                                <strong class="text-slate-100">💡 開池平衡的重要性：</strong>
+                                如果你的 Open Range 僅有極強手牌 (例如 AA, KK, QQ, JJ, AK)，長期下來對手一旦發現，便絕不會為你的好牌買單。加入適當的投機牌 (如 JTs, T9s 或小口袋對) 可以極好地隱藏你的牌力強度。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calculators: 5/10 Rule and 3/6 Rule -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- 5 and 10 Rule Card -->
+                <div class="bg-poker-cardBg border border-poker-border p-6 rounded-xl space-y-4">
+                    <div class="flex items-center gap-2 border-b border-poker-border pb-3">
+                        <span class="p-2 bg-emerald-950 border border-emerald-500/30 text-emerald-400 rounded-lg">
+                            <strong class="font-mono">5/10</strong>
+                        </span>
+                        <div>
+                            <h4 class="font-bold text-slate-200">口袋對子試圖中 Set：5和10原則</h4>
+                            <p class="text-2xs text-slate-400">專門用於決定前期拿到小對子時是否跟注 (Call Open)</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        口袋對子 (22~TT) 的核心價值是希望在 Flop 中 Set 來贏得對手的深籌碼。如果不中，很難打下去。此時必須計算跟注代價相對於你的總籌碼：
+                    </p>
+                    <ul class="text-xs space-y-1 text-slate-400 list-disc list-inside">
+                        <li>跟注代價 <strong class="text-emerald-400">低於 5% 總籌碼</strong> ➔ <span class="text-emerald-400 font-bold">愉快 Call 進入</span></li>
+                        <li>跟注代價 <strong class="text-rose-400">高於 10% 總籌碼</strong> ➔ <span class="text-rose-400 font-bold">果斷 Fold 放棄</span></li>
+                        <li>介於 <strong class="text-amber-400">5% ~ 10% 之間</strong> ➔ 視位置、後方玩家激進度而定</li>
+                    </ul>
+
+                    <!-- Mini Calculator PP -->
+                    <div class="bg-slate-900 p-4 rounded-lg space-y-3 border border-slate-800">
+                        <div class="text-xs font-bold text-slate-200">🧮 口袋對子跟注決策器</div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-3xs text-slate-400 block mb-1">你的總籌碼量 (Chips)</label>
+                                <input type="number" id="calc-stack-pp" value="1500" class="w-full bg-poker-cardBg text-slate-200 border border-slate-700 rounded p-1.5 text-xs text-center focus:border-amber-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="text-3xs text-slate-400 block mb-1">對手的 Open 尺寸</label>
+                                <input type="number" id="calc-call-pp" value="60" class="w-full bg-poker-cardBg text-slate-200 border border-slate-700 rounded p-1.5 text-xs text-center focus:border-amber-500 focus:outline-none">
+                            </div>
+                        </div>
+                        <button onclick="calculatePP()" class="w-full py-1.5 bg-emerald-600 hover:bg-emerald-500 text-xs text-poker-darkBg font-bold rounded transition">點擊計算建議</button>
+                        <div id="result-pp" class="text-xs font-semibold p-2 bg-slate-950 text-center rounded border border-poker-border text-slate-400">
+                            等待計算輸入數據...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3 and 6 Rule Card -->
+                <div class="bg-poker-cardBg border border-poker-border p-6 rounded-xl space-y-4">
+                    <div class="flex items-center gap-2 border-b border-poker-border pb-3">
+                        <span class="p-2 bg-amber-950 border border-amber-500/30 text-amber-400 rounded-lg">
+                            <strong class="font-mono">3/6</strong>
+                        </span>
+                        <div>
+                            <h4 class="font-bold text-slate-200">同花連牌：3和6原則</h4>
+                            <p class="text-2xs text-slate-400">專用於決定前期同花連牌 (如 54s, 78s) 的切入策略</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        同花連牌在多人底池有很強的潛力。但因為色彩在翻牌太過明顯，同花的隱含賠率其實比 Set 來的低 (人們很容易提防同花，但不容易防備暗三條)，因此其入池規則更為嚴苛：
+                    </p>
+                    <ul class="text-xs space-y-1 text-slate-400 list-disc list-inside">
+                        <li>跟注代價 <strong class="text-emerald-400">低於 3% 總籌碼</strong> ➔ <span class="text-emerald-400 font-bold">Call 來看翻牌</span></li>
+                        <li>跟注代價 <strong class="text-rose-400">高於 6% 總籌碼</strong> ➔ <span class="text-rose-400 font-bold">直接棄牌 (Fold)</span></li>
+                        <li>介於 <strong class="text-amber-400">3% ~ 6% 之間</strong> ➔ 必須有絕佳的位置且後方無人威脅</li>
+                    </ul>
+
+                    <!-- Mini Calculator SC -->
+                    <div class="bg-slate-900 p-4 rounded-lg space-y-3 border border-slate-800">
+                        <div class="text-xs font-bold text-slate-200">🧮 同花連牌跟注決策器</div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-3xs text-slate-400 block mb-1">你的總籌碼量 (Chips)</label>
+                                <input type="number" id="calc-stack-sc" value="1500" class="w-full bg-poker-cardBg text-slate-200 border border-slate-700 rounded p-1.5 text-xs text-center focus:border-amber-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="text-3xs text-slate-400 block mb-1">對手的 Open 尺寸</label>
+                                <input type="number" id="calc-call-sc" value="60" class="w-full bg-poker-cardBg text-slate-200 border border-slate-700 rounded p-1.5 text-xs text-center focus:border-amber-500 focus:outline-none">
+                            </div>
+                        </div>
+                        <button onclick="calculateSC()" class="w-full py-1.5 bg-amber-500 hover:bg-amber-400 text-xs text-poker-darkBg font-bold rounded transition">點擊計算建議</button>
+                        <div id="result-sc" class="text-xs font-semibold p-2 bg-slate-950 text-center rounded border border-poker-border text-slate-400">
+                            等待計算輸入數據...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 3: STEAL & RESTEAL ==================== -->
+        <section id="content-steal" class="tab-content space-y-8 hidden">
+            <!-- Steal Concept and Decay Model -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div class="lg:col-span-7 space-y-6">
+                    <h2 class="text-2xl font-bold flex items-center gap-2 text-amber-400">
+                        <i data-lucide="swords" class="w-6 h-6"></i>
+                        偷盲 (Steal)：SNG 生存的唯一氧氣
+                    </h2>
+                    <p class="text-slate-300 leading-relaxed text-sm">
+                        在 SNG 錦標賽中，盲注每 5 分鐘就調升一次。如果你是一個極端保守、從不主動偷盲的玩家，
+                        盲注的蠶食速度將快到讓你失去所有折疊權益 (Fold Equity)，從而被動等死。
+                    </p>
+
+                    <!-- Steal Simulation Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Scenario A: No Stealing -->
+                        <div class="bg-rose-950/20 border border-rose-500/20 p-5 rounded-xl space-y-3">
+                            <div class="text-rose-400 font-bold flex items-center gap-1.5 text-sm">
+                                <i data-lucide="skull" class="w-4 h-4"></i> 被動等死：0% 偷盲率
+                            </div>
+                            <p class="text-xs text-slate-300">
+                                初始籌碼 1500。在不打牌情況下，隨盲注不斷蠶食：
+                            </p>
+                            <div class="space-y-1 font-mono text-2xs text-slate-400 bg-slate-900/60 p-3 rounded">
+                                <div>第 1 輪 (Lv 1 10/20) ➔ 剩 $1460</div>
+                                <div>第 2 輪 (Lv 3 25/50) ➔ 剩 $1385</div>
+                                <div>第 3 輪 (Lv 5 75/150) ➔ 剩 $1160</div>
+                                <div>第 4 輪 (Lv 7 100/200+Ante) ➔ 剩 $680</div>
+                            </div>
+                            <div class="text-rose-300 font-bold text-xs">
+                                ❌ 僅 30 分鐘，籌碼已縮水至不足 3BB，毫無偷盲空間。
+                            </div>
+                        </div>
+
+                        <!-- Scenario B: Dynamic Stealing -->
+                        <div class="bg-emerald-950/20 border border-emerald-500/20 p-5 rounded-xl space-y-3">
+                            <div class="text-emerald-400 font-bold flex items-center gap-1.5 text-sm">
+                                <i data-lucide="shield-check" class="w-4 h-4"></i> 積極防守：100% 偷盲嘗試 (對抗弱 BB)
+                            </div>
+                            <p class="text-xs text-slate-300">
+                                同樣 1500。假設 SB 遇到大盲棄牌率為 80% (其餘 20% 對手 3-Bet Shove 我們棄牌)：
+                            </p>
+                            <div class="space-y-1 font-mono text-2xs text-slate-400 bg-slate-900/60 p-3 rounded">
+                                <div>第 1 輪 (Lv 1) ➔ 成功，籌碼維持 $1500</div>
+                                <div>第 2 輪 (Lv 3) ➔ 成功，籌碼維持 $1500</div>
+                                <div>第 3 輪 (Lv 5) ➔ 遭 Shove，Fold，剩 $975</div>
+                                <div>第 4 輪 (Lv 7) ➔ 成功，籌碼維持 $975</div>
+                            </div>
+                            <div class="text-emerald-300 font-bold text-xs">
+                                 維持 $975 (近 5BB)，保留了極強的 Fold Equity (大盲依然怕你)！
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Five critical questions for resteal -->
+                    <div class="bg-poker-cardBg border border-poker-border rounded-xl p-5 space-y-4">
+                        <h4 class="font-bold text-amber-400 flex items-center gap-2 text-sm">
+                            <i data-lucide="help-circle" class="w-5 h-5"></i>
+                            Resteal (反偷盲) 決策五大心法
+                        </h4>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            當你持有 10~13 BB 時，Open 很容易面臨「Call 捨不得，Fold 又太心疼」的窘境。此時 Resteal (3-Bet Shove) 是你最強力的武器！行動前請確認以下五大問題：
+                        </p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                            <div class="bg-slate-900 p-3 rounded border border-slate-800">
+                                <strong class="text-amber-400">1. 對手是否頻繁 Steal？</strong><br>
+                                如果對方是個老江湖 (CO/BTN 偷盲頻繁)，代表他 range 很寬，Call 不下來。
+                            </div>
+                            <div class="bg-slate-900 p-3 rounded border border-slate-800">
+                                <strong class="text-amber-400">2. 對手是否極害怕出局？</strong><br>
+                                If對手在泡沫期顯現出對金錢的渴望 (很苟)，你的 Shove 會獲得極大 Fold Equity。
+                            </div>
+                            <div class="bg-slate-900 p-3 rounded border border-slate-800">
+                                <strong class="text-amber-400">3. 後面還有幾個人未表態？</strong><br>
+                                越多人在你後面，你撞上超強牌 (AA/KK/QQ) 的機率就呈指數級上升。
+                            </div>
+                            <div class="bg-slate-900 p-3 rounded border border-slate-800">
+                                <strong class="text-amber-400">4. 籌碼是否具威脅性？</strong><br>
+                                10~13 BB 的全下能重創那些 20~25 BB 的中籌碼。太深(不痛)或太淺(必跟)都不適用。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Interactive BB Strategy Table -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="bg-poker-cardBg border border-poker-border p-6 rounded-xl shadow-xl space-y-5">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                                <i data-lucide="layers" class="text-amber-400"></i>
+                                不同籌碼深度 (BB) 的核心戰術
+                            </h3>
+                            <p class="text-xs text-slate-400">隨著盲注調升，你的戰術方針必須徹底重組。請選擇你當下的籌碼狀態：</p>
+                        </div>
+
+                        <!-- Clickable tiers -->
+                        <div class="space-y-3">
+                            <!-- Tier 1 -->
+                            <button onclick="selectBBTier('30plus')" id="tier-30plus" class="w-full text-left p-4 rounded-xl border border-poker-border bg-slate-900/40 hover:bg-slate-900/80 transition-all duration-300">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-emerald-400">30+ BB (超深籌碼)</span>
+                                    <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded">前期保守 / 後期壓制</span>
+                                </div>
+                                <p class="text-2xs text-slate-400">保留實力，不輕易亂搞</p>
+                            </button>
+                            <!-- Tier 2 -->
+                            <button onclick="selectBBTier('13to30')" id="tier-13to30" class="w-full text-left p-4 rounded-xl border border-poker-border bg-slate-900/40 hover:bg-slate-900/80 transition-all duration-300">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-amber-400">13 - 30 BB (中等偏深)</span>
+                                    <span class="text-xs bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded">偷盲主力區</span>
+                                </div>
+                                <p class="text-2xs text-slate-400">利用 Fold Equity 大幅拓展收益</p>
+                            </button>
+                            <!-- Tier 3 -->
+                            <button onclick="selectBBTier('10to13')" id="tier-10to13" class="w-full text-left p-4 rounded-xl border border-poker-border bg-slate-900/40 hover:bg-slate-900/80 transition-all duration-300">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-yellow-500">10 - 13 BB (中等尷尬)</span>
+                                    <span class="text-xs bg-yellow-500/10 text-yellow-400 px-2 py-0.5 rounded">Resteal 為主</span>
+                                </div>
+                                <p class="text-2xs text-slate-400">不 Limp，採取 2-Bet Shove 或 Fold</p>
+                            </button>
+                            <!-- Tier 4 -->
+                            <button onclick="selectBBTier('4to10')" id="tier-4to10" class="w-full text-left p-4 rounded-xl border border-poker-border bg-slate-900/40 hover:bg-slate-900/80 transition-all duration-300">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-rose-400">4 - 10 BB (短籌碼危險區)</span>
+                                    <span class="text-xs bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded">All-in / Fold</span>
+                                </div>
+                                <p class="text-2xs text-slate-400">剝奪對手 postflop 優勢，僅能 preflop 對決</p>
+                            </button>
+                            <!-- Tier 5 -->
+                            <button onclick="selectBBTier('1to4')" id="tier-1to4" class="w-full text-left p-4 rounded-xl border border-poker-border bg-slate-900/40 hover:bg-slate-900/80 transition-all duration-300">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-bold text-slate-400">1 - 4 BB (乾枯短籌碼)</span>
+                                    <span class="text-xs bg-slate-500/10 text-slate-400 px-2 py-0.5 rounded">豁出去賭運氣</span>
+                                </div>
+                                <p class="text-2xs text-slate-400">已失去 Fold Equity</p>
+                            </button>
+                        </div>
+
+                        <!-- Dynamic BB Detail Card -->
+                        <div id="bb-tier-detail" class="p-4 bg-slate-900 border border-slate-800 rounded-xl">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 4: ICM & BUBBLE ==================== -->
+        <section id="content-icm" class="tab-content space-y-8 hidden">
+            <!-- ICM & Non-linear chips explanation -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <div class="lg:col-span-7 space-y-6">
+                    <h2 class="text-2xl font-bold flex items-center gap-2 text-amber-400">
+                        <i data-lucide="calculator" class="w-6 h-6"></i>
+                        獨立籌碼模型 (ICM) 的奧秘
+                    </h2>
+                    <p class="text-slate-300 leading-relaxed text-sm">
+                        在現金桌中，你的 1,000 籌碼始終等於 $10 現金。但在 SNG/MTT 中，
+                        <strong class="text-amber-400">籌碼的價值是非線性的 (Non-linear)。</strong>
+                        你桌上擁有的籌碼數量 and 其實際的現金期望值 ($EV) 呈現一條向下彎曲的曲線。
+                    </p>
+
+                    <!-- EV Non-linear Slider Simulator -->
+                    <div class="bg-poker-cardBg border border-poker-border p-6 rounded-xl space-y-5">
+                        <div class="flex justify-between items-center border-b border-poker-border pb-3">
+                            <h4 class="font-bold text-slate-200">📊 籌碼 vs 現金期望值 ($EV) 模擬器</h4>
+                            <span class="text-2xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded">模擬四人桌 (總碼 20000, 總獎金 $100)</span>
+                        </div>
+                        <p class="text-xs text-slate-400">拉動滑桿改變你的籌碼，觀測線性價值(Cash) 與非線性價值(SNG $EV) 的落差：</p>
+
+                        <!-- Slider -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-xs text-slate-400 font-mono">
+                                <span>起點 (0)</span>
+                                <span class="text-amber-400 font-bold">當前籌碼: <span id="sim-chips">5000</span></span>
+                                <span>極限 (20000)</span>
+                            </div>
+                            <input type="range" id="chip-slider" min="500" max="18000" step="100" value="5300" oninput="updateICMSimulator(this.value)" class="w-full accent-amber-500 bg-slate-800 h-2 rounded-lg appearance-none cursor-pointer">
+                        </div>
+
+                        <!-- Side by Side Metrics -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-slate-900 p-4 rounded-lg border-l-4 border-slate-500">
+                                <div class="text-3xs text-slate-400 uppercase">Cash 遊戲價值 (線性)</div>
+                                <div id="sim-linear-val" class="text-xl font-bold font-mono text-slate-300 mt-1">$26.50</div>
+                                <p class="text-3xs text-slate-500 mt-1">籌碼佔比 26.5% = 26.5% 的獎金</p>
+                            </div>
+                            <div class="bg-slate-900 p-4 rounded-lg border-l-4 border-amber-500">
+                                <div class="text-3xs text-slate-400 uppercase">SNG 遊戲價值 (ICM 期望值)</div>
+                                <div id="sim-icm-val" class="text-xl font-bold font-mono text-amber-400 mt-1">$27.36</div>
+                                <p class="text-3xs text-slate-500 mt-1">在泡沫階段綜合前三名概率算出</p>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-amber-500/5 border border-amber-500/10 text-slate-400 text-2xs leading-relaxed rounded-lg">
+                            <strong class="text-amber-300">💡 重點結論：</strong> 
+                            在 SNG 中，即使你贏下了全場 100% 的籌碼 (20,000)，你最多也只能拿走 $50 獎金 (第一名 50%)。
+                            這意味著：<strong class="text-rose-400">贏得的籌碼價值永遠低於輸掉等量籌碼所損失的價值！</strong>這就是為什麼你必須打得比現金桌更保守、更重視風險溢價。
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Bubble Factors & Bubble Matrix -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="bg-poker-cardBg border border-poker-border p-6 rounded-xl shadow-xl space-y-5">
+                        <h3 class="text-lg font-bold text-slate-100 border-b border-poker-border pb-3 flex items-center gap-2">
+                            <i data-lucide="shield" class="text-amber-400"></i>
+                            泡沫係數 (Bubble Factor)
+                        </h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            泡沫係數代表著：<strong>你是冒著失去多少期望值的風險，去爭取贏得多少期望值。</strong> 
+                            公式 = <span class="font-mono text-rose-400">損失 $EV</span> / <span class="font-mono text-emerald-400">贏得 $EV</span>。
+                        </p>
+
+                        <!-- Bubble Factor Quick reference cards -->
+                        <div class="space-y-3 text-xs">
+                            <div class="bg-slate-900 p-3 rounded border border-slate-800 flex justify-between items-center">
+                                <div>
+                                    <span class="font-bold text-slate-200 block">面對同等中籌碼 (B 遇 D)</span>
+                                    <span class="text-3xs text-slate-400">你是在用失去 $9.98 的風險去贏取 $8.05</span>
+                                </div>
+                                <span class="px-2.5 py-1 bg-amber-500/10 text-amber-400 rounded-lg font-mono font-bold">1.24 倍</span>
+                            </div>
+
+                            <div class="bg-slate-900 p-3 rounded border border-slate-800 flex justify-between items-center">
+                                <div>
+                                    <span class="font-bold text-slate-200 block">面對巨型深籌碼 (B 遇 A)</span>
+                                    <span class="text-3xs text-slate-400">這是一次高昂的衝突，泡沫係數飆高</span>
+                                </div>
+                                <span class="px-2.5 py-1 bg-rose-500/10 text-rose-400 rounded-lg font-mono font-bold">2.54 倍</span>
+                            </div>
+                        </div>
+
+                        <!-- Rules of thumb on Bubble Factors -->
+                        <div class="text-2xs text-slate-400 space-y-1.5 pt-2 border-t border-poker-border">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                <span>越接近錢圈 (泡沫期)，泡沫係數越大。</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                <span>場上有超短籌碼時，會放大深籌碼之間的泡沫係數。</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                <span>中等籌碼與中等籌碼對決，泡沫係數會急劇飆升。</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bubble Stage Strategy Matrix (Chip Leader, 2nd, 3rd, Short Stack) -->
+            <div class="space-y-4">
+                <h3 class="text-xl font-bold text-center text-slate-100 flex items-center justify-center gap-2">
+                    <i data-lucide="compass" class="text-amber-500"></i>
+                    Bubble 階段 4 大籌碼生存指南
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- CL -->
+                    <div class="bg-poker-cardBg border border-poker-border p-5 rounded-xl space-y-3 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded text-3xs font-bold font-mono">1st RANK</span>
+                                <i data-lucide="shield-check" class="w-5 h-5 text-amber-400"></i>
+                            </div>
+                            <h4 class="font-bold text-base text-slate-100">你是 Chip Leader (CL)</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mt-2">
+                                <strong class="text-emerald-400">大肆殘虐、全力施壓。</strong> 
+                                其他玩家礙於巨大的 ICM 壓力，不敢輕易跟你硬碰硬。他們必須頻繁蓋牌。
+                            </p>
+                        </div>
+                        <div class="pt-2 border-t border-slate-800 text-3xs text-slate-500">注意：若有人準備跟你槓上，仍要適當避開。</div>
+                    </div>
+
+                    <!-- 2nd -->
+                    <div class="bg-poker-cardBg border border-poker-border p-5 rounded-xl space-y-3 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="px-2 py-0.5 bg-yellow-500/10 text-yellow-400 rounded text-3xs font-bold font-mono">2nd RANK</span>
+                                <i data-lucide="help-circle" class="w-5 h-5 text-yellow-400"></i>
+                            </div>
+                            <h4 class="font-bold text-base text-slate-100">你暫居第二名</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mt-2">
+                                <strong class="text-amber-400">坐二望一，戰術龜縮。</strong> 
+                                避開 CL 的 3-bet，不要去招惹第四名。因為第四名已被逼到絕路，而與第三名決戰又會讓第四名坐收漁翁之利。
+                            </p>
+                        </div>
+                        <div class="pt-2 border-t border-slate-800 text-3xs text-slate-500">注意：泡沫係數高達 2.5+，承受不起跑輸的代價。</div>
+                    </div>
+
+                    <!-- 3rd -->
+                    <div class="bg-poker-cardBg border border-poker-border p-5 rounded-xl space-y-3 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="px-2 py-0.5 bg-rose-500/10 text-rose-400 rounded text-3xs font-bold font-mono">3rd RANK</span>
+                                <i data-lucide="target" class="w-5 h-5 text-rose-400"></i>
+                            </div>
+                            <h4 class="font-bold text-base text-slate-100">你暫居第三名</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mt-2">
+                                <strong class="text-rose-400">不要等死，主動出擊。</strong> 
+                                不要天真地等著第四名自行滅亡。你對抗一、二名有著高昂的泡沫係數，你唯一且必須下手的目標只有第四名。
+                            </p>
+                        </div>
+                        <div class="pt-2 border-t border-slate-800 text-3xs text-slate-500">注意：跟第四名搞個你死我活，膽大心細才能奪冠。</div>
+                    </div>
+
+                    <!-- 4th -->
+                    <div class="bg-poker-cardBg border border-poker-border p-5 rounded-xl space-y-3 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="px-2 py-0.5 bg-slate-500/20 text-slate-300 rounded text-3xs font-bold font-mono">4th RANK</span>
+                                <i data-lucide="zap" class="w-5 h-5 text-slate-300"></i>
+                            </div>
+                            <h4 class="font-bold text-base text-slate-100">你處於墊底淘汰邊緣</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mt-2">
+                                <strong class="text-slate-200">徹底豁出去，瘋狂全下。</strong> 
+                                你的泡沫係數無限逼近於 1。不要妄圖龜縮蹭進前三。此時越瘋狂，你的生還與翻盤機率反而越高。
+                            </p>
+                        </div>
+                        <div class="pt-2 border-t border-slate-800 text-3xs text-slate-500">注意：毫無顧忌，以高 Fold Equity 來強收盲注。</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 5: ITM & HEADS UP ==================== -->
+        <section id="content-itm" class="tab-content space-y-8 hidden">
+            <!-- Three Handed Strategy Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <div class="lg:col-span-7 space-y-6">
+                    <h2 class="text-2xl font-bold flex items-center gap-2 text-amber-400">
+                        <i data-lucide="users-2" class="w-6 h-6"></i>
+                        三人桌 (3-Handed)：脫離泡沫的狂歡
+                    </h2>
+                    <p class="text-slate-300 leading-relaxed text-sm">
+                        恭喜你！只要踏進前三名，這意味著我們已經 ITM (In The Money)。
+                        一旦脫離 Bubble，<strong class="text-emerald-400">泡沫係數將大幅下降，籌碼價值幾乎回歸線性。</strong>
+                        此時我們不需要再向之前那樣戰戰兢兢，必須轉而啟動瘋狂的壓制模式。
+                    </p>
+
+                    <!-- Three handed rules -->
+                    <div class="bg-poker-cardBg border border-poker-border rounded-xl p-6">
+                        <h4 class="font-bold text-slate-200 mb-4 flex items-center gap-2">
+                            <i data-lucide="clipboard-list" class="text-amber-500"></i>
+                            三人桌黃金操作指南 (3-Handed Principles)
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                            <div class="flex gap-2 items-start bg-slate-900 p-3 rounded">
+                                <span class="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-3xs shrink-0 mt-0.5">1</span>
+                                <div>
+                                    <strong class="text-slate-100">頻繁瘋狂偷盲：</strong> 
+                                    因為沒有泡沫限制，大盲極度寬鬆。每次只要 fold 到你，都可以果斷 raise。
+                                </div>
+                            </div>
+                            <div class="flex gap-2 items-start bg-slate-900 p-3 rounded">
+                                <span class="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-3xs shrink-0 mt-0.5">2</span>
+                                <div>
+                                    <strong class="text-slate-100">放膽防守大盲：</strong> 
+                                    對方的偷盲範圍肯定極寬，所以不要輕易放棄大盲。大膽跟注 (Call) 來看翻牌。
+                                </div>
+                            </div>
+                            <div class="flex gap-2 items-start bg-slate-900 p-3 rounded">
+                                <span class="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-3xs shrink-0 mt-0.5">3</span>
+                                <div>
+                                    <strong class="text-slate-100">Resteal 再次成為利器：</strong> 
+                                    任何 3-Bet Shove 在此時都有很強的利潤。
+                                </div>
+                            </div>
+                            <div class="flex gap-2 items-start bg-slate-900 p-3 rounded">
+                                <span class="w-5 h-5 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-3xs shrink-0 mt-0.5">4</span>
+                                <div>
+                                    <strong class="text-slate-100">打出極高侵略性：</strong> 
+                                    不要進了錢圈就鬆懈！我們的目標是第 1 名，第 3 名的微薄利潤絕不是我們的終點。
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Heads-Up Duel -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="bg-gradient-to-b from-poker-cardBg to-slate-900 border border-poker-border p-6 rounded-xl shadow-xl space-y-5">
+                        <div class="text-center space-y-2">
+                            <div class="inline-flex p-3 bg-amber-500/10 rounded-full border border-amber-500/30">
+                                <i data-lucide="sword" class="w-8 h-8 text-amber-400"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-100">單挑對決 (Heads-Up) 終極戰</h3>
+                            <p class="text-2xs text-slate-400">進入 HU 時，泡沫係數徹底歸 1 (與現金桌等同)。</p>
+                        </div>
+
+                        <div class="bg-slate-950 p-4 rounded-lg border border-poker-border text-xs space-y-3 leading-relaxed">
+                            <p class="text-amber-300 font-bold">🎯 HU 核心調整戰略：</p>
+                            <div class="flex gap-2">
+                                <span class="text-amber-500">▸</span>
+                                <span><strong>起手牌範圍極度放寬：</strong> 對手手裡有強牌的機率驟降，任何一張 Ace 已經足夠你在 preflop 直接打完。</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <span class="text-amber-500">▸</span>
+                                <span><strong>投機牌與對子全線進攻：</strong> 所有的口袋對子、同花連牌、KXs、QXs 甚至隔張同花連牌都是非常有戰鬥力的牌，必須頻繁 Steal、3-Bet 甚至 4-Bet。</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <span class="text-amber-500">▸</span>
+                                <span><strong>絕不輕易 Fold A High 或一對：</strong> 翻牌後，除非你非常確定對手持有領先的強牌，否則在這種高頻率推牌的波動下，不要隨便蓋掉中等對子。</span>
+                            </div>
+                        </div>
+
+                        <div class="p-3.5 bg-emerald-950/20 border border-emerald-500/20 rounded-lg text-emerald-400 text-2xs text-center">
+                            <strong>微優勢遊戲的勝利：</strong> 單挑看似是推來推去的運氣遊戲，但長期做正EV決策的玩家，將會笑著捲走大部份的獎金。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 6: INTERACTIVE QUIZ ==================== -->
+        <section id="content-quiz" class="tab-content space-y-8 hidden">
+            <div class="bg-poker-cardBg border border-poker-border p-6 rounded-xl shadow-xl">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-poker-border pb-4">
+                    <div>
+                        <h2 class="text-2xl font-bold flex items-center gap-2 text-amber-400">
+                            <i data-lucide="help-circle" class="w-6 h-6"></i>
+                            SNG 核心戰術學力檢測
+                        </h2>
+                        <p class="text-xs text-slate-400">Tony 老師精選 10 題核心實戰測試，馬上點擊答案來檢測吧！</p>
+                    </div>
+                    <!-- Dynamic score tracker -->
+                    <div class="bg-slate-900/90 px-4 py-2 rounded-xl border border-poker-border flex items-center gap-3 shrink-0">
+                        <span class="text-xs text-slate-400 font-medium">答對題數:</span>
+                        <span id="quiz-score" class="text-lg font-bold font-mono text-amber-400">0 / 10</span>
+                    </div>
+                </div>
+
+                <!-- Quiz Cards Container -->
+                <div class="space-y-6" id="quiz-container">
+                    <!-- Dynamic Quiz Rendered by JS -->
+                </div>
+
+                <!-- Reset button -->
+                <div class="pt-4 text-center">
+                    <button onclick="resetQuiz()" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-poker-darkBg font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 mx-auto">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i> 重做測驗
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-poker-border bg-poker-darkBg py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-3">
+            <p class="text-sm text-slate-500">TONY的初階SNG課程(互動優化版)</p>
+            <p class="text-xs text-slate-600">© 2026 TONY課程專用. 版權所有. 撲克是一門追求正期望值的科學.</p>
+        </div>
+    </footer>
+
+    <!-- Script Section -->
+    <script>
+        // Init Lucide Icons
+        lucide.createIcons();
+
+        // 13x13 Range Matrix definition
+        const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+        
+        // Define ranges for each position in code
+        // true: playable, false: fold
+        const ranges = {
+            utg: (r, c) => {
+                // 22+, AKs, AKo
+                // Pairs
+                if (r === c) return true; // 22+
+                // AKs
+                if (r === 0 && c === 1) return true; // AKs
+                // AKo
+                if (r === 1 && c === 0) return true; // AKo
+                return false;
+            },
+            mp: (r, c) => {
+                // 22+, AQs+, KQs, JTs, AQo+
+                // Pairs
+                if (r === c) return true;
+                // Suited: AKs(0,1), AQs(0,2), KQs(1,2), JTs(3,4)
+                if (r < c) {
+                    if (r === 0 && c <= 2) return true; // AKs, AQs
+                    if (r === 1 && c === 2) return true; // KQs
+                    if (r === 3 && c === 4) return true; // JTs
+                }
+                // Offsuit: AKo(1,0), AQo(2,0)
+                if (r > c) {
+                    if (c === 0 && r <= 2) return true; // AKo, AQo
+                }
+                return false;
+            },
+            co_btn: (r, c) => {
+                // 22+, ATs+, KQs, QJs, JTs, T9s, 98s, 87s, 76s, 65s, AJo+, KQo
+                if (r === c) return true;
+                // Suited
+                if (r < c) {
+                    if (r === 0 && c <= 3) return true; // ATs+
+                    if (r === 1 && c === 2) return true; // KQs
+                    if (r === 2 && c === 3) return true; // QJs
+                    if (r === 3 && c === 4) return true; // JTs
+                    if (r === 4 && c === 5) return true; // T9s
+                    if (r === 5 && c === 6) return true; // 98s
+                    if (r === 6 && c === 7) return true; // 87s
+                    if (r === 7 && c === 8) return true; // 76s
+                    if (r === 8 && c === 9) return true; // 65s
+                }
+                // Offsuit
+                if (r > c) {
+                    if (c === 0 && r <= 3) return true; // AJo+
+                    if (c === 1 && r === 2) return true; // KQo
+                }
+                return false;
+            },
+            sb: (r, c) => {
+                // 22+, A2s+, KTs+, QTs+, JTs, T9s, 98s, 87s, 76s, 65s, ATo+, KQo, QJo
+                if (r === c) return true;
+                // Suited
+                if (r < c) {
+                    if (r === 0) return true; // A2s+
+                    if (r === 1 && c <= 3) return true; // KTs+
+                    if (r === 2 && c <= 3) return true; // QTs+
+                    if (r === 3 && c === 4) return true; // JTs
+                    if (r === 4 && c === 5) return true; // T9s
+                    if (r === 5 && c === 6) return true; // 98s
+                    if (r === 6 && c === 7) return true; // 87s
+                    if (r === 7 && c === 8) return true; // 76s
+                    if (r === 8 && c === 9) return true; // 65s
+                }
+                // Offsuit
+                if (r > c) {
+                    if (c === 0 && r <= 4) return true; // ATo+
+                    if (c === 1 && r === 2) return true; // KQo
+                    if (c === 2 && r === 3) return true; // QJo
+                }
+                return false;
+            }
+        };
+
+        // Render hand matrix grid dynamically
+        function renderGrid(position) {
+            const container = document.getElementById('poker-range-grid');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            for (let r = 0; r < 13; r++) {
+                for (let c = 0; c < 13; c++) {
+                    const cell = document.createElement('div');
+                    let label = '';
+                    let isSuited = r < c;
+                    let isPair = r === c;
+                    
+                    if (isPair) {
+                        label = ranks[r] + ranks[c];
+                    } else if (isSuited) {
+                        label = ranks[r] + ranks[c] + 's';
+                    } else {
+                        label = ranks[c] + ranks[r] + 'o';
+                    }
+                    
+                    cell.innerText = label;
+                    cell.className = "flex items-center justify-center text-3xs font-bold font-mono rounded cursor-default transition-all duration-300 py-1 sm:py-2 select-none ";
+                    
+                    // Style base matrix cells
+                    if (isPair) {
+                        cell.classList.add("bg-slate-900", "text-slate-400");
+                    } else if (isSuited) {
+                        cell.classList.add("bg-slate-900/60", "text-slate-500");
+                    } else {
+                        cell.classList.add("bg-slate-900/30", "text-slate-600");
+                    }
+                    
+                    // Highlight based on selected range
+                    const isActive = ranges[position] ? ranges[position](r, c) : false;
+                    if (isActive) {
+                        cell.classList.remove("bg-slate-900", "bg-slate-900/60", "bg-slate-900/30", "text-slate-400", "text-slate-500", "text-slate-600");
+                        
+                        // Custom gradients depending on the card category
+                        if (isPair) {
+                            cell.classList.add("bg-gradient-to-br", "from-amber-400", "to-amber-500", "text-poker-darkBg", "shadow-sm", "shadow-amber-500/20");
+                        } else {
+                            cell.classList.add("bg-emerald-600", "text-poker-darkBg");
+                        }
+                    }
+                    
+                    container.appendChild(cell);
+                }
+            }
+        }
+
+        // Selected position metadata - Use backticks to avoid double-quote collision issues
+        const positionMetas = {
+            utg: {
+                title: "槍口位 (UTG & UTG+1) — 蒙眼走鋼索",
+                desc: `你是 preflop 第一個行動的。沒有任何後方玩家的牌力資訊，你就必須做出選擇。此時不宜亂搞，<strong>必須採用超強力的牌組進場。</strong><br><br><span class="text-amber-400">★ 推薦範圍：22+, AKs, AKo</span><br>小口袋對子可以用來博取極高隱含賠率的 Set。如果害怕後方玩家壓榨 (Squeeze)，也可以把極小的對子 (例如 22-55) 棄掉。`,
+                activeBtnId: "btn-utg",
+                seatIds: ["seat-utg", "seat-utg1"]
+            },
+            mp: {
+                title: "中游位 (MP1 - MP3) — 稍現曙光",
+                desc: `相較於 UTG，後面的玩家減少到 4~6 位，這意味著你的 FQ (Fold Equity) 增加、且手牌贏得底池的淨值也相對提升。但切記，<strong>SNG 前期真理：不要浪費籌碼。</strong> 不要因為位置稍微靠後就開始濫玩弱同花連牌。<br><br><span class="text-amber-400">★ 推薦範圍：22+, AQs+, KQs, JTs, AQo+</span>`,
+                activeBtnId: "btn-mp",
+                seatIds: ["seat-mp1", "seat-mp2", "seat-mp3"]
+            },
+            co_btn: {
+                title: "後位優勢區 (CO & BTN) — 偷盲發動機",
+                desc: `在 CO 與 BTN 擁有極致的位置優勢 (Postflop 最後行動)。後面只剩下 2~3 位玩家，他們持有強牌的概率很低。<strong class="text-emerald-400">只要前面玩家都 Fold，你就應該放膽去偷盲。</strong> 即便對手抵抗跟注，你依然能在翻牌後用位置優勢拿下底池。<br><br><span class="text-amber-400">★ 推薦範圍：22+, ATs+, KQs, QJs, JTs, T9s, 98s, 87s, 76s, 65s, AJo+, KQo</span>`,
+                activeBtnId: "btn-co_btn",
+                seatIds: ["seat-co", "seat-btn"]
+            },
+            sb: {
+                title: "小盲位 (SB) — 戰術陷阱區",
+                desc: `小盲位在翻牌後永遠是最先行動的、最難受的位置，長期以來必然是負期望值 (-50 bb/100)。所以一般情況下 SB 應趨於保守。<strong class="text-amber-300">但是，當所有人折疊到你，且你的籌碼量偏低時，這裏就是你發動全下 (Shove) 掠奪大盲的最美福音。</strong><br><br><span class="text-amber-400">★ 推薦範圍：22+, A2s+, KTs+, QTs+, JTs, T9s, 98s, 87s, 76s, 65s, ATo+, KQo, QJo</span>`,
+                activeBtnId: "btn-sb",
+                seatIds: ["seat-sb"]
+            },
+            bb: {
+                title: "大盲位 (BB) — 防衛與狙擊",
+                desc: `大盲位在 preflop 有被動入池的優勢。長期目標是將損失降低至 -100 bb/100 以上。<strong class="text-amber-400">你可以以欺負弱小、軟弱的 SB 玩家為樂。</strong> 如果對手風格很軟，你可以極大程度地寬頻防守 and 反擊。`,
+                activeBtnId: "btn-co_btn", // Default fallback grid layout to CO/BTN for range illustration
+                seatIds: ["seat-bb"]
+            }
+        };
+
+        // Position Selection Handler
+        function selectPosition(posKey) {
+            // Render grid
+            renderGrid(posKey);
+            
+            // Get meta info
+            const meta = positionMetas[posKey];
+            if(!meta) return;
+            
+            // Inject text info
+            const infoBox = document.getElementById('position-info-box');
+            if(infoBox) {
+                infoBox.innerHTML = `
+                    <h4 class="font-bold text-amber-400 flex items-center gap-1.5 text-sm mb-2">
+                        <i data-lucide="info" class="w-4 h-4"></i> ${meta.title}
+                    </h4>
+                    <p class="text-xs text-slate-300 leading-relaxed">${meta.desc}</p>
+                `;
+            }
+            
+            // Reinitialize lucide icons inside dynamically injected text
+            lucide.createIcons();
+
+            // Toggle active styles on buttons
+            document.querySelectorAll('.range-selector-btn').forEach(btn => {
+                btn.className = "range-selector-btn px-2.5 py-1.5 bg-slate-800 text-slate-300 rounded border border-slate-700";
+            });
+            const activeBtn = document.getElementById(meta.activeBtnId);
+            if (activeBtn) {
+                activeBtn.className = "range-selector-btn px-2.5 py-1.5 bg-amber-500 text-poker-darkBg font-bold rounded border border-amber-500/50";
+            }
+
+            // Toggle active seat button borders on felt
+            document.querySelectorAll('.seat-btn').forEach(btn => {
+                btn.classList.add('opacity-50', 'border-slate-600', 'bg-slate-900/60');
+                btn.classList.remove('ring-2', 'ring-amber-400', 'opacity-100', 'bg-rose-950/80', 'bg-amber-950/60', 'bg-emerald-950/60', 'bg-blue-950/60', 'bg-purple-950/60');
+            });
+            meta.seatIds.forEach(seatId => {
+                const seatElement = document.getElementById(seatId);
+                if (seatElement) {
+                    seatElement.classList.remove('opacity-50', 'border-slate-600', 'bg-slate-900/60');
+                    seatElement.classList.add('ring-2', 'ring-amber-400', 'opacity-100');
+                }
+            });
+        }
+
+        // Dynamic Tab Switcher
+        function switchTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            // Show target
+            document.getElementById('content-' + tabId).classList.remove('hidden');
+
+            // Reset tab buttons active classes
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 text-slate-400 hover:text-slate-200";
+            });
+            
+            // Activate current button
+            const activeBtn = document.getElementById('tab-' + tabId);
+            if(activeBtn) {
+                activeBtn.className = "tab-btn px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 text-amber-500 bg-poker-cardBg border border-poker-border";
+            }
+        }
+
+        // Pocket Pairs: 5/10 Rule Calculator
+        function calculatePP() {
+            const stack = parseFloat(document.getElementById('calc-stack-pp').value);
+            const cost = parseFloat(document.getElementById('calc-call-pp').value);
+            const resultBox = document.getElementById('result-pp');
+
+            if (isNaN(stack) || isNaN(cost) || stack <= 0 || cost <= 0) {
+                resultBox.className = "text-xs font-semibold p-2 bg-rose-950/30 text-rose-400 border border-rose-500/20 text-center rounded";
+                resultBox.innerHTML = "請輸入有效的籌碼和跟注代價！";
+                return;
+            }
+
+            const percentage = (cost / stack) * 100;
+            let advice = "";
+            let colorClasses = "";
+
+            if (percentage < 5.0) {
+                colorClasses = "bg-emerald-950/50 border-emerald-500/40 text-emerald-400";
+                advice = `佔總籌碼 ${percentage.toFixed(1)}% (＜ 5%) ➔ <strong>絕對跟注 (Call)！</strong> 隱含賠率極高，看翻牌中 Set 極其划算。`;
+            } else if (percentage > 10.0) {
+                colorClasses = "bg-rose-950/50 border-rose-500/40 text-rose-400";
+                advice = `佔總籌碼 ${percentage.toFixed(1)}% (＞ 10%) ➔ <strong>直接棄牌 (Fold)！</strong> 成本太昂貴，不值。`;
+            } else {
+                colorClasses = "bg-amber-950/50 border-amber-500/40 text-amber-300";
+                advice = `佔總籌碼 ${percentage.toFixed(1)}% (介於 5%~10%) ➔ <strong>視情況跟注！</strong> 如果你有位置、或者後面玩家偏緊，可以 Call。`;
+            }
+
+            resultBox.className = `text-xs font-semibold p-2 border text-center rounded ${colorClasses}`;
+            resultBox.innerHTML = advice;
+        }
+
+        // Suited Connectors: 3/6 Rule Calculator
+        function calculateSC() {
+            const stack = parseFloat(document.getElementById('calc-stack-sc').value);
+            const cost = parseFloat(document.getElementById('calc-call-sc').value);
+            const resultBox = document.getElementById('result-sc');
+
+            if (isNaN(stack) || isNaN(cost) || stack <= 0 || cost <= 0) {
+                resultBox.className = "text-xs font-semibold p-2 bg-rose-950/30 text-rose-400 border border-rose-500/20 text-center rounded";
+                resultBox.innerHTML = "請輸入有效的籌碼和跟注代價！";
+                return;
+            }
+
+            const percentage = (cost / stack) * 100;
+            let advice = "";
+            let colorClasses = "";
+
+            if (percentage < 3.0) {
+                colorClasses = "bg-emerald-950/50 border-emerald-500/40 text-emerald-400";
+                advice = `佔總籌碼 ${percentage.toFixed(1)}% (＜ 3%) ➔ <strong>安全跟注 (Call)！</strong> 籌碼成本安全，適合看翻牌。`;
+            } else if (percentage > 6.0) {
+                colorClasses = "bg-rose-950/50 border-rose-500/40 text-rose-400";
+                advice = `佔總籌碼 ${percentage.toFixed(1)}% (＞ 6%) ➔ <strong>果斷棄牌 (Fold)！</strong> 同花連牌溢價過高，請勿硬跟。`;
+            } else {
+                colorClasses = "bg-amber-950/50 border-amber-500/40 text-amber-300";
+                advice = `佔總籌碼 ${percentage.toFixed(1)}% (介於 3%~6%) ➔ <strong>視情況而定！</strong> 如果手牌點數較高 (如 JTs/98s) 且具位置優勢才考慮跟入。`;
+            }
+
+            resultBox.className = `text-xs font-semibold p-2 border text-center rounded ${colorClasses}`;
+            resultBox.innerHTML = advice;
+        }
+
+        // Interactive BB Stack Tier Handler - Use backticks to ensure zero quote collisions
+        const bbTierMetas = {
+            '30plus': {
+                title: "30+ BB — 超深籌碼核心戰略",
+                desc: `<strong>操作守則：前期克制，後期全力獵殺。</strong><br>在盲注偏低、你手握絕對深籌碼的時期，保持 TAG (緊兇) 風格，不要去參與一堆沒必要的雜牌大亂鬥。進入中後期之後，你可以大膽使用這把籌碼大錘，主動全下施壓那些 10-15BB 的中等籌碼生存者，他們看見你的籌碼像看見死神，不敢輕易造次。`
+            },
+            '13to30': {
+                title: "13 - 30 BB — 偷盲精華區",
+                desc: `<strong>操作守則：偷盲、再偷盲。</strong><br>此時你的手牌價值退居二線，而『折疊權益 (Fold Equity)』成為你的最核心武器。只要時機正確、位置完美，大盲手軟，哪怕你手持 27o，也完全可以進行 Open Steal。將這部分做好了，你的筹碼量將像雪球一般滾動，否則你將很快掉入尷羊圈。`
+            },
+            '10to13': {
+                title: "10 - 13 BB — Resteal 反偷狙擊槍",
+                desc: `<strong>操作守則：主動全下 (Shove) 或棄牌 (Fold)。不 Limp。</strong><br>這個籌碼量非常尷尬，如果你只做個 2BB 的 Open，一旦對手 Call 或 3-Bet，你翻牌後將被折磨得痛不欲生。此時，你的主要防禦和掠奪武器改為 <strong>Resteal Shove</strong>。尋找那些在後位偷盲頻繁的 CL 或激進中籌碼，大膽 3-bet 全下把他們推走！`
+            },
+            '4to10': {
+                title: "4 - 10 BB — 決死推牌期",
+                desc: `<strong>操作守則：All-in or Fold。</strong><br>在 4~10 BB 的極限危險期，你已經完全沒有 Postflop 的操作空間。每次在 preflop 進池唯一的選擇就是直接梭哈 (Shove) 或者是蓋牌 (Fold)。全下可以迫使對手在 preflop 做生死決策，剝奪他們的翻牌後技術優勢，讓對手只能 Call 或 Fold。`
+            },
+            '1to4': {
+                title: "1 - 4 BB — 命懸一線",
+                desc: `<strong>操作守則：全看天意，豁出去。</strong><br>此時你已經完全失去了 Fold Equity (哪怕你 Shove，大盲也必定賠率跟注)。你已經不需要再看任何位置或對手特點，拿到任何有尊嚴的手牌 (Any A, Any K, Any Pair, Suited Connectors) 即可直接全下。此時你是在跟概率賭運氣。`
+            }
+        };
+
+        function selectBBTier(tierKey) {
+            // Update Active Buttons styles
+            document.querySelectorAll("[id^='tier-']").forEach(btn => {
+                btn.className = "w-full text-left p-4 rounded-xl border border-poker-border bg-slate-900/40 hover:bg-slate-900/80 transition-all duration-300";
+            });
+            const activeBtn = document.getElementById('tier-' + tierKey);
+            if (activeBtn) {
+                // Change border color to show active
+                activeBtn.className = "w-full text-left p-4 rounded-xl border border-amber-500/50 bg-gradient-to-r from-slate-900 to-slate-900/80 ring-2 ring-amber-400/20 shadow-md transition-all duration-300";
+            }
+
+            // Update details
+            const meta = bbTierMetas[tierKey];
+            const detailBox = document.getElementById('bb-tier-detail');
+            if(detailBox && meta) {
+                detailBox.innerHTML = `
+                    <h4 class="font-bold text-amber-400 text-sm mb-2 flex items-center gap-1.5">
+                        <i data-lucide="shield-alert" class="w-4 h-4"></i> ${meta.title}
+                    </h4>
+                    <p class="text-xs text-slate-300 leading-relaxed">${meta.desc}</p>
+                `;
+            }
+            
+            // Reinitialize lucide
+            lucide.createIcons();
+        }
+
+        // ICM Non-linear Curve Simulator Function
+        function updateICMSimulator(val) {
+            const chips = parseInt(val);
+            const simChipsEl = document.getElementById('sim-chips');
+            if(simChipsEl) simChipsEl.innerText = chips;
+
+            // Simple calculation to represent non-linear curves matching PDF context:
+            // SNG total chips = 20000, total prize pool = $100
+            // Linear cash value = chips / 20000 * 100
+            const linearVal = (chips / 20000) * 100;
+            const simLinearValEl = document.getElementById('sim-linear-val');
+            if(simLinearValEl) simLinearValEl.innerText = '$' + linearVal.toFixed(2);
+
+            // SNG $EV non-linear value approximation:
+            // As stack grows, incremental $EV decreases. (e.g. at 5300/20000 (26.5% chips) EV is $27.36)
+            // Adjust scale to fit the exact reference point B: 5300 chips -> $27.36
+            const ratio = chips / 20000;
+            let sngEV = 0;
+            if (chips <= 2500) {
+                sngEV = (chips / 2500) * 15.96;
+            } else if (chips <= 5300) {
+                sngEV = 15.96 + ((chips - 2500) / 2800) * (27.36 - 15.96);
+            } else {
+                const remainingPot = 100 - 27.36;
+                const remainingRatio = (chips - 5300) / (20000 - 5300);
+                sngEV = 27.36 + remainingPot * Math.pow(remainingRatio, 0.65);
+            }
+
+            const simIcmValEl = document.getElementById('sim-icm-val');
+            if(simIcmValEl) simIcmValEl.innerText = '$' + sngEV.toFixed(2);
+        }
+
+        // ==================== INTERACTIVE QUIZ DATA & LOGIC ====================
+        const quizQuestions = [
+            {
+                id: 1,
+                question: "Q1: 根據 Tony 老師的『高山賣水理論』，SNG 泡沫期（Bubble）在河牌（River）做價值下注時，為什麼下注 1/2 池往往比直接全下（All-in）更能收獲價值？",
+                options: [
+                    "因為下注 1/2 池在數學上可以提供對手更高的底池賠率（Pot Odds），誘導他用垃圾牌跟注。",
+                    "因為對手存在強烈的 ICM 生存壓力，不想冒著淘汰出局的風險，1/2 池的成本在對手心理承受範圍內，更容易被買單。",
+                    "因為下注半池永遠比下注一池擁有更高的正期望值（+EV），這是撲克軟體的硬性規定。",
+                    "因為下注一池是錯失價值的行為，而半池能防止底池被對手加注。"
+                ],
+                correctAnswer: 1,
+                rationale: "在 SNG 泡沫期，玩家非常珍惜自己的生存性命（不想在臨門一腳前出局）。過大的 Bet Size（如全下）會強行觸發對手的 ICM 避險本能進而蓋牌；而 1/2 池的下注能降低其風險危機感，從而成功完成價值極大化。"
+            },
+            {
+                id: 2,
+                question: "Q2: 在前期盲注極低時（15/30），你手持口袋對子 4♠ 4♦ 暫居槍口後一位（UTG+1），此時總籌碼量為 1,500。前位玩家 Open 到 60。根據 Tony 老師講授的『5/10原則』，你應該如何抉擇？",
+                options: [
+                    "直接 3-Bet 全下（Shove），以防止後續玩家壓榨進池。",
+                    "果斷棄牌（Fold），因為在槍口位玩 44 很容易在 postflop 失去位置優勢而被擊潰。",
+                    "選擇跟注（Call），因為跟注代價 60 僅佔你總籌碼 1,500 的 4%（低於 5%），博取暗三條（Set）非常划算。",
+                    "選擇 Limp，等後方玩家跟注後再看翻牌。"
+                ],
+                correctAnswer: 2,
+                rationale: "符合口袋對子的『5/10原則』。入池費用（60）低於總籌碼（1,500）的 5%，此時跟注能獲得極佳的隱含賠率。一旦翻牌中 Set，你將有機會贏走對手的整條深籌碼。"
+            },
+            {
+                id: 3,
+                question: "Q3: 同樣在前期深籌碼狀態下，你手持同花連牌 7♥ 8♥，面臨前面玩家的 Open（150），你當下的總籌碼是 1,500。根據『3/6原則』，你最正確的決定是？",
+                options: [
+                    "跟注來看翻牌，因為同花連牌的聽牌能力極強，適合在前期大撈一筆。",
+                    "果斷棄牌（Fold），因為跟注代價 150 已佔你總籌碼的 10%（遠高於 6% 的限制安全線）。",
+                    "進行 3-Bet 施壓，用 78s 做強力的 preflop 詐唬反擊。",
+                    "選擇 All-in，利用 78s 優秀的股權進行生死對決。"
+                ],
+                correctAnswer: 1,
+                rationale: "同花連牌雖然聽牌能力好，但在翻牌一旦開出同花面，對手防備心極高，其隱含賠率其實低於暗三條。根據『3/6原則』，超過 6%（本題已高達 10%）的代價過於昂貴，應毫不猶豫 Fold。"
+            },
+            {
+                id: 4,
+                question: "Q4: 進入 SNG 的 4 人泡沫階段（3人進錢圈）。你是 Chip Leader（9,000 籌碼），第二名有 6,000，第三名有 4,000，第四名僅剩 1,000。此時你在小盲（SB）遇到大盲（BB）的第二名，最合適的戰略是？",
+                options: [
+                    "對第二名進行頻繁的 2-Bet 施壓或 Shove。因為其面臨極大的 ICM 壓力（一旦跟你對決輸掉，他就可能讓第四名白嫖進錢圈），絕不敢輕易反抗。",
+                    "選擇和平蓋牌，不與深籌碼發生任何碰撞，等第四名自然盲死。",
+                    "跟第二名平跟入池（Limp），在翻牌後進行小底池的技術對決。",
+                    "直接對第二名發起友好討論，協商分池。"
+                ],
+                correctAnswer: 0,
+                rationale: "這是 CL 專屬的『ICM 殘虐特權』。第二名此時的泡沫係數高達 2.5 以上，他跟你碰撞的代價太大，他有絕對的動機去蓋牌蹭進錢圈。此時對他施壓能輕鬆無痛掠奪大量盲注。"
+            },
+            {
+                id: 5,
+                question: "Q5: 當盲注調升，你僅剩下 11 BB 籌碼暫居 BTN 位置。前面所有人 Fold 到你。此時根據 Tony 老師的『BB stack tier 核心指南』，你應該採取什麼操作？",
+                options: [
+                    "平跟入池（Limp），如果大盲 Raise 再 Fold，盡可能省下籌碼。",
+                    "只做 2BB 的 Open，看翻牌是否能擊中一對。",
+                    "採用 All-in or Fold 戰術，拿有戰鬥力的手牌直接 Open Shove，剝奪對手 postflop 優勢並強收死錢。",
+                    "直接 Fold，保留 11 BB 等待下一把拿到 AA。"
+                ],
+                correctAnswer: 2,
+                rationale: "10~13 BB 屬於中等偏短的尷尬區間。此時做小 Open 會讓你在翻牌後面臨進退兩難。採用 All-in or Fold 可以利用強大的 FQ（折疊權益）強行掠奪場上的盲注與前注（Ante），主動尋求生存氧氣。"
+            },
+            {
+                id: 6,
+                question: "Q6: 關於 SNG/MTT 錦標賽理論中的「泡沫係數 (Bubble Factor)」計算公式，以下哪一項是完全正確的？",
+                options: [
+                    "泡沫係數 = 贏取籌碼的真實價值 / 輸掉籌碼的真實價值",
+                    "泡沫係數 = 損失的期望值 ($EV) / 贏取的期望值 ($EV)",
+                    "泡沫係數 = 盲注與前注的總和 / 當前的總玩家數量",
+                    "泡沫係數 = 你的底池成敗比 (Pot Odds) / 翻牌後預估股權"
+                ],
+                correctAnswer: 1,
+                rationale: "泡沫係數是用來衡量當發生一場對決時，『你承擔的風險代價』與『你潛在獲得的收益價值』的比值。公式即為：損失 $EV / 贏取 $EV。此數值在泡沫期通常大於 1，意即輸大於贏。"
+            },
+            {
+                id: 7,
+                question: "Q7: 進入 4 人泡沫階段，盲注已高達 200/400 (Ante 50)。你處在大盲位 (BB) 僅剩下 4 BB 籌碼，手持 Q♠ J♦。小盲位 (SB，籌碼 25 BB) 選擇直接 Open Shove 推你。此時最適宜的操作與邏輯是什麼？",
+                options: [
+                    "選擇蓋牌 (Fold)，等小籌碼互相碰撞，勉強蹭進錢圈是首要目標。",
+                    "選擇跟注 (Call)。因為你只有 4 BB 且不戰鬥將直接盲死，泡沫係數接近 1，必須拿有尊嚴且股權領先的牌搏翻倍。",
+                    "選擇跟注 (Call)，並且在翻牌後伺機進行過牌-加注 (Check-raise) 戰略。",
+                    "蓋牌並在聊天室要求對手保持友好交流，避免惡意壓榨。"
+                ],
+                correctAnswer: 1,
+                rationale: "當籌碼縮水到 4 BB 以下時，你已經失去了任何 Fold Equity，此時盲注加前注比例極高。QJo 是極佳的對抗範圍領先牌，且此深度你的泡沫係數接近 1，應果斷 Call 拼翻倍生存。"
+            },
+            {
+                id: 8,
+                question: "Q8: 恭喜你！進入了前三名 (ITM) 三人桌 (3-Handed)。此時關於場上的泡沫係數與侵略性，以下敘述何者最正確？",
+                options: [
+                    "此時泡沫係數維持不變，應當保持極致的保守，等待對手互卡出局。",
+                    "泡沫係數大幅下降，籌碼價值幾乎回歸線性。我們應徹底轉向『冠軍極大化』打法，大膽進攻並頻繁偷盲。",
+                    "此時大盲棄牌率提高，應全手牌進行平跟入池 (Limp-in) 戰術。",
+                    "應退回前期 5/10 原則與 3/6 原則，不再進行任何偷盲操作。"
+                ],
+                correctAnswer: 1,
+                rationale: "一旦進錢圈脫離 Bubble，ICM 風險重壓解除，泡沫係數降至最低點，籌碼價值轉為線性。這時主動發起進攻、瘋狂撕咬保守的對手，是最大化搶下冠亞軍利潤的唯一途徑。"
+            },
+            {
+                id: 9,
+                question: "Q9: 進入單挑階段 (Heads-Up)，盲注為 300/600。你手持 K♦ 3♠ 暫居 SB (即 BTN 位置)，籌碼量剩 12 BB。前面動作到你，最合適的操作是什麼？",
+                options: [
+                    "直接 Preflop 棄牌 (Fold)，因為 K3o 的點數過於邊緣，不值得入池。",
+                    "選擇平跟入池 (Limp-in)，並在沒中 K 或是 3 時在翻牌後蓋牌。",
+                    "直接 Open Shove 全下。在 HU 且 12 BB 深度下，K-High 股權極強，必須用全下來最大化 Fold Equity 與底池權益。",
+                    "做一個 2 BB 的小 Open，等對手 3-Bet 全下後再決定跟注。"
+                ],
+                correctAnswer: 2,
+                rationale: "在單挑 Heads-Up 賽制中玩家範圍極寬，K-High 是極強的領先手牌。在 12 BB 的極淺籌碼狀態下，Limp 或小 Open 容易在翻牌後陷入被動，直接 Open Shove 是獲得正期望值 (+EV) 最暴力的作法。"
+            },
+            {
+                id: 10,
+                question: "Q10: 如果你在 SNG 前期只玩極強手牌 (例如 AA, KK, QQ, AK)，從不加入任何中口袋對子或同花連牌，在範圍平衡 (Range Balance) 邏輯下，長期會有何致命缺點？",
+                options: [
+                    "對手會輕易識破你的開池強度，一旦你 Open 所有人便迅速蓋牌，導致你的好牌永遠無法獲得最大價值支付 (Miss Value)。",
+                    "你的同花股權會下降，無法在翻牌圈取得兩對或順子聽牌。",
+                    "荷官發給你 AA 的機率會因此下降，這是平台伺服器的洗牌規則特點。",
+                    "沒有缺點。越緊的玩家在錦標賽中贏得冠軍的機會越高。"
+                ],
+                correctAnswer: 0,
+                rationale: "如果你的範圍完全不平衡（只有明牌般的強牌），對手只要具備基礎技術，就會在你 Open 時棄掉所有中等牌，讓你拿不到好牌的支付。混入適當的投機牌才能完美隱藏頂級強牌的強度。"
+            }
+        ];
+
+        // Track user's quiz state
+        let userAnswers = {};
+
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            if(!container) return;
+            container.innerHTML = '';
+
+            quizQuestions.forEach((q, qIndex) => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-900/60 p-5 rounded-xl border border-poker-border space-y-4";
+                
+                // Question text
+                const qTitle = document.createElement('h3');
+                qTitle.className = "font-semibold text-slate-100 text-sm md:text-base leading-relaxed";
+                qTitle.innerText = q.question;
+                card.appendChild(qTitle);
+
+                // Options list
+                const optionsDiv = document.createElement('div');
+                optionsDiv.className = "grid grid-cols-1 gap-3";
+
+                q.options.forEach((opt, optIndex) => {
+                    const btn = document.createElement('button');
+                    btn.id = `q-${q.id}-opt-${optIndex}`;
+                    btn.className = "w-full text-left p-3.5 rounded-lg border text-xs md:text-sm transition-all duration-200 flex items-start gap-3 bg-poker-cardBg border-slate-800 text-slate-300 hover:bg-slate-800 hover:border-slate-700";
+                    
+                    btn.innerHTML = `
+                        <span class="w-5 h-5 rounded-full border border-slate-600 flex items-center justify-center font-bold text-3xs shrink-0 mt-0.5 text-slate-400 select-none">${String.fromCharCode(65 + optIndex)}</span>
+                        <span>${opt}</span>
+                    `;
+
+                    // Handle answer click
+                    btn.onclick = () => selectQuizAnswer(q.id, optIndex);
+                    optionsDiv.appendChild(btn);
+                });
+
+                card.appendChild(optionsDiv);
+
+                // Rationale Explanation card (Hidden by default)
+                const rationaleDiv = document.createElement('div');
+                rationaleDiv.id = `q-${q.id}-rationale`;
+                rationaleDiv.className = "hidden p-4 rounded-lg text-xs leading-relaxed border transition-all duration-300";
+                card.appendChild(rationaleDiv);
+
+                container.appendChild(card);
+            });
+        }
+
+        function selectQuizAnswer(qId, selectedIdx) {
+            // Guard if already answered
+            if (userAnswers[qId] !== undefined) return;
+
+            userAnswers[qId] = selectedIdx;
+            const q = quizQuestions.find(item => item.id === qId);
+            const isCorrect = selectedIdx === q.correctAnswer;
+
+            // Highlight chosen option and correct option
+            q.options.forEach((_, optIndex) => {
+                const btn = document.getElementById(`q-${qId}-opt-${optIndex}`);
+                if (btn) {
+                    btn.disabled = true; // Disable further clicks
+                    btn.classList.remove('hover:bg-slate-800', 'hover:border-slate-700');
+                    
+                    const spanCircle = btn.querySelector('span');
+                    
+                    if (optIndex === q.correctAnswer) {
+                        // Highlight correct answer in green
+                        btn.className = "w-full text-left p-3.5 rounded-lg border text-xs md:text-sm transition-all duration-200 flex items-start gap-3 bg-emerald-950/40 border-emerald-500/60 text-emerald-400 font-medium";
+                        spanCircle.className = "w-5 h-5 rounded-full bg-emerald-500/20 border-emerald-500 text-emerald-300 flex items-center justify-center font-bold text-3xs shrink-0 mt-0.5";
+                        spanCircle.innerHTML = '<i data-lucide="check" class="w-3 h-3"></i>';
+                    } else if (optIndex === selectedIdx && !isCorrect) {
+                        // Highlight wrong choice in red
+                        btn.className = "w-full text-left p-3.5 rounded-lg border text-xs md:text-sm transition-all duration-200 flex items-start gap-3 bg-rose-950/40 border-rose-500/60 text-rose-400 font-medium";
+                        spanCircle.className = "w-5 h-5 rounded-full bg-rose-500/20 border-rose-500 text-rose-300 flex items-center justify-center font-bold text-3xs shrink-0 mt-0.5";
+                        spanCircle.innerHTML = '<i data-lucide="x" class="w-3 h-3"></i>';
+                    } else {
+                        btn.className = "w-full text-left p-3.5 rounded-lg border text-xs md:text-sm flex items-start gap-3 bg-poker-cardBg/40 border-slate-900 text-slate-500 opacity-60";
+                    }
+                }
+            });
+
+            // Show Rationale Explanation box
+            const rationaleBox = document.getElementById(`q-${qId}-rationale`);
+            if (rationaleBox) {
+                rationaleBox.classList.remove('hidden');
+                if (isCorrect) {
+                    rationaleBox.className = "p-4 rounded-lg text-xs leading-relaxed border bg-emerald-950/20 border-emerald-500/20 text-emerald-400";
+                    rationaleBox.innerHTML = `<strong>🎉 恭喜答對！解析：</strong>${q.rationale}`;
+                } else {
+                    rationaleBox.className = "p-4 rounded-lg text-xs leading-relaxed border bg-rose-950/10 border-rose-500/10 text-slate-300";
+                    rationaleBox.innerHTML = `<strong>💡 答錯囉！Tony 老師正解解析：</strong>${q.rationale}`;
+                }
+            }
+
+            // Update Total Score Counter
+            updateQuizScore();
+            lucide.createIcons();
+        }
+
+        function updateQuizScore() {
+            let correctCount = 0;
+            quizQuestions.forEach(q => {
+                if (userAnswers[q.id] === q.correctAnswer) {
+                    correctCount++;
+                }
+            });
+            const scoreEl = document.getElementById('quiz-score');
+            if(scoreEl) {
+                scoreEl.innerText = `${correctCount} / 10`;
+            }
+        }
+
+        function resetQuiz() {
+            userAnswers = {};
+            updateQuizScore();
+            renderQuiz();
+            lucide.createIcons();
+        }
+
+        // Window Onload handler
+        window.onload = function() {
+            // Render first position default on load
+            selectPosition('utg');
+            // Render first stack tier detail on load
+            selectBBTier('13to30');
+            // Initialize ICM slider
+            updateICMSimulator(5300);
+            // Render dynamic quiz
+            renderQuiz();
+        }
+    </script>
+</body>
+</html>
