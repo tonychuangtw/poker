@@ -29,7 +29,10 @@ if (!missing.length) {
   process.exit(0);
 }
 
-const batch = missing.slice(0, 60);
+/* 長字串（整段 note）一次塞 60 條會讓單一 haiku 呼叫跑到超時（2026-08-11 兩次 850s 陣亡），
+   平均長度超過 100 字就縮小批量，其餘隔日輪到（仍維持每次執行 ≤3 呼叫） */
+const avgLen = missing.reduce((s, k) => s + k.length, 0) / missing.length;
+const batch = missing.slice(0, avgLen > 100 ? 8 : 60);
 console.log(`events-i18n: translating ${batch.length}/${missing.length} missing keys`);
 
 for (const group of GROUPS) {
