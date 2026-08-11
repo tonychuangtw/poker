@@ -242,6 +242,49 @@ var tilt0 = TrackerStats.tiltStats([]);
 assert(tilt0.n === 0 && tilt0.afterLossAvg === null && tilt0.longestLossStreak === 0,
   'tiltStats: empty list safe defaults');
 
+// 行為標籤彙總
+var msess = [
+  { date: '2026-08-03', buyin: 100, cashout: 300, mood: ['狀態好'] },          // +200
+  { date: '2026-08-04', buyin: 100, cashout: 200, mood: ['狀態好', '魚多'] },  // +100
+  { date: '2026-08-05', buyin: 100, cashout: 0, mood: ['上頭'] },              // -100
+  { date: '2026-08-06', buyin: 100, cashout: 50 }                              // 無標籤
+];
+var moods = TrackerStats.moodStats(msess);
+assert(moods.length === 3, 'moodStats: 3 tags');
+assert(moods[0].tag === '狀態好' && moods[0].n === 2 && moods[0].pl === 300 && moods[0].avg === 150,
+  'moodStats: 狀態好 n=2 pl=+300 avg=+150, sorted first by avg');
+assert(moods[moods.length - 1].tag === '上頭' && moods[moods.length - 1].avg === -100,
+  'moodStats: 上頭 avg=-100 last');
+assert(TrackerStats.moodStats([]).length === 0, 'moodStats: empty safe');
+
+// 規則型洞察
+function mk(date, pl, extra) {
+  var r = { date: date, buyin: 100, cashout: 100 + pl };
+  if (extra) for (var k in extra) r[k] = extra[k];
+  return r;
+}
+// 平日全贏、週末全輸，各 5 場（2026-08-03 一 ~ 08-09 日）
+var isess = [
+  mk('2026-08-03', 50), mk('2026-08-04', 50), mk('2026-08-05', 50), mk('2026-08-06', 50), mk('2026-08-07', 50),
+  mk('2026-08-08', -30), mk('2026-08-09', -30), mk('2026-08-15', -30), mk('2026-08-16', -30), mk('2026-08-22', -30)
+];
+var ins = TrackerStats.insights(isess);
+var wkIns = ins.filter(function (x) { return x.k === 'weekday'; })[0];
+assert(wkIns && wkIns.a === 50 && wkIns.b === -30 && wkIns.an === 5 && wkIns.bn === 5,
+  'insights: weekday vs weekend a=+50 b=-30');
+assert(TrackerStats.insights(isess.slice(0, 6)).filter(function (x) { return x.k === 'weekday'; }).length === 0,
+  'insights: below minN emits nothing');
+// 場地洞察：A 場全贏 B 場全輸
+var vsess = [];
+for (var vi = 0; vi < 5; vi++) { vsess.push(mk('2026-08-0' + (vi + 1), 40, { venue: 'A' })); }
+for (vi = 0; vi < 5; vi++) { vsess.push(mk('2026-08-1' + vi, -40, { venue: 'B' })); }
+var vIns = TrackerStats.insights(vsess);
+assert(vIns.filter(function (x) { return x.k === 'venue-best' && x.name === 'A' && x.a === 40; }).length === 1,
+  'insights: venue-best A +40');
+assert(vIns.filter(function (x) { return x.k === 'venue-worst' && x.name === 'B' && x.a === -40; }).length === 1,
+  'insights: venue-worst B -40');
+assert(TrackerStats.insights([]).length === 0, 'insights: empty safe');
+
 // ---------- 4. Preflop table ----------
 console.log('--- Preflop table ---');
 

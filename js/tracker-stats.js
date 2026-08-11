@@ -75,7 +75,90 @@
     };
   }
 
-  var TrackerStats = { tagStats: tagStats, monthlyStats: monthlyStats, tiltStats: tiltStats };
+  /**
+   * 行為標籤彙總（2026-08-11，參考 ivey 的行為觀察）。
+   * rec.mood = ['狀態好', ...]（canonical zh-TW 字串，顯示端再翻譯）。
+   * @returns {{tag:string,n:number,pl:number,avg:number}[]} 依平均盈虧由高到低
+   */
+  function moodStats(list) {
+    var map = {};
+    list.forEach(function (r) {
+      (r.mood || []).forEach(function (m) {
+        if (!map[m]) map[m] = { tag: m, n: 0, pl: 0 };
+        map[m].n++;
+        map[m].pl += plOf(r);
+      });
+    });
+    return Object.keys(map).map(function (k) {
+      var g = map[k];
+      return { tag: g.tag, n: g.n, pl: g.pl, avg: g.pl / g.n };
+    }).sort(function (a, b) { return b.avg - a.avg; });
+  }
+
+  /**
+   * 規則型洞察（不用 AI）：回傳結構化事實，文案由 UI 層組（i18n）。
+   * 每條都要兩側樣本數達 minN（預設 5）才產生，避免小樣本瞎掰。
+   * @returns {Array<{k:string, a:number, b:number, an:number, bn:number, name?:string}>}
+   *   k='weekday'：a=平日平均, b=週末平均；k='venue-best'/'venue-worst'：name=場地, a=平均, an=場次；
+   *   k='duration'：a=短場(≤中位數)平均, b=長場平均；k='mood'：name=標籤, a=有標平均, b=整體平均
+   */
+  function insights(list, minN) {
+    minN = minN || 5;
+    var out = [];
+    var pls = list.map(plOf);
+    var overallAvg = pls.length ? pls.reduce(function (x, y) { return x + y; }, 0) / pls.length : 0;
+
+    /* 平日 vs 週末（六日） */
+    var wk = [], we = [];
+    list.forEach(function (r) {
+      var d = new Date(r.date + 'T12:00:00Z').getUTCDay();
+      (d === 0 || d === 6 ? we : wk).push(plOf(r));
+    });
+    function avg(a) { return a.reduce(function (x, y) { return x + y; }, 0) / a.length; }
+    if (wk.length >= minN && we.length >= minN) {
+      out.push({ k: 'weekday', a: avg(wk), b: avg(we), an: wk.length, bn: we.length });
+    }
+
+    /* 場地最賺 / 最虧 */
+    var vm = {};
+    list.forEach(function (r) {
+      var v = (r.venue || '').trim();
+      if (!v) return;
+      (vm[v] = vm[v] || []).push(plOf(r));
+    });
+    var vs = Object.keys(vm).filter(function (v) { return vm[v].length >= minN; })
+      .map(function (v) { return { name: v, a: avg(vm[v]), an: vm[v].length }; })
+      .sort(function (x, y) { return y.a - x.a; });
+    if (vs.length >= 2) {
+      if (vs[0].a > 0) out.push({ k: 'venue-best', name: vs[0].name, a: vs[0].a, an: vs[0].an });
+      var worst = vs[vs.length - 1];
+      if (worst.a < 0) out.push({ k: 'venue-worst', name: worst.name, a: worst.a, an: worst.an });
+    }
+
+    /* 時長：以有填時數場次的中位數分短/長 */
+    var timed = list.filter(function (r) { return r.hours > 0; });
+    if (timed.length >= minN * 2) {
+      var hrs = timed.map(function (r) { return r.hours; }).sort(function (x, y) { return x - y; });
+      var med = hrs[Math.floor(hrs.length / 2)];
+      var shortS = [], longS = [];
+      timed.forEach(function (r) { (r.hours <= med ? shortS : longS).push(plOf(r)); });
+      if (shortS.length >= minN && longS.length >= minN) {
+        out.push({ k: 'duration', a: avg(shortS), b: avg(longS), an: shortS.length, bn: longS.length, med: med });
+      }
+    }
+
+    /* 行為標籤 vs 整體 */
+    moodStats(list).forEach(function (m) {
+      if (m.n >= minN && list.length - m.n >= minN) {
+        out.push({ k: 'mood', name: m.tag, a: m.avg, b: overallAvg, an: m.n });
+      }
+    });
+
+    return out;
+  }
+
+  var TrackerStats = { tagStats: tagStats, monthlyStats: monthlyStats, tiltStats: tiltStats,
+    moodStats: moodStats, insights: insights };
   if (typeof module !== 'undefined' && module.exports) module.exports = TrackerStats;
   else global.TrackerStats = TrackerStats;
 })(typeof window !== 'undefined' ? window : this);

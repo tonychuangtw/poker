@@ -112,6 +112,63 @@
     });
   })();
 
+  /* 現場行為標籤（2026-08-11，參考 ivey 行為觀察）——canonical 為繁中，顯示走 t() */
+  var MOODS = ['狀態好', '疲勞', '上頭', '分心', 'Read 準', 'Read 失誤', '魚多', '桌硬'];
+  (function initMoodChips() {
+    var box = $('#fMood');
+    MOODS.forEach(function (m) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'mood-chip';
+      b.dataset.mood = m;
+      b.textContent = t(m);
+      b.addEventListener('click', function () { b.classList.toggle('active'); });
+      box.appendChild(b);
+    });
+  })();
+  function pickedMoods() {
+    var out = [];
+    $('#fMood').querySelectorAll('.mood-chip.active').forEach(function (b) { out.push(b.dataset.mood); });
+    return out;
+  }
+
+  /* 中途事件（補碼/暫停…，2026-08-11 參考 ivey 的 session 時間軸）
+     金額為該筆紀錄的幣別；補碼金額只作紀錄，總買入仍以「買入」欄為準（欄名已註明含 rebuy） */
+  var EVT_KINDS = ['補碼', '加碼', '暫停', '繼續'];
+  $('#btnAddEvt').addEventListener('click', function () {
+    var row = document.createElement('div');
+    row.className = 'evt-row';
+    var sel = document.createElement('select');
+    EVT_KINDS.forEach(function (k) {
+      var o = document.createElement('option');
+      o.value = k; o.textContent = t(k);
+      sel.appendChild(o);
+    });
+    var tm = document.createElement('input');
+    tm.type = 'time';
+    var amt = document.createElement('input');
+    amt.type = 'number'; amt.inputMode = 'decimal'; amt.min = '0'; amt.step = 'any';
+    amt.placeholder = t('金額');
+    sel.addEventListener('change', function () {
+      amt.style.visibility = (sel.value === '暫停' || sel.value === '繼續') ? 'hidden' : 'visible';
+    });
+    var del = document.createElement('button');
+    del.type = 'button'; del.className = 'del-btn'; del.textContent = '✕';
+    del.addEventListener('click', function () { row.remove(); });
+    row.appendChild(sel); row.appendChild(tm); row.appendChild(amt); row.appendChild(del);
+    $('#evtEditor').appendChild(row);
+  });
+  function pickedEvents() {
+    var out = [];
+    $('#evtEditor').querySelectorAll('.evt-row').forEach(function (row) {
+      var sel = row.querySelector('select'), tm = row.querySelector('input[type=time]'),
+          amt = row.querySelector('input[type=number]');
+      var a = parseFloat(amt.value) || 0;
+      out.push({ k: sel.value, t: tm.value || '', amt: a > 0 ? a : undefined });
+    });
+    return out;
+  }
+
   $('#fDate').value = new Date().toISOString().slice(0, 10);
   $('#sessionForm').addEventListener('submit', function (e) {
     e.preventDefault();
@@ -132,12 +189,18 @@
       cur: $('#fCur').value,
       note: $('#fNote').value.trim()
     };
+    var moods = pickedMoods();
+    if (moods.length) rec.mood = moods;
+    var evts = pickedEvents();
+    if (evts.length) rec.events = evts;
     try { localStorage.setItem('poker.lastCur', rec.cur); } catch (e) {}
     sessions.push(rec);
     saveSessions(sessions);
     $('#fVenue').value = ''; $('#fTag').value = '';
     $('#fBuyin').value = ''; $('#fCashout').value = '';
     $('#fHours').value = ''; $('#fBB').value = ''; $('#fNote').value = '';
+    $('#fMood').querySelectorAll('.mood-chip.active').forEach(function (b) { b.classList.remove('active'); });
+    $('#evtEditor').innerHTML = '';
     renderTracker();
   });
 
@@ -181,9 +244,27 @@
       sub.textContent = t('買入 ') + fmtMoney(r.buyin) + t(' → 兌現 ') + fmtMoney(r.cashout) +
         curTag + bbTxt +
         (r.hours ? t(' ｜ ') + r.hours + t(' 小時') : '') +
+        (r.mood && r.mood.length ? t(' ｜ ') + r.mood.map(function (m) { return t(m); }).join('·') : '') +
+        (r.events && r.events.length ? t(' ｜ ⏱ ') + r.events.length + t(' 事件') : '') +
         (r.note ? t(' ｜ ') + r.note : '');
       main.appendChild(title);
       main.appendChild(sub);
+      if (r.events && r.events.length) {
+        var tl = document.createElement('div');
+        tl.className = 'session-timeline';
+        tl.hidden = true;
+        var sym = CUR_SYM[r.cur || 'TWD'] || '';
+        r.events.forEach(function (ev2) {
+          var line = document.createElement('div');
+          line.className = 'timeline-line';
+          line.textContent = (ev2.t ? ev2.t + '　' : '') + t(ev2.k) +
+            (ev2.amt ? '　+' + sym + fmtMoney(ev2.amt) : '');
+          tl.appendChild(line);
+        });
+        main.appendChild(tl);
+        main.style.cursor = 'pointer';
+        main.addEventListener('click', function () { tl.hidden = !tl.hidden; });
+      }
       var plEl = document.createElement('span');
       plEl.className = 'session-pl ' + (pl > 0 ? 'pos' : pl < 0 ? 'neg' : 'muted');
       plEl.textContent = fmtPL(pl);
@@ -339,6 +420,62 @@
         '</td></tr>';
     });
     tbl.innerHTML = html;
+  }
+
+  /* --- 行為分析（mood 標籤 × 盈虧）--- */
+  function renderMoodStats() {
+    var tbl = $('#moodStatsTable'), hint = $('#moodStatsHint');
+    var groups = TrackerStats.moodStats(vSessions);
+    if (!groups.length) {
+      tbl.innerHTML = '';
+      hint.textContent = t('新增紀錄時點選「現場狀態」標籤，這裡會顯示每種狀態下的盈虧。');
+      return;
+    }
+    hint.textContent = t('依平均盈虧排序 — 平均為負的狀態，就是該避開的開局訊號。');
+    var html = t('<tr><th>狀態</th><th>場次</th><th>總盈虧</th><th>平均</th></tr>');
+    groups.forEach(function (g) {
+      var plCls = g.pl > 0 ? 'pos' : g.pl < 0 ? 'neg' : 'muted';
+      var avgCls = g.avg > 0 ? 'pos' : g.avg < 0 ? 'neg' : 'muted';
+      html += '<tr><td>' + escapeHtml(t(g.tag)) + '</td><td>' + g.n +
+        '</td><td class="' + plCls + '">' + fmtPL(Math.round(g.pl)) +
+        '</td><td class="' + avgCls + '">' + fmtPL(Math.round(g.avg)) + '</td></tr>';
+    });
+    tbl.innerHTML = html;
+  }
+
+  /* --- 洞察卡（規則型統計，門檻兩側 n≥5）--- */
+  function renderInsights() {
+    var card = $('#insightCard'), box = $('#insightBox');
+    var facts = TrackerStats.insights(vSessions);
+    if (!facts.length) { card.hidden = true; return; }
+    card.hidden = false;
+    box.innerHTML = '';
+    facts.forEach(function (f) {
+      var txt = '';
+      if (f.k === 'weekday') {
+        txt = (f.a >= f.b)
+          ? '📅 ' + t('平日平均每場 ') + fmtPL(Math.round(f.a)) + t('，週末 ') + fmtPL(Math.round(f.b)) + t(' — 上班日才是你的主場')
+          : '📅 ' + t('週末平均每場 ') + fmtPL(Math.round(f.b)) + t('，平日 ') + fmtPL(Math.round(f.a)) + t(' — 你在週末狀態更好');
+      } else if (f.k === 'venue-best') {
+        txt = '🏆 ' + t('在「') + f.name + t('」平均每場 ') + fmtPL(Math.round(f.a)) +
+          t('（') + f.an + t(' 場）— 你最賺的場地');
+      } else if (f.k === 'venue-worst') {
+        txt = '⚠️ ' + t('在「') + f.name + t('」平均每場 ') + fmtPL(Math.round(f.a)) +
+          t('（') + f.an + t(' 場）— 考慮避開或檢討打法');
+      } else if (f.k === 'duration') {
+        txt = (f.a >= f.b)
+          ? '⏱ ' + t('短場（≤') + f.med + t(' 小時）平均 ') + fmtPL(Math.round(f.a)) + t('，長場 ') + fmtPL(Math.round(f.b)) + t(' — 見好就收對你有利')
+          : '⏱ ' + t('長場（>') + f.med + t(' 小時）平均 ') + fmtPL(Math.round(f.b)) + t('，短場 ') + fmtPL(Math.round(f.a)) + t(' — 你適合打深場');
+      } else if (f.k === 'mood') {
+        txt = '🏷 ' + t('標「') + t(f.name) + t('」的場次平均 ') + fmtPL(Math.round(f.a)) +
+          t('，整體平均 ') + fmtPL(Math.round(f.b));
+      }
+      if (!txt) return;
+      var p = document.createElement('p');
+      p.className = 'insight-item';
+      p.textContent = txt;
+      box.appendChild(p);
+    });
   }
 
   /* --- 月報 --- */
@@ -582,8 +719,10 @@
     renderHero();
     renderList();
     renderStats();
+    renderInsights();
     renderAdvStats();
     renderTagStats();
+    renderMoodStats();
     renderMonthly();
     renderTilt();
     drawChart();

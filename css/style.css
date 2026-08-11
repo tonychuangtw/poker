@@ -395,16 +395,16 @@ canvas { width: 100%; display: block; border-radius: 8px; }
 .card-slot.filled {
   border: 1px solid #cfd2d6; border-style: solid;
   background: linear-gradient(160deg, #ffffff, #eef0f2 70%, #e3e6ea);
-  color: #16181d;
+  color: #14171d;
   box-shadow: 0 3px 8px rgba(0, 0, 0, .45), inset 0 1px 0 #fff;
-  font-size: 1.1rem;
+  font-size: 1.25rem; font-weight: 800;
 }
 .card-slot.active {
   border-color: var(--accent); border-style: solid;
   outline: 2px solid var(--accent); outline-offset: 1px;
   box-shadow: 0 0 14px rgba(var(--accent-rgb), .35);
 }
-.card-slot .red { color: #c72c3e; }
+.card-slot .red { color: #d02b3f; }
 
 .deck-grid-wrap { overflow-x: auto; margin-top: 12px; padding-bottom: 4px; }
 .deck-grid {
@@ -415,19 +415,19 @@ canvas { width: 100%; display: block; border-radius: 8px; }
   min-width: 31.25rem;
 }
 .deck-card {
-  padding: 8px 0; text-align: center;
-  background: linear-gradient(165deg, #fbfcfd, #e9ecef);
-  color: #1c1f26;
-  border: 1px solid #c9ced4; border-radius: 6px;
-  font-size: .85rem; font-weight: 700; cursor: pointer;
+  padding: 9px 0; text-align: center;
+  background: linear-gradient(165deg, #fdfefe, #eceff2);
+  color: #14171d;
+  border: 1px solid #c9ced4; border-radius: 7px;
+  font-size: 1rem; font-weight: 800; cursor: pointer;
   line-height: 1.15;
   box-shadow: 0 1px 3px rgba(0, 0, 0, .35), inset 0 1px 0 #fff;
   transition: transform .12s, box-shadow .18s, opacity .18s;
 }
 .deck-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 0, 0, .45), inset 0 1px 0 #fff; }
 .deck-card:active { transform: scale(.94); }
-.deck-card small { display: block; font-size: .8em; font-weight: 500; }
-.deck-card.suit-h, .deck-card.suit-d { color: #c72c3e; }
+.deck-card small { display: block; font-size: .85em; font-weight: 600; }
+.deck-card.suit-h, .deck-card.suit-d { color: #d02b3f; }
 .deck-card.used {
   opacity: .18; pointer-events: none;
   filter: grayscale(.6);
@@ -888,3 +888,31 @@ a.ev-name:hover { text-decoration: underline; }
 .hero-num.neg { color: var(--neg); }
 .hero-num.muted { color: var(--muted); }
 .hero-sub { color: var(--muted); font-size: .85rem; }
+
+/* ===== 行為標籤 chips ＋ 洞察卡 ===== */
+.mood-chips { display: flex; flex-wrap: wrap; gap: .45rem; margin: .2rem 0 .8rem; }
+.mood-chip {
+  border: 1px solid var(--border); background: var(--bg3); color: var(--muted);
+  border-radius: 999px; padding: .32rem .8rem; font-size: .84rem; cursor: pointer;
+}
+.mood-chip.active {
+  border-color: rgba(var(--accent-rgb), .6); background: rgba(var(--accent-rgb), .14);
+  color: var(--accent2); font-weight: 650;
+}
+.insight-item {
+  background: var(--bg3); border: 1px solid var(--border-soft); border-radius: var(--radius-sm);
+  padding: .6rem .8rem; margin: .45rem 0; font-size: .9rem; line-height: 1.55;
+}
+
+/* ===== 中途事件編輯器＋列表時間軸 ===== */
+.evt-editor { display: flex; flex-direction: column; gap: .4rem; margin: .2rem 0; }
+.evt-row { display: flex; gap: .4rem; align-items: center; }
+.evt-row select { flex: 0 0 6.2rem; }
+.evt-row input[type="time"] { flex: 0 0 6.4rem; }
+.evt-row input[type="number"] { flex: 1; min-width: 0; }
+.btn-link { background: none; border: none; color: var(--accent2); cursor: pointer; font-size: .85rem; padding: .3rem 0; }
+.session-timeline {
+  margin-top: .45rem; padding: .45rem .7rem; border-left: 2px solid rgba(var(--accent-rgb), .5);
+  background: var(--bg3); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.timeline-line { font-size: .82rem; color: var(--muted); line-height: 1.7; font-variant-numeric: tabular-nums; }
