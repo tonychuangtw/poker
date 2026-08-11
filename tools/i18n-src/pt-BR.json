@@ -974,5 +974,12 @@
  "賽程載入失敗，請稍後再試。": "Falha ao carregar a programação. Tente novamente mais tarde.",
  "輸入解鎖 Email": "Digite o e-mail de desbloqueio",
  "已解鎖，歡迎回來！": "Desbloqueado — bem-vindo de volta!",
- "這個 Email 沒有解鎖資格。": "Este e-mail não tem permissão de desbloqueio."
+ "這個 Email 沒有解鎖資格。": "Este e-mail não tem permissão de desbloqueio.",
+ "幣別": "Moeda",
+ "顯示幣種": "Moeda de exibição",
+ "本月": "Este mês",
+ "本月尚無紀錄": "Sem registros este mês",
+ "尚無紀錄": "Ainda sem registros",
+ "時薪 ": "Por hora ",
+ "（原幣 ": "(orig. "
 }

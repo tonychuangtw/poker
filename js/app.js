@@ -51,7 +51,67 @@
     return (n > 0 ? '+' : '') + fmtMoney(n);
   }
 
+  /* --- 多幣別（2026-08-11 Tony，參考 ivey）---
+     每筆紀錄存 rec.cur（ISO 代碼），沒存的舊紀錄視為 TWD。
+     顯示層統一換算成「顯示幣種」（右上角選、記在 poker.dispCur），
+     匯率用 data/fx.json（每日更新），抓不到就用上次快取，再不行只顯示原值。 */
+  var CURS = ['TWD', 'KRW', 'USD', 'VND', 'JPY', 'PHP', 'EUR', 'GBP', 'CNY', 'HKD', 'THB', 'MYR', 'SGD'];
+  var CUR_SYM = { TWD: 'NT$', KRW: '₩', USD: '$', VND: '₫', JPY: '¥', PHP: '₱', EUR: '€',
+    GBP: '£', CNY: 'CN¥', HKD: 'HK$', THB: '฿', MYR: 'RM', SGD: 'S$' };
+  var fxRates = null;
+  try { fxRates = JSON.parse(localStorage.getItem('poker.fxCache') || 'null'); } catch (e) {}
+  fetch('data/fx.json?d=' + new Date().toISOString().slice(0, 10))
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d && d.rates) {
+        fxRates = d.rates;
+        try { localStorage.setItem('poker.fxCache', JSON.stringify(d.rates)); } catch (e) {}
+        renderTracker();
+      }
+    }).catch(function () {});
+
+  function dispCur() { return localStorage.getItem('poker.dispCur') || 'TWD'; }
+  function conv(amt, from) {
+    from = from || 'TWD';
+    var to = dispCur();
+    if (from === to || !fxRates || !fxRates[from] || !fxRates[to]) return amt;
+    return amt * fxRates[to] / fxRates[from];
+  }
+  /* 換算後的顯示用副本：金額一律轉成顯示幣種，統計/圖表全吃這份 */
+  function viewSessions() {
+    return sessions.map(function (r) {
+      if ((r.cur || 'TWD') === dispCur()) return r;
+      var c = Object.assign({}, r);
+      c.buyin0 = r.buyin; c.cashout0 = r.cashout;   // 原幣值，列表顯示用
+      c.buyin = conv(r.buyin, r.cur);
+      c.cashout = conv(r.cashout, r.cur);
+      /* bb 也是錢的單位，一起換算才不會把 bb 統計弄錯 */
+      if (c.bb > 0) c.bb = conv(r.bb, r.cur);
+      return c;
+    });
+  }
+  var vSessions = sessions;
+
   // 新增
+  /* 幣別選單：新增用 fCur（記住上次選的）、右上角 dispCur = 統一顯示幣種 */
+  (function initCurSelects() {
+    var fSel = $('#fCur'), dSel = $('#dispCur');
+    CURS.forEach(function (c) {
+      var o1 = document.createElement('option');
+      o1.value = c; o1.textContent = c;
+      fSel.appendChild(o1);
+      var o2 = document.createElement('option');
+      o2.value = c; o2.textContent = c;
+      dSel.appendChild(o2);
+    });
+    fSel.value = localStorage.getItem('poker.lastCur') || 'TWD';
+    dSel.value = dispCur();
+    dSel.addEventListener('change', function () {
+      try { localStorage.setItem('poker.dispCur', dSel.value); } catch (e) {}
+      renderTracker();
+    });
+  })();
+
   $('#fDate').value = new Date().toISOString().slice(0, 10);
   $('#sessionForm').addEventListener('submit', function (e) {
     e.preventDefault();
@@ -69,8 +129,10 @@
       cashout: parseFloat($('#fCashout').value) || 0,
       hours: parseFloat($('#fHours').value) || 0,
       bb: parseFloat($('#fBB').value) || 0,
+      cur: $('#fCur').value,
       note: $('#fNote').value.trim()
     };
+    try { localStorage.setItem('poker.lastCur', rec.cur); } catch (e) {}
     sessions.push(rec);
     saveSessions(sessions);
     $('#fVenue').value = ''; $('#fTag').value = '';
@@ -86,7 +148,7 @@
     var filter = $('#filterType').value;
     var ul = $('#sessionList');
     ul.innerHTML = '';
-    var shown = sessions
+    var shown = vSessions
       .filter(function (r) { return filter === 'all' || r.type === filter; })
       .slice()
       .sort(function (a, b) {
@@ -112,9 +174,13 @@
         (r.tag ? t(' · ＃') + r.tag : '')));
       var sub = document.createElement('div');
       sub.className = 'session-sub';
+      var curTag = (r.cur && r.cur !== dispCur())
+        ? t('（原幣 ') + (CUR_SYM[r.cur] || r.cur + ' ') + fmtMoney(r.cashout0 - r.buyin0) + t('）') : '';
+      var bbTxt = (r.type === 'cash' && r.bb > 0)
+        ? t(' ｜ ') + fmtPL(Math.round(pl / r.bb * 10) / 10) + ' bb' : '';
       sub.textContent = t('買入 ') + fmtMoney(r.buyin) + t(' → 兌現 ') + fmtMoney(r.cashout) +
+        curTag + bbTxt +
         (r.hours ? t(' ｜ ') + r.hours + t(' 小時') : '') +
-        (r.bb ? t(' ｜ 大盲 ') + r.bb : '') +
         (r.note ? t(' ｜ ') + r.note : '');
       main.appendChild(title);
       main.appendChild(sub);
@@ -152,10 +218,10 @@
 
   function renderStats() {
     var cats = [
-      [t('現金局'), sessions.filter(function (r) { return r.type === 'cash'; }), false],
-      ['MTT', sessions.filter(function (r) { return r.type === 'mtt'; }), true],
-      ['SNG', sessions.filter(function (r) { return r.type === 'sng'; }), true],
-      [t('總計'), sessions, false]
+      [t('現金局'), vSessions.filter(function (r) { return r.type === 'cash'; }), false],
+      ['MTT', vSessions.filter(function (r) { return r.type === 'mtt'; }), true],
+      ['SNG', vSessions.filter(function (r) { return r.type === 'sng'; }), true],
+      [t('總計'), vSessions, false]
     ];
     var html = t('<tr><th>類別</th><th>場次</th><th>總買入</th><th>總盈虧</th><th>ROI%</th><th>ITM%</th></tr>');
     cats.forEach(function (c) {
@@ -207,7 +273,7 @@
   }
 
   function renderAdvStats() {
-    var s = advStats(sessions);
+    var s = advStats(vSessions);
     var tbl = $('#advStatsTable'), hint = $('#advStatsHint');
     if (s.n < 2) {
       tbl.innerHTML = '';
@@ -263,7 +329,7 @@
       return;
     }
     hint.textContent = t('無標籤的舊紀錄以場地分組；依總盈虧排序。');
-    var groups = TrackerStats.tagStats(sessions);
+    var groups = TrackerStats.tagStats(vSessions);
     var html = t('<tr><th>標籤</th><th>場次</th><th>總盈虧</th><th>時薪</th></tr>');
     groups.forEach(function (g) {
       var plCls = g.pl > 0 ? 'pos' : g.pl < 0 ? 'neg' : 'muted';
@@ -285,7 +351,7 @@
       return;
     }
     hint.textContent = '';
-    var months = TrackerStats.monthlyStats(sessions);
+    var months = TrackerStats.monthlyStats(vSessions);
     var html = t('<tr><th>月份</th><th>場次</th><th>盈虧</th><th>時數</th></tr>');
     months.forEach(function (m) {
       var plCls = m.pl > 0 ? 'pos' : m.pl < 0 ? 'neg' : 'muted';
@@ -320,7 +386,7 @@
   /* --- 傾斜偵測 --- */
   function renderTilt() {
     var box = $('#tiltInsight');
-    var st = TrackerStats.tiltStats(sessions);
+    var st = TrackerStats.tiltStats(vSessions);
     if (st.afterLossCount < 5) {
       box.textContent = t('樣本不足（連輸後的場次需 ≥ 5，目前 ') + st.afterLossCount +
         t('），累積更多紀錄後顯示分析。');
@@ -411,7 +477,7 @@
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, cssW, cssH);
 
-    var ordered = sessions.slice().sort(function (a, b) {
+    var ordered = vSessions.slice().sort(function (a, b) {
       return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.id < b.id ? -1 : 1);
     });
     var pts = [0], cum = 0;
@@ -474,7 +540,46 @@
   }
   window.addEventListener('resize', drawChart);
 
+  /* --- 大字盈虧 hero 卡（ivey 式，2026-08-11 Tony）--- */
+  var heroScope = localStorage.getItem('poker.heroScope') || 'month';
+  $('#heroScope').addEventListener('click', function (e) {
+    var btn = e.target.closest('.seg-btn');
+    if (!btn) return;
+    heroScope = btn.dataset.scope;
+    try { localStorage.setItem('poker.heroScope', heroScope); } catch (e2) {}
+    renderTracker();
+  });
+
+  function renderHero() {
+    var btns = $('#heroScope').querySelectorAll('.seg-btn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('active', btns[i].dataset.scope === heroScope);
+    }
+    var month = new Date().toISOString().slice(0, 7);
+    var list = heroScope === 'month'
+      ? vSessions.filter(function (r) { return (r.date || '').slice(0, 7) === month; })
+      : vSessions;
+    var num = $('#heroNum'), sub = $('#heroSub');
+    if (!list.length) {
+      num.textContent = '—';
+      num.className = 'hero-num muted';
+      sub.textContent = t(heroScope === 'month' ? '本月尚無紀錄' : '尚無紀錄');
+      return;
+    }
+    var s = advStats(list);
+    var pl = 0;
+    list.forEach(function (r) { pl += r.cashout - r.buyin; });
+    num.textContent = fmtPL(Math.round(pl)) + ' ' + dispCur();
+    num.className = 'hero-num ' + (pl > 0 ? 'pos' : pl < 0 ? 'neg' : 'muted');
+    var bits = [list.length + t(' 場')];
+    if (s.hourly !== null) bits.push(t('時薪 ') + fmtPL(Math.round(s.hourly)));
+    if (s.bbPerHr !== null) bits.push(fmtPL(Math.round(s.bbPerHr * 10) / 10) + ' bb/hr');
+    sub.textContent = bits.join('　·　');
+  }
+
   function renderTracker() {
+    vSessions = viewSessions();
+    renderHero();
     renderList();
     renderStats();
     renderAdvStats();
@@ -500,9 +605,9 @@
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
   $('#btnExportCsv').addEventListener('click', function () {
-    var rows = [[t('日期'), t('類型'), t('場地'), t('標籤'), t('買入'), t('兌現'), t('盈虧'), t('時數'), t('大盲'), t('備註')]];
+    var rows = [[t('日期'), t('類型'), t('場地'), t('標籤'), t('幣別'), t('買入'), t('兌現'), t('盈虧'), t('時數'), t('大盲'), t('備註')]];
     sessions.forEach(function (r) {
-      rows.push([r.date, TYPE_NAMES[r.type] || r.type, r.venue, r.tag || '', r.buyin, r.cashout,
+      rows.push([r.date, TYPE_NAMES[r.type] || r.type, r.venue, r.tag || '', r.cur || 'TWD', r.buyin, r.cashout,
         r.cashout - r.buyin, r.hours || '', r.bb || '', r.note]);
     });
     var csv = '\uFEFF' + rows.map(function (row) { return row.map(csvEscape).join(','); }).join('\r\n');

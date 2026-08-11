@@ -974,5 +974,12 @@
  "賽程載入失敗，請稍後再試。": "Không tải được lịch thi đấu. Vui lòng thử lại sau.",
  "輸入解鎖 Email": "Nhập email mở khóa",
  "已解鎖，歡迎回來！": "Đã mở khóa — chào mừng trở lại!",
- "這個 Email 沒有解鎖資格。": "Email này không có quyền mở khóa."
+ "這個 Email 沒有解鎖資格。": "Email này không có quyền mở khóa.",
+ "幣別": "Tiền tệ",
+ "顯示幣種": "Tiền tệ hiển thị",
+ "本月": "Tháng này",
+ "本月尚無紀錄": "Chưa có ghi chép tháng này",
+ "尚無紀錄": "Chưa có ghi chép",
+ "時薪 ": "Mỗi giờ ",
+ "（原幣 ": "(gốc "
 }

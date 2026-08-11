@@ -974,5 +974,12 @@
  "賽程載入失敗，請稍後再試。": "Spielplan konnte nicht geladen werden. Bitte später erneut versuchen.",
  "輸入解鎖 Email": "Freischalt-E-Mail eingeben",
  "已解鎖，歡迎回來！": "Freigeschaltet — willkommen zurück!",
- "這個 Email 沒有解鎖資格。": "Diese E-Mail ist nicht zum Freischalten berechtigt."
+ "這個 Email 沒有解鎖資格。": "Diese E-Mail ist nicht zum Freischalten berechtigt.",
+ "幣別": "Währung",
+ "顯示幣種": "Anzeigewährung",
+ "本月": "Dieser Monat",
+ "本月尚無紀錄": "Keine Einträge diesen Monat",
+ "尚無紀錄": "Noch keine Einträge",
+ "時薪 ": "Stundenlohn ",
+ "（原幣 ": "(Orig. "
 }
