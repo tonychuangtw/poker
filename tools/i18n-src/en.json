@@ -960,5 +960,16 @@
  "🎚 混合頻率": "🎚 mixed frequency",
  "📅 開賽提醒通知": "📅 event start reminders",
  "📌 測驗以建議 range 為準，圖表的自訂編輯不影響評分。 翻前四種題型在門檻附近是混合策略，只要你選的動作在模型裡有 ≥25% 頻率就算對。": "📌 quizzes use suggested range, chart customizations don't affect scoring. near threshold, preflop 4 types are mixed strategy, any action ≥25% frequency counts right.",
- "🔥 連續完成 ": "🔥 consecutive completions "
+ "🔥 連續完成 ": "🔥 consecutive completions ",
+ "關閉": "Close",
+ "保證": "GTD",
+ "官網": "Official site",
+ "賽程表": "Schedule",
+ "主賽/保底賽": "Main / GTD",
+ "混合牌種": "Mixed games",
+ "女士賽": "Ladies",
+ "每日賽": "Daily",
+ "衛星賽": "Satellite",
+ "賽程更新於 ": "Schedule updated ",
+ "賽程載入失敗，請稍後再試。": "Failed to load the schedule. Please try again later."
 }

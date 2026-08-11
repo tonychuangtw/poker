@@ -2771,6 +2771,15 @@
         date.className = 'ev-date';
         date.textContent = evFmtDate(ev.start, ev.end);
         top.appendChild(name); top.appendChild(date);
+        /* 有逐日賽程的賽事：掛徽章，點卡片開站內賽程表（js/schedule.js） */
+        if (ev.schedule) {
+          var badge = document.createElement('span');
+          badge.className = 'ev-sched-badge';
+          badge.textContent = '📅 ' + t('賽程表');
+          top.appendChild(badge);
+          item.classList.add('has-sched');
+          item._ev = ev;
+        }
         var sub = document.createElement('div');
         sub.className = 'ev-sub';
         sub.textContent = t(ev.city) +
@@ -2842,11 +2851,13 @@
   }
   $('#evRegion').addEventListener('change', renderEvents);
   $('#evCity').addEventListener('change', renderEvents);
-  /* 賽事卡片預設收合兩行說明，點卡片展開全文（點連結不算） */
+  /* 賽事卡片：有賽程表就開站內逐日賽程；沒有則展開/收合說明（點連結不算） */
   $('#evList').addEventListener('click', function (e) {
     if (e.target.closest('a')) return;
     var item = e.target.closest('.ev-item');
-    if (item) item.classList.toggle('open');
+    if (!item) return;
+    if (item._ev && item._ev.schedule && window.Sched) { Sched.open(item._ev); return; }
+    item.classList.toggle('open');
   });
   loadEvents();
 

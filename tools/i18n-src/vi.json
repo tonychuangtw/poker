@@ -960,5 +960,16 @@
  "🎚 混合頻率": "🎚 Mixed frequency",
  "📅 開賽提醒通知": "📅 Tournament reminder notification",
  "📌 測驗以建議 range 為準，圖表的自訂編輯不影響評分。 翻前四種題型在門檻附近是混合策略，只要你選的動作在模型裡有 ≥25% 頻率就算對。": "📌 Quiz graded by suggested range, custom edits don't affect. Preflop 4 types near threshold are mixed, ≥25% frequency in model = correct.",
- "🔥 連續完成 ": "🔥 Completed "
+ "🔥 連續完成 ": "🔥 Completed ",
+ "關閉": "Đóng",
+ "保證": "GTD",
+ "官網": "Trang chính thức",
+ "賽程表": "Lịch thi đấu",
+ "主賽/保底賽": "Main / GTD",
+ "混合牌種": "Mixed games",
+ "女士賽": "Nữ",
+ "每日賽": "Hằng ngày",
+ "衛星賽": "Satellite",
+ "賽程更新於 ": "Cập nhật ",
+ "賽程載入失敗，請稍後再試。": "Không tải được lịch thi đấu. Vui lòng thử lại sau."
 }

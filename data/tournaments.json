@@ -22,7 +22,8 @@
       "start": "2026-07-25",
       "end": "2026-08-10",
       "note": "濟州暑期系列，17 天賽程，總保證獎金約 KRW 20 億（約 US$1.5M）。K Poker Cup 段（7/25–8/4，共 53 場側賽）：#1 Jeju Opening（7/25–26，買入 90 萬 KRW，保證 1.8 億 KRW）、#5 Mystery Bounty（7/26–28）、#23 K Poker Cup 主賽（7/29–8/3，買入 130 萬 KRW，保證 8.8 億 KRW）、#26 High Roller（7/29–31，買入 700 萬 KRW，保證 4.4 億 KRW）、#49 Mega Stack（8/2–4）；King Poker Cup 段（8/1–8/10）含 King's 主賽（8/6–9，買入約 $15,000）與 Final Coronation Super High Roller（8/10，買入 $30,000）",
-      "url": "https://www.pokernews.com/news/2026/06/k-poker-cup-king-poker-cup-new-details-jeju-festival-51466.htm"
+      "url": "https://www.pokernews.com/news/2026/06/k-poker-cup-king-poker-cup-new-details-jeju-festival-51466.htm",
+      "schedule": "kpc-king-jeju-2026"
     },
     {
       "series": "APPT Manila 2026",
@@ -33,7 +34,8 @@
       "start": "2026-07-28",
       "end": "2026-08-10",
       "note": "PokerStars LIVE Asia Pacific Poker Tour，主賽事買入 ₱80,000，保證獎金 ₱60,000,000（8/6–8/10 進行），賽事範圍自 Super Qualifier（₱9,000）至 Super High Roller（₱300,000）共十場賽事，全期節慶總保證獎金逾 ₱132,000,000",
-      "url": "https://www.pokerstarslive.com/appt/manila/"
+      "url": "https://www.pokerstarslive.com/appt/manila/",
+      "schedule": "appt-manila-2026"
     },
     {
       "series": "WSOP Circuit Slovakia",
@@ -44,7 +46,8 @@
       "start": "2026-07-31",
       "end": "2026-08-11",
       "note": "WSOP Circuit 2026 歐洲站之一，共 13 場金手鏈賽（12 場正式金戒指賽＋23 場邊桌賽），全系列保證獎金 €2,800,000，主賽事買入 €1,350+€150，保證 €1,000,000，分梯次於 8/6–8/8 進行；另設保證 €1,000,000 的 PLO Championship",
-      "url": "https://thepokerchronicle.com/twelve-wsop-rings-and-e2-8-million-guarantee-at-the-wsop-circuit-slovakia-at-card-casino-samorin/"
+      "url": "https://thepokerchronicle.com/twelve-wsop-rings-and-e2-8-million-guarantee-at-the-wsop-circuit-slovakia-at-card-casino-samorin/",
+      "schedule": "wsop-circuit-slovakia-2026"
     },
     {
       "series": "APC Taipei III 2026",
@@ -66,7 +69,8 @@
       "start": "2026-08-07",
       "end": "2026-08-16",
       "note": "Asian Poker Tour × Paradise Group，與 9 月的 APPT Korea 為不同系列，全系列超過 108 場賽事、保證約 KRW 40 億（約 US$2.7M），主賽事（8/9–8/15）買入 KRW 2,500,000，保證獎金約 KRW 15 億，冠軍可獲 3 個 APTC 台北 2026 席位；另設 Super High Roller（買入 KRW 15,000,000，保證 KRW 5 億）與 Superstar Challenge（買入約 KRW 3,500 萬）",
-      "url": "https://www.theasianpokertour.com/series/apt-incheon-south-korea-2026/events"
+      "url": "https://www.theasianpokertour.com/series/apt-incheon-south-korea-2026/events",
+      "schedule": "apt-incheon-2026"
     },
     {
       "series": "QPC Autumn 2026（Quads Poker Championship）",
@@ -88,7 +92,8 @@
       "start": "2026-08-12",
       "end": "2026-08-24",
       "note": "Championship 主賽事 8/19–8/24，買入 $3,500，保證獎金 $200 萬，設 3 個起始梯次；WPT Global 線上衛星賽自 7/5 起每週日進行，得獎者含 5 晚 Chamada Prestige 酒店住宿（8/18–8/23）、餐飲、機場接送，並設 $100,000 冠軍加碼獎金",
-      "url": "https://www.pokernews.com/news/2026/06/world-poker-tour-announces-two-season-24-stops-in-cyprus-51444.htm"
+      "url": "https://www.pokernews.com/news/2026/06/world-poker-tour-announces-two-season-24-stops-in-cyprus-51444.htm",
+      "schedule": "wpt-cyprus-championship-2026"
     },
     {
       "series": "WPT Cambodia — Passport to the World Championship",
@@ -99,7 +104,8 @@
       "start": "2026-08-12",
       "end": "2026-08-24",
       "note": "Championship 主賽事 8/20–8/24，買入 $1,300，保證獎金 $500,000，全系列約 70 場賽事、總保證獎金約 $1,000,000，可作為 WPT World Championship（Wynn Las Vegas）衛星資格賽；此為 NagaWorld 2026 年第二場 WPT 賽事（首場為 1/21–2/9 舉行、總保證 $3.5M 的 WPT Cambodia Championship），兩場為各自獨立系列",
-      "url": "https://www.pokernews.com/news/2026/06/wpt-cambodia-passport-to-the-world-championship-51584.htm"
+      "url": "https://www.pokernews.com/news/2026/06/wpt-cambodia-passport-to-the-world-championship-51584.htm",
+      "schedule": "wpt-cambodia-passport-2026"
     },
     {
       "series": "WSOP Circuit — Harrah's Atlantic City",
@@ -110,7 +116,8 @@
       "start": "2026-08-13",
       "end": "2026-08-24",
       "note": "睽違五年重返大西洋城，共 18 場金戒指賽事，系列保證獎金逾 $150 萬，主賽事（Event #10）買入 $1,700，保證 $600,000，分三梯次（約 8/20–8/23）開打",
-      "url": "https://www.wsop.com/news/the-wsop-circuit-returns-to-harrah-s-atlantic-city-for-first-time-in-five-years/"
+      "url": "https://www.wsop.com/news/the-wsop-circuit-returns-to-harrah-s-atlantic-city-for-first-time-in-five-years/",
+      "schedule": "wsop-circuit-harrahs-atlantic-city-2026"
     },
     {
       "series": "EPT Barcelona 2026",

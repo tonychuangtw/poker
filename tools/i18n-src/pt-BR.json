@@ -960,5 +960,16 @@
  "🎚 混合頻率": "🎚 Frequência mista",
  "📅 開賽提醒通知": "📅 Notif lembrete torneio",
  "📌 測驗以建議 range 為準，圖表的自訂編輯不影響評分。 翻前四種題型在門檻附近是混合策略，只要你選的動作在模型裡有 ≥25% 頻率就算對。": "📌 Quiz pelo range recomendado. 4 tipos pré-flop ≥25% freq = correto.",
- "🔥 連續完成 ": "🔥 Completou "
+ "🔥 連續完成 ": "🔥 Completou ",
+ "關閉": "Fechar",
+ "保證": "GTD",
+ "官網": "Site oficial",
+ "賽程表": "Programação",
+ "主賽/保底賽": "Main / GTD",
+ "混合牌種": "Jogos mistos",
+ "女士賽": "Feminino",
+ "每日賽": "Diários",
+ "衛星賽": "Satélite",
+ "賽程更新於 ": "Atualizado ",
+ "賽程載入失敗，請稍後再試。": "Falha ao carregar a programação. Tente novamente mais tarde."
 }
