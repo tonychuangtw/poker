@@ -971,5 +971,8 @@
  "每日賽": "Daily",
  "衛星賽": "Satellite",
  "賽程更新於 ": "Schedule updated ",
- "賽程載入失敗，請稍後再試。": "Failed to load the schedule. Please try again later."
+ "賽程載入失敗，請稍後再試。": "Failed to load the schedule. Please try again later.",
+ "輸入解鎖 Email": "Enter unlock email",
+ "已解鎖，歡迎回來！": "Unlocked — welcome back!",
+ "這個 Email 沒有解鎖資格。": "This email is not eligible to unlock."
 }

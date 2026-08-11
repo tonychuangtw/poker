@@ -971,5 +971,8 @@
  "每日賽": "Daily",
  "衛星賽": "Satellit",
  "賽程更新於 ": "Stand ",
- "賽程載入失敗，請稍後再試。": "Spielplan konnte nicht geladen werden. Bitte später erneut versuchen."
+ "賽程載入失敗，請稍後再試。": "Spielplan konnte nicht geladen werden. Bitte später erneut versuchen.",
+ "輸入解鎖 Email": "Freischalt-E-Mail eingeben",
+ "已解鎖，歡迎回來！": "Freigeschaltet — willkommen zurück!",
+ "這個 Email 沒有解鎖資格。": "Diese E-Mail ist nicht zum Freischalten berechtigt."
 }

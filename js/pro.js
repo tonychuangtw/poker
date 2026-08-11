@@ -126,6 +126,25 @@
     });
     box.appendChild(restore);
 
+    /* Email 白名單解鎖：不依賴網址參數 —— iOS 主畫面 PWA 與 Safari 的
+       localStorage 不互通、Telegram 內建瀏覽器又是第三份，URL 解鎖常落錯地方。
+       在這裡輸入一次就存進「目前這個」環境，哪裡開都解得了。 */
+    var byEmail = el('button', 'btn-link', t('輸入解鎖 Email'));
+    byEmail.addEventListener('click', function () {
+      var em = prompt(t('輸入解鎖 Email'));
+      if (!em) return;
+      write(USER_KEY, em.trim().toLowerCase());
+      if (isSuper()) {
+        unlockAll();
+        closePaywall();
+        alert(t('已解鎖，歡迎回來！'));
+      } else {
+        try { localStorage.removeItem(USER_KEY); } catch (e) {}
+        alert(t('這個 Email 沒有解鎖資格。'));
+      }
+    });
+    box.appendChild(byEmail);
+
     var later = el('button', 'btn-link', t('稍後再說'));
     later.addEventListener('click', closePaywall);
     box.appendChild(later);

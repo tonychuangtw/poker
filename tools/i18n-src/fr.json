@@ -971,5 +971,8 @@
  "每日賽": "Quotidiens",
  "衛星賽": "Satellite",
  "賽程更新於 ": "Mis à jour ",
- "賽程載入失敗，請稍後再試。": "Échec du chargement du programme. Réessayez plus tard."
+ "賽程載入失敗，請稍後再試。": "Échec du chargement du programme. Réessayez plus tard.",
+ "輸入解鎖 Email": "Saisir l’e-mail de déblocage",
+ "已解鎖，歡迎回來！": "Débloqué — bon retour !",
+ "這個 Email 沒有解鎖資格。": "Cet e-mail n’a pas accès au déblocage."
 }
