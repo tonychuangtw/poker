@@ -53,7 +53,14 @@
     return !!u && SUPER_USERS.indexOf(u.trim().toLowerCase()) !== -1;
   }
 
-  function has() { return !!read(KEY) || isSuper(); }
+  /* 原生殼（App Store 版）才有真正的購買 gating。網頁版在金流接上前一律全解鎖：
+     沒有登入系統就無法只認 Tony 的 email，而鎖住又賣不了東西，只是把自己人擋在外面
+     （2026-08-11 Tony 指示：打開就要什麼都看得到，網頁跟 App 一致）。
+     iOS 上架接 IAP 時再回來檢討網頁版策略。 */
+  var IS_NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform &&
+                     window.Capacitor.isNativePlatform());
+
+  function has() { return !IS_NATIVE || !!read(KEY) || isSuper(); }
 
   function limit(k) { return has() ? Infinity : LIMITS[k]; }
 
@@ -206,9 +213,7 @@
     /* ?pro=dev 解鎖、?pro=off 還原 —— 只給網頁版試看用。
        原生殼一律忽略，免得有人靠網址就解鎖 App Store 買來的東西。
        上架前這段要拿掉或改成不可猜的字串。 */
-    var native = window.Capacitor && window.Capacitor.isNativePlatform &&
-                 window.Capacitor.isNativePlatform();
-    if (!native) {
+    if (!IS_NATIVE) {
       if (/[?&]pro=dev/.test(location.search)) write(KEY, '1');
       if (/[?&]pro=off/.test(location.search)) { try { localStorage.removeItem(KEY); } catch (e) {} }
     }
