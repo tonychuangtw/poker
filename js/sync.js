@@ -149,6 +149,7 @@
   function onCredential(resp) {
     if (!resp || !resp.credential) return;
     setToken(resp.credential);
+    if (window.Pro && Pro.recheck) Pro.recheck();  // 白名單 email 登入 → 立即全解鎖
     renderUi();
     var level = currentLevel();
     setStatus("syncing…");

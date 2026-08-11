@@ -48,9 +48,26 @@
   function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function write(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
+  /* 雲端同步（js/sync.js）的 Google 登入 email —— token 在 sessionStorage 的 JWT */
+  function syncEmail() {
+    try {
+      var tk = sessionStorage.getItem('sync.token');
+      if (!tk) return '';
+      var p = JSON.parse(atob(tk.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      if (!p || !(p.exp * 1000 > Date.now())) return '';
+      return String(p.email || '').trim().toLowerCase();
+    } catch (e) { return ''; }
+  }
+
   function isSuper() {
     var u = read(USER_KEY);
-    return !!u && SUPER_USERS.indexOf(u.trim().toLowerCase()) !== -1;
+    if (u && SUPER_USERS.indexOf(u.trim().toLowerCase()) !== -1) return true;
+    var se = syncEmail();
+    if (se && SUPER_USERS.indexOf(se) !== -1) {
+      write(USER_KEY, se);  // 持久化：登入 token 是 session 級，白名單解鎖不該跟著過期
+      return true;
+    }
+    return false;
   }
 
   /* 原生殼（App Store 版）才有真正的購買 gating。網頁版在金流接上前一律全解鎖：
@@ -238,6 +255,8 @@
     paywall: paywall,
     hitLimit: hitLimit,
     set: set,
+    /* 登入後叫這支：白名單命中就立即解鎖，不用重新整理（sync.js onCredential 用） */
+    recheck: function () { if (has()) { unlockAll(); closePaywall(); } },
     setPurchaseHandler: function (fn) { purchaseHandler = fn; },
     setRestoreHandler: function (fn) { restoreHandler = fn; }
   };
