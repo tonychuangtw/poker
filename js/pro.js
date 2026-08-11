@@ -14,6 +14,12 @@
 
   var KEY = 'poker.pro';
   var QUIZ_KEY = 'poker.pro.quiz';
+  var USER_KEY = 'poker.user';
+
+  /* 超級使用者：這些 email 一律視同 Pro，全部功能可見（Tony 2026-08-11 指示）。
+     解鎖方式：開 App 時網址帶一次 ?user=<email>，命中就存進 localStorage 永久生效；
+     ?user=off 清除。網頁版與原生殼都認。 */
+  var SUPER_USERS = ['tonychuangtw@gmail.com'];
 
   /* 免費版上限（Tony 2026-08-06 定案） */
   var LIMITS = {
@@ -42,7 +48,12 @@
   function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function write(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
-  function has() { return !!read(KEY); }
+  function isSuper() {
+    var u = read(USER_KEY);
+    return !!u && SUPER_USERS.indexOf(u.trim().toLowerCase()) !== -1;
+  }
+
+  function has() { return !!read(KEY) || isSuper(); }
 
   function limit(k) { return has() ? Infinity : LIMITS[k]; }
 
@@ -182,6 +193,12 @@
       if (/[?&]pro=dev/.test(location.search)) write(KEY, '1');
       if (/[?&]pro=off/.test(location.search)) { try { localStorage.removeItem(KEY); } catch (e) {} }
     }
+    /* ?user=<email> 超級使用者登記（網址不分大小寫，整串轉小寫再解析） */
+    try {
+      var qUser = new URLSearchParams(location.search.toLowerCase()).get('user');
+      if (qUser === 'off') { try { localStorage.removeItem(USER_KEY); } catch (e) {} }
+      else if (qUser) write(USER_KEY, qUser.trim());
+    } catch (e) {}
     if (has()) return;
     var nodes = document.querySelectorAll('[data-pro]');
     for (var i = 0; i < nodes.length; i++) lock(nodes[i]);
