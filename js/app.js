@@ -5,7 +5,7 @@
   var $ = function (sel) { return document.querySelector(sel); };
   var $$ = function (sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); };
 
-  var TYPE_NAMES = { cash: t('現金局'), timed: t('限時桌'), mtt: 'MTT', sng: 'SNG', home: t('私場') };
+  var TYPE_NAMES = { cash: t('現金局'), timed: t('限時桌'), mtt: 'MTT', sng: 'SNG', home: 'Homegame' };
   /* 有盲注結構、可算 bb 統計的類型（錦標賽型的 mtt/sng 不算） */
   function isCashLike(type) { return type === 'cash' || type === 'timed' || type === 'home'; }
   function arenaOf(r) { return r.arena || 'live'; }  // 舊紀錄視為現場
