@@ -2,6 +2,9 @@
 
 純前端（vanilla HTML/CSS/JS）單頁德州撲克工具，無框架、無建置步驟、無外部相依，可直接開啟 `index.html` 或部署到 GitHub Pages。介面為繁體中文，深色主題，行動裝置優先。
 
+> 要一起開發？先讀 [CONTRIBUTING.md](CONTRIBUTING.md)：工作流程（branch → PR → CI）、
+> 哪些目錄是機器產物不可手改（`data/`）、部署前的版本戳步驟。
+
 ## 功能
 
 ### 1. 記帳

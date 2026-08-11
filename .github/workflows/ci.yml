@@ -1,0 +1,27 @@
+# PR 與 main 的必跑檢查：測試套件 + 全部 JS 語法檢查。
+# main 有 branch protection 時把本 workflow 設為 required status check。
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 測試套件
+        run: node test/test.js
+      - name: JS 語法檢查
+        run: |
+          for f in js/*.js tools/*.mjs sw.js; do
+            node --check "$f" || exit 1
+          done
+      - name: 資料檔 JSON 格式檢查
+        run: |
+          for f in $(find data -name '*.json'); do
+            node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))" || { echo "bad JSON: $f"; exit 1; }
+          done
