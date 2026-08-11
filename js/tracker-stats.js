@@ -147,6 +147,15 @@
       }
     }
 
+    /* 現場 vs 線上（無 arena 的舊紀錄視為現場） */
+    var lv = [], ol = [];
+    list.forEach(function (r) {
+      ((r.arena || 'live') === 'online' ? ol : lv).push(plOf(r));
+    });
+    if (lv.length >= minN && ol.length >= minN) {
+      out.push({ k: 'arena', a: avg(lv), b: avg(ol), an: lv.length, bn: ol.length });
+    }
+
     /* 行為標籤 vs 整體 */
     moodStats(list).forEach(function (m) {
       if (m.n >= minN && list.length - m.n >= minN) {

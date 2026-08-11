@@ -1023,5 +1023,16 @@
  "繼續": "Retomar",
  "金額": "Valor",
  " ｜ ⏱ ": " | ⏱ ",
- " 事件": " eventos"
+ " 事件": " eventos",
+ "限時桌": "Mesa por tempo",
+ "私場": "Home game",
+ "現場": "Ao vivo",
+ "線上": "Online",
+ "場域": "Modalidade",
+ "全部場域": "Todas",
+ "合計": "Total",
+ "現場平均每場 ": "Média ao vivo ",
+ "，線上 ": ", online ",
+ " — 現場是你的優勢區": "— ao vivo é seu forte",
+ " — 線上是你的優勢區": "— online é seu forte"
 }

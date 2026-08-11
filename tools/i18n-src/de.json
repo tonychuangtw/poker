@@ -1023,5 +1023,16 @@
  "繼續": "Weiter",
  "金額": "Betrag",
  " ｜ ⏱ ": " | ⏱ ",
- " 事件": " Ereignisse"
+ " 事件": " Ereignisse",
+ "限時桌": "Zeittisch",
+ "私場": "Homegame",
+ "現場": "Live",
+ "線上": "Online",
+ "場域": "Format",
+ "全部場域": "Alle Formate",
+ "合計": "Gesamt",
+ "現場平均每場 ": "Live Ø ",
+ "，線上 ": ", online ",
+ " — 現場是你的優勢區": "— live ist deine Stärke",
+ " — 線上是你的優勢區": "— online ist deine Stärke"
 }

@@ -916,3 +916,4 @@ a.ev-name:hover { text-decoration: underline; }
   background: var(--bg3); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 .timeline-line { font-size: .82rem; color: var(--muted); line-height: 1.7; font-variant-numeric: tabular-nums; }
+.filter-group { display: inline-flex; gap: .4rem; }

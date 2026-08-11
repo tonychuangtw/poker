@@ -5,7 +5,10 @@
   var $ = function (sel) { return document.querySelector(sel); };
   var $$ = function (sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); };
 
-  var TYPE_NAMES = { cash: t('現金局'), mtt: 'MTT', sng: 'SNG' };
+  var TYPE_NAMES = { cash: t('現金局'), timed: t('限時桌'), mtt: 'MTT', sng: 'SNG', home: t('私場') };
+  /* 有盲注結構、可算 bb 統計的類型（錦標賽型的 mtt/sng 不算） */
+  function isCashLike(type) { return type === 'cash' || type === 'timed' || type === 'home'; }
+  function arenaOf(r) { return r.arena || 'live'; }  // 舊紀錄視為現場
 
   /* ================= Tabs ================= */
   $('#tabNav').addEventListener('click', function (e) {
@@ -105,6 +108,7 @@
       dSel.appendChild(o2);
     });
     fSel.value = localStorage.getItem('poker.lastCur') || 'TWD';
+    $('#fArena').value = localStorage.getItem('poker.lastArena') || 'live';
     dSel.value = dispCur();
     dSel.addEventListener('change', function () {
       try { localStorage.setItem('poker.dispCur', dSel.value); } catch (e) {}
@@ -187,13 +191,17 @@
       hours: parseFloat($('#fHours').value) || 0,
       bb: parseFloat($('#fBB').value) || 0,
       cur: $('#fCur').value,
+      arena: $('#fArena').value,
       note: $('#fNote').value.trim()
     };
     var moods = pickedMoods();
     if (moods.length) rec.mood = moods;
     var evts = pickedEvents();
     if (evts.length) rec.events = evts;
-    try { localStorage.setItem('poker.lastCur', rec.cur); } catch (e) {}
+    try {
+      localStorage.setItem('poker.lastCur', rec.cur);
+      localStorage.setItem('poker.lastArena', rec.arena);
+    } catch (e) {}
     sessions.push(rec);
     saveSessions(sessions);
     $('#fVenue').value = ''; $('#fTag').value = '';
@@ -206,13 +214,18 @@
 
   // 篩選
   $('#filterType').addEventListener('change', renderList);
+  $('#filterArena').addEventListener('change', renderList);
 
   function renderList() {
     var filter = $('#filterType').value;
+    var arenaF = $('#filterArena').value;
     var ul = $('#sessionList');
     ul.innerHTML = '';
     var shown = vSessions
-      .filter(function (r) { return filter === 'all' || r.type === filter; })
+      .filter(function (r) {
+        return (filter === 'all' || r.type === filter) &&
+               (arenaF === 'all' || arenaOf(r) === arenaF);
+      })
       .slice()
       .sort(function (a, b) {
         return b.date < a.date ? -1 : b.date > a.date ? 1 : (b.id < a.id ? -1 : 1);
@@ -232,6 +245,7 @@
       var badge = document.createElement('span');
       badge.className = 'type-badge';
       badge.textContent = TYPE_NAMES[r.type] || r.type;
+      if (arenaOf(r) === 'online') badge.textContent += '·' + t('線上');
       title.appendChild(badge);
       title.appendChild(document.createTextNode(r.date + (r.venue ? ' · ' + r.venue : '') +
         (r.tag ? t(' · ＃') + r.tag : '')));
@@ -239,7 +253,7 @@
       sub.className = 'session-sub';
       var curTag = (r.cur && r.cur !== dispCur())
         ? t('（原幣 ') + (CUR_SYM[r.cur] || r.cur + ' ') + fmtMoney(r.cashout0 - r.buyin0) + t('）') : '';
-      var bbTxt = (r.type === 'cash' && r.bb > 0)
+      var bbTxt = (isCashLike(r.type) && r.bb > 0)
         ? t(' ｜ ') + fmtPL(Math.round(pl / r.bb * 10) / 10) + ' bb' : '';
       sub.textContent = t('買入 ') + fmtMoney(r.buyin) + t(' → 兌現 ') + fmtMoney(r.cashout) +
         curTag + bbTxt +
@@ -301,9 +315,21 @@
     var cats = [
       [t('現金局'), vSessions.filter(function (r) { return r.type === 'cash'; }), false],
       ['MTT', vSessions.filter(function (r) { return r.type === 'mtt'; }), true],
-      ['SNG', vSessions.filter(function (r) { return r.type === 'sng'; }), true],
-      [t('總計'), vSessions, false]
+      ['SNG', vSessions.filter(function (r) { return r.type === 'sng'; }), true]
     ];
+    /* 限時桌/私場：有紀錄才佔一列 */
+    var timed = vSessions.filter(function (r) { return r.type === 'timed'; });
+    var home = vSessions.filter(function (r) { return r.type === 'home'; });
+    if (timed.length) cats.push([t('限時桌'), timed, false]);
+    if (home.length) cats.push([t('私場'), home, false]);
+    /* 現場/線上拆列：兩邊都有才顯示 */
+    var lv = vSessions.filter(function (r) { return arenaOf(r) === 'live'; });
+    var ol = vSessions.filter(function (r) { return arenaOf(r) === 'online'; });
+    if (lv.length && ol.length) {
+      cats.push([t('現場'), lv, false]);
+      cats.push([t('線上'), ol, false]);
+    }
+    cats.push([t('總計'), vSessions, false]);
     var html = t('<tr><th>類別</th><th>場次</th><th>總買入</th><th>總盈虧</th><th>ROI%</th><th>ITM%</th></tr>');
     cats.forEach(function (c) {
       var s = statsFor(c[1], c[2]);
@@ -343,7 +369,7 @@
     // 現金局 bb 統計：需同時填大盲與時數
     var bbSum = 0, bbHours = 0;
     list.forEach(function (r) {
-      if (r.type === 'cash' && r.bb > 0 && r.hours > 0) {
+      if (isCashLike(r.type) && r.bb > 0 && r.hours > 0) {
         bbSum += (r.cashout - r.buyin) / r.bb;
         bbHours += r.hours;
       }
@@ -466,6 +492,9 @@
         txt = (f.a >= f.b)
           ? '⏱ ' + t('短場（≤') + f.med + t(' 小時）平均 ') + fmtPL(Math.round(f.a)) + t('，長場 ') + fmtPL(Math.round(f.b)) + t(' — 見好就收對你有利')
           : '⏱ ' + t('長場（>') + f.med + t(' 小時）平均 ') + fmtPL(Math.round(f.b)) + t('，短場 ') + fmtPL(Math.round(f.a)) + t(' — 你適合打深場');
+      } else if (f.k === 'arena') {
+        txt = '🎰 ' + t('現場平均每場 ') + fmtPL(Math.round(f.a)) + t('，線上 ') + fmtPL(Math.round(f.b)) +
+          (f.a >= f.b ? t(' — 現場是你的優勢區') : t(' — 線上是你的優勢區'));
       } else if (f.k === 'mood') {
         txt = '🏷 ' + t('標「') + t(f.name) + t('」的場次平均 ') + fmtPL(Math.round(f.a)) +
           t('，整體平均 ') + fmtPL(Math.round(f.b));
@@ -620,9 +649,24 @@
     var pts = [0], cum = 0;
     ordered.forEach(function (r) { cum += r.cashout - r.buyin; pts.push(cum); });
 
+    /* 現場/線上分線（兩邊都有紀錄才畫）；比例尺要涵蓋三條線，不然分線會衝出畫布 */
+    var hasLive = ordered.some(function (r) { return arenaOf(r) === 'live'; });
+    var hasOnline = ordered.some(function (r) { return arenaOf(r) === 'online'; });
+    var split = hasLive && hasOnline;
+    var lvPts = [0], olPts = [0];
+    if (split) {
+      var lc = 0, oc = 0;
+      ordered.forEach(function (r) {
+        var p = r.cashout - r.buyin;
+        if (arenaOf(r) === 'live') lc += p; else oc += p;
+        lvPts.push(lc); olPts.push(oc);
+      });
+    }
+    var allPts = split ? pts.concat(lvPts, olPts) : pts;
+
     var padL = 46, padR = 10, padT = 12, padB = 22;
     var w = cssW - padL - padR, h = cssH - padT - padB;
-    var min = Math.min.apply(null, pts), max = Math.max.apply(null, pts);
+    var min = Math.min.apply(null, allPts), max = Math.max.apply(null, allPts);
     if (min === max) { min -= 1; max += 1; }
     var span = max - min;
     min -= span * 0.08; max += span * 0.08;
@@ -661,19 +705,37 @@
       ctx.fillText('新增紀錄後顯示走勢', cssW / 2, cssH / 2);
       return;
     }
-    // 折線
-    ctx.strokeStyle = cum >= 0 ? '#3ecf7a' : '#ff5c6c';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    pts.forEach(function (v, i) {
-      if (i === 0) ctx.moveTo(x(i), y(v)); else ctx.lineTo(x(i), y(v));
-    });
-    ctx.stroke();
-    // 終點
-    ctx.fillStyle = ctx.strokeStyle;
-    ctx.beginPath();
-    ctx.arc(x(pts.length - 1), y(cum), 3.5, 0, Math.PI * 2);
-    ctx.fill();
+    function drawLine(series, color, width) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      series.forEach(function (v, i) {
+        if (i === 0) ctx.moveTo(x(i), y(v)); else ctx.lineTo(x(i), y(v));
+      });
+      ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x(series.length - 1), y(series[series.length - 1]), 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    /* 現場 / 線上 都有紀錄 → 三條線（2026-08-12 Tony）；否則維持單線 */
+    if (split) {
+      drawLine(lvPts, '#3ecf7a', 1.6);
+      drawLine(olPts, '#6ea8fe', 1.6);
+      drawLine(pts, '#e8c87e', 2.4);
+      /* 圖例 */
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'left';
+      var lx = padL + 4;
+      [['#e8c87e', t('合計')], ['#3ecf7a', t('現場')], ['#6ea8fe', t('線上')]].forEach(function (lg) {
+        ctx.fillStyle = lg[0];
+        ctx.fillRect(lx, padT, 10, 3);
+        ctx.fillText(lg[1], lx + 14, padT + 5);
+        lx += 14 + ctx.measureText(lg[1]).width + 14;
+      });
+    } else {
+      drawLine(pts, cum >= 0 ? '#3ecf7a' : '#ff5c6c', 2);
+    }
   }
   window.addEventListener('resize', drawChart);
 
@@ -744,9 +806,10 @@
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
   $('#btnExportCsv').addEventListener('click', function () {
-    var rows = [[t('日期'), t('類型'), t('場地'), t('標籤'), t('幣別'), t('買入'), t('兌現'), t('盈虧'), t('時數'), t('大盲'), t('備註')]];
+    var rows = [[t('日期'), t('類型'), t('場域'), t('場地'), t('標籤'), t('幣別'), t('買入'), t('兌現'), t('盈虧'), t('時數'), t('大盲'), t('備註')]];
     sessions.forEach(function (r) {
-      rows.push([r.date, TYPE_NAMES[r.type] || r.type, r.venue, r.tag || '', r.cur || 'TWD', r.buyin, r.cashout,
+      rows.push([r.date, TYPE_NAMES[r.type] || r.type, arenaOf(r) === 'online' ? t('線上') : t('現場'),
+        r.venue, r.tag || '', r.cur || 'TWD', r.buyin, r.cashout,
         r.cashout - r.buyin, r.hours || '', r.bb || '', r.note]);
     });
     var csv = '\uFEFF' + rows.map(function (row) { return row.map(csvEscape).join(','); }).join('\r\n');

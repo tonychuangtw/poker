@@ -284,6 +284,13 @@ assert(vIns.filter(function (x) { return x.k === 'venue-best' && x.name === 'A' 
 assert(vIns.filter(function (x) { return x.k === 'venue-worst' && x.name === 'B' && x.a === -40; }).length === 1,
   'insights: venue-worst B -40');
 assert(TrackerStats.insights([]).length === 0, 'insights: empty safe');
+// 現場 vs 線上
+var asess = [];
+for (var ai = 0; ai < 5; ai++) { asess.push(mk('2026-08-0' + (ai + 1), 60)); }              // 無 arena → 視為現場
+for (ai = 0; ai < 5; ai++) { asess.push(mk('2026-08-1' + ai, -20, { arena: 'online' })); }
+var aIns = TrackerStats.insights(asess).filter(function (x) { return x.k === 'arena'; })[0];
+assert(aIns && aIns.a === 60 && aIns.b === -20 && aIns.an === 5 && aIns.bn === 5,
+  'insights: arena live +60 vs online -20, legacy defaults to live');
 
 // ---------- 4. Preflop table ----------
 console.log('--- Preflop table ---');

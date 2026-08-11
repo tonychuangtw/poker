@@ -1023,5 +1023,16 @@
  "繼續": "Reprise",
  "金額": "Montant",
  " ｜ ⏱ ": " | ⏱ ",
- " 事件": " événements"
+ " 事件": " événements",
+ "限時桌": "Table à durée",
+ "私場": "Partie privée",
+ "現場": "Live",
+ "線上": "En ligne",
+ "場域": "Format",
+ "全部場域": "Tous formats",
+ "合計": "Total",
+ "現場平均每場 ": "Moyenne live ",
+ "，線上 ": ", en ligne ",
+ " — 現場是你的優勢區": "— le live est votre force",
+ " — 線上是你的優勢區": "— le online est votre force"
 }

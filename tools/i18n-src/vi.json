@@ -1023,5 +1023,16 @@
  "繼續": "Tiếp tục",
  "金額": "Số tiền",
  " ｜ ⏱ ": " | ⏱ ",
- " 事件": " sự kiện"
+ " 事件": " sự kiện",
+ "限時桌": "Bàn giới hạn giờ",
+ "私場": "Home game",
+ "現場": "Live",
+ "線上": "Online",
+ "場域": "Hình thức",
+ "全部場域": "Tất cả",
+ "合計": "Tổng",
+ "現場平均每場 ": "TB live ",
+ "，線上 ": ", online ",
+ " — 現場是你的優勢區": "— live là thế mạnh của bạn",
+ " — 線上是你的優勢區": "— online là thế mạnh của bạn"
 }
