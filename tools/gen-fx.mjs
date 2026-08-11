@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const OUT = join(root, 'data', 'fx.json');
 const WANT = ['USD', 'KRW', 'TWD', 'VND', 'PHP', 'JPY', 'EUR', 'GBP', 'CNY', 'HKD',
-  'THB', 'MYR', 'SGD', 'AUD', 'CAD', 'KHR', 'INR', 'MOP', 'IDR', 'CZK'];
+  'THB', 'MYR', 'SGD', 'AUD', 'CAD', 'KHR', 'INR', 'MOP', 'IDR', 'CZK', 'CHF'];
 
 try {
   const res = await fetch('https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(20000) });
