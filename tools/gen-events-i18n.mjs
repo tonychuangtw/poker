@@ -38,11 +38,14 @@ console.log(`events-i18n: translating ${batch.length}/${missing.length} missing 
 for (const group of GROUPS) {
   const groupMissing = batch.filter((k) => group.some((l) => db[l][k] === undefined));
   if (!groupMissing.length) continue;
-  const prompt = `把下面 JSON 陣列裡的繁體中文字串（德州撲克賽事的城市名與賽事說明）翻譯成這些語言：${group.join(', ')}。
-輸出純 JSON、不要 markdown code fence、不要任何其他文字：{"<語言代碼>": {"原文": "譯文", ...}, ...}
-每個語言的表都要涵蓋陣列裡全部字串。系列名/場館名/Main Event 等專有名詞與數字金額保留原樣；
+  /* key 用索引不用原文：長句原文當 JSON key 會被模型改寫（空白/標點正規化），
+     exact-match 對不回來 → 翻了也存不進去（2026-08-11 實際踩到，8/23 條全滅） */
+  const indexed = groupMissing.map((k, i) => ({ i: String(i), text: k }));
+  const prompt = `把下面 JSON 陣列裡每個 {i, text} 的繁體中文 text（德州撲克賽事的城市名與賽事說明）翻譯成這些語言：${group.join(', ')}。
+輸出純 JSON、不要 markdown code fence、不要任何其他文字：{"<語言代碼>": {"<i>": "譯文", ...}, ...}
+每個語言的表都要涵蓋全部索引 i。系列名/場館名/Main Event 等專有名詞與數字金額保留原樣；
 zh-CN 用大陸撲克用語；ja 撲克術語用片假名；ko 用韓文外來語；th 用泰文。
-${JSON.stringify(groupMissing)}`;
+${JSON.stringify(indexed)}`;
   try {
     const out = execFileSync('claude',
       ['--print', '--model', 'haiku', '--dangerously-skip-permissions', prompt],
@@ -52,8 +55,9 @@ ${JSON.stringify(groupMissing)}`;
     const res = JSON.parse(jsonStr);
     for (const l of group) {
       if (!res[l]) continue;
-      for (const [k, v] of Object.entries(res[l])) {
-        if (wanted.has(k) && typeof v === 'string' && v) db[l][k] = v;
+      for (const [idx, v] of Object.entries(res[l])) {
+        const k = groupMissing[parseInt(idx, 10)];
+        if (k !== undefined && typeof v === 'string' && v) db[l][k] = v;
       }
     }
   } catch (e) {
