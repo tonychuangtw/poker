@@ -69,6 +69,17 @@
       "url": "https://www.theasianpokertour.com/series/apt-incheon-south-korea-2026/events"
     },
     {
+      "series": "QPC Autumn 2026（Quads Poker Championship）",
+      "region": "亞洲",
+      "country": "越南",
+      "city": "河內",
+      "venue": "Quads Hanoi Poker Club",
+      "start": "2026-08-09",
+      "end": "2026-08-19",
+      "note": "河內 Quads 撲克俱樂部秋季系列，共 64 場賽事，全系列保證獎金 800 億 VND（約 US$3M）；主賽事保證獎金 200 億 VND（約 US$760K）",
+      "url": "https://somuchpoker.com/poker-calendar/2026"
+    },
+    {
       "series": "WPT Cyprus Championship",
       "region": "歐洲",
       "country": "賽普勒斯（北賽普勒斯）",
@@ -122,6 +133,17 @@
       "end": "2026-08-31",
       "note": "共 104 場賽事（其中 92 場為正式編號賽事），總保證獎金經 2026-07-24 再次查證確認為新台幣 39,000,000 元；主賽事（8/25–8/31，分 6 個起始梯次）保證新台幣 1,500 萬元，另有 Natural8 Open 暖身主賽事（8/20–8/22）保證新台幣 500 萬元，全系列最高買入為 Superstar Challenge（新台幣 120,000 元）",
       "url": "https://somuchpoker.com/news/ps-championship-iv-taipei-2026-event-schedule"
+    },
+    {
+      "series": "HSOP Grinder Series II 2026",
+      "region": "亞洲",
+      "country": "越南",
+      "city": "河內",
+      "venue": "Grand Plaza Hotel Hanoi",
+      "start": "2026-08-19",
+      "end": "2026-08-29",
+      "note": "Hanoi Series of Poker 第二季 Grinder 系列，共 94 場賽事，全系列保證獎金 474 億 VND（約 US$1.8M）；7 月首屆 Grinder 系列保證 500 億 VND 含 120 億主賽",
+      "url": "https://somuchpoker.com/poker-calendar/2026"
     },
     {
       "series": "WPT bestbet Scramble Championship",
@@ -221,6 +243,17 @@
       "end": "2026-09-17",
       "note": "Triton 10 週年賽季濟州站，官方已公布完整 14 天賽程，買入區間約 $15,000–$200,000，9/4 開幕，含 9/12 開打的 Triton Invitational（邀請制，上屆由 Adrian Mateos 於 133 人賽事中奪冠，獲得約 $637 萬）與 9/14 開打的 $100,000 主賽事（NLH，50 分鐘慢結構），9/16 另設 10 週年特別賽（$150,000，早鳥享 5 折優惠），9/17 閉幕；開幕週另含 $25,000 Golden Decade 與 $40,000 Mystery Bounty；GTD 保證獎金官方尚未公布。命名更正：經 2026-07-24 再次查證，Triton 官網與 PokerNews 完整賽程公告均僅稱本場為「Triton Poker Super High Roller Series (Jeju)」，未見任何「Jeju II」或編號字樣，故將系列名稱由先前的「Jeju II 2026」修正移除編號",
       "url": "https://www.pokernews.com/news/2026/07/triton-poker-jeju-2026-full-schedule-announced-51914.htm"
+    },
+    {
+      "series": "RPT Championship IV 2026",
+      "region": "亞洲",
+      "country": "越南",
+      "city": "河內",
+      "venue": "Royal Poker Club",
+      "start": "2026-09-11",
+      "end": "2026-09-22",
+      "note": "Royal Poker Tour 河內錦標賽第四站，共 83 場賽事，全系列保證獎金約 778 億 VND（約 US$3M）；主賽事買入 2,750 萬 VND，保證獎金 200 億 VND；另有 RPT Super Star Challenge（買入 1.09 億 VND）等高額賽",
+      "url": "https://somuchpoker.com/events-calendar/rpt/2026/rpt-championship-iv"
     },
     {
       "series": "WSOP Circuit Council Bluffs",
@@ -584,6 +617,17 @@
       "end": "2026-11-29",
       "note": "2026-07-24 查證新發現，Grosvenor UK Poker Tour（GUKPT）年度總決賽站，為 2026 年 GUKPT 完整賽季（含 7 月 Goliath／Coventry、8 月新增站 Glasgow、9 月 Luton、9-10 月 Leeds、10-11 月 Blackpool 等分站）的壓軸賽事；本次查詢區間僅涵蓋開賽首 9 天（11/19–11/27），逐場賽程與保證獎金截至查證時尚未見官方完整公布，建議持續追蹤",
       "url": "https://www.gukpt.com/"
+    },
+    {
+      "series": "GLPC Ultimate Showdown 2026",
+      "region": "亞洲",
+      "country": "越南",
+      "city": "河內",
+      "venue": "Grand Loyal Poker Club",
+      "start": "2026-11-20",
+      "end": "2026-12-01",
+      "note": "河內 Grand Loyal 撲克俱樂部年末大型系列，12 月初收官；12 月另有 RPT Grand Final（12/1–12，Royal Poker Club）接棒",
+      "url": "https://somuchpoker.com/poker-calendar/2026"
     },
     {
       "series": "EPT Prague 2026",
