@@ -1295,6 +1295,43 @@ assert(ls.byStreet.flop.badCalls === 2 && ls.byStreet.river.missedCalls === 1 &&
   'leakSummary per-street breakdown');
 assert(HANDS.leakSummary([]).decisions === 0, 'leakSummary empty list ok');
 
+// prettyCards（花色符號＋容錯）
+assert(HANDS.prettyCards('As Kd') === 'A♠ K♦', 'prettyCards "As Kd"');
+assert(HANDS.prettyCards('AsKd') === 'A♠ K♦', 'prettyCards concatenated');
+assert(HANDS.prettyCards('th 7c') === 'T♥ 7♣', 'prettyCards lowercase + T');
+assert(HANDS.prettyCards('xyz') === 'xyz', 'prettyCards keeps unparsable token');
+assert(HANDS.prettyCards('') === '', 'prettyCards empty');
+
+// handToText（匯出文字：關鍵行都在）
+var exRec = {
+  date: '2026-08-15', name: 'Daily Game', gtype: 'mtt', players: 8,
+  blinds: '2500/5000', ante: 5000, stack: 16, pos: 'LJ', hero: 'Kc Jc',
+  opps: [{ pos: 'BTN', stack: 18 }],
+  showdown: [{ pos: 'BB', cards: '9s 8d' }],
+  result: -14, note: 'test note',
+  streets: [{ street: 'preflop', boardTxt: '', pot: 2.5, toCall: 0, action: 'raise',
+              range: '77+ A9s+',
+              analysis: { needed: 0, equity: 0.62, verdict: 'raise_ahead' } }]
+};
+var exTxt = HANDS.handToText(exRec);
+assert(exTxt.indexOf('2026-08-15') === 0, 'handToText starts with date');
+assert(exTxt.indexOf('K♣ J♣') !== -1, 'handToText pretty hero cards');
+assert(exTxt.indexOf('BTN') !== -1 && exTxt.indexOf('18 bb') !== -1, 'handToText opps line');
+assert(exTxt.indexOf('9♠ 8♦') !== -1, 'handToText showdown line');
+assert(exTxt.indexOf('-14 bb') !== -1, 'handToText result line');
+assert(exTxt.indexOf('62.0%') !== -1, 'handToText analysis line');
+var exMin = HANDS.handToText({ date: '2026-08-15', pos: 'BTN', hero: 'As Kd', streets: [] });
+assert(exMin.indexOf('A♠ K♦') !== -1, 'handToText minimal rec ok');
+
+// dateBucket（列表時間分組；today=2026-08-15 是週六）
+assert(HANDS.dateBucket('2026-08-15', '2026-08-15') === 'today', 'dateBucket today');
+assert(HANDS.dateBucket('2026-08-14', '2026-08-15') === 'yesterday', 'dateBucket yesterday');
+assert(HANDS.dateBucket('2026-08-10', '2026-08-15') === 'thisweek', 'dateBucket monday -> thisweek');
+assert(HANDS.dateBucket('2026-08-09', '2026-08-15') === 'lastweek', 'dateBucket sunday -> lastweek');
+assert(HANDS.dateBucket('2026-08-01', '2026-08-15') === 'thismonth', 'dateBucket same month');
+assert(HANDS.dateBucket('2026-07-20', '2026-08-15') === '2026-07', 'dateBucket previous month');
+assert(HANDS.dateBucket('bogus', '2026-08-15') === 'unknown', 'dateBucket bad date');
+
 // ---------- 6b. 訓練系統（純函式） ----------
 console.log('--- Training ---');
 var TRAINING = require('../js/training.js');

@@ -141,6 +141,90 @@
     return out;
   }
 
+  /* ---- 匯出與列表工具（2026-08-15，手牌記錄精靈）---- */
+  var SUIT_SYM = { s: '♠', h: '♥', d: '♦', c: '♣' };
+
+  /* "As Kd" / "AsKd" → "A♠ K♦"；解析不了的 token 原樣保留 */
+  function prettyCards(str) {
+    var s = String(str == null ? '' : str).trim();
+    if (!s) return '';
+    var toks = s.split(/[\s,]+/), flat = [];
+    toks.forEach(function (tk) {
+      if (tk.length > 2 && tk.length % 2 === 0) {
+        for (var i = 0; i < tk.length; i += 2) flat.push(tk.slice(i, i + 2));
+      } else flat.push(tk);
+    });
+    return flat.map(function (tk) {
+      var m = /^([2-9tjqka10]{1,2})([shdc])$/i.exec(tk);
+      if (!m) return tk;
+      return m[1].toUpperCase().replace('10', 'T') + SUIT_SYM[m[2].toLowerCase()];
+    }).join(' ');
+  }
+
+  /* 手牌純文字匯出（PokerAlpha 式）。rec 欄位缺的行自動略過；
+     street.analysis 沒有時只列動作不列評估。 */
+  function handToText(rec) {
+    var L = [];
+    L.push(rec.date || '');
+    var head = (rec.gtype === 'mtt' ? t('錦標賽') : t('現金局')) +
+      (rec.name ? ' ' + rec.name : '');
+    L.push(head);
+    if (rec.players) L.push(t('桌上人數：') + rec.players + t(' 人'));
+    if (rec.blinds) L.push(t('盲注：') + rec.blinds + (rec.ante ? t('（前注 ') + rec.ante + t('）') : ''));
+    if (rec.stack) L.push(t('有效籌碼：') + rec.stack + ' bb');
+    L.push(t('我：') + rec.pos + ' ' + prettyCards(rec.hero));
+    if (rec.opps && rec.opps.length) {
+      L.push('');
+      L.push(t('對手'));
+      rec.opps.forEach(function (o) {
+        L.push(o.pos + (o.stack ? t('：籌碼 ') + o.stack + ' bb' : ''));
+      });
+    }
+    (rec.streets || []).forEach(function (st) {
+      L.push('');
+      L.push(STREET_NAMES[st.street] +
+        (st.boardTxt ? '  ' + prettyCards(st.boardTxt) : '') +
+        t('｜底池 ') + st.pot + ' bb' +
+        (st.toCall ? t('｜需跟注 ') + st.toCall + ' bb' : ''));
+      L.push(t('行動：') + ACTION_NAMES[st.action] + t('｜對手 range：') + st.range);
+      if (st.analysis) {
+        L.push(t('需要勝率 ') + (st.analysis.needed * 100).toFixed(1) +
+          t('% vs 實際 ') + (st.analysis.equity * 100).toFixed(1) + '% → ' +
+          verdictText(st.analysis.verdict));
+      }
+    });
+    if (rec.showdown && rec.showdown.length) {
+      L.push('');
+      L.push(t('攤牌'));
+      rec.showdown.forEach(function (sd) {
+        L.push(sd.pos + t('：') + prettyCards(sd.cards));
+      });
+    }
+    if (rec.result !== null && rec.result !== undefined) {
+      L.push('');
+      L.push(t('結果：') + (rec.result > 0 ? '+' : '') + rec.result + ' bb');
+    }
+    if (rec.note) L.push(t('備註：') + rec.note);
+    return L.join('\n');
+  }
+
+  /* 列表時間分組：回傳分組代碼（顯示文字由 UI 層翻譯）。
+     today / yesterday / thisweek / lastweek / thismonth / 'YYYY-MM'。週一起算。 */
+  function dateBucket(dateStr, todayStr) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateStr))) return 'unknown';
+    var d = new Date(dateStr + 'T00:00:00Z');
+    var now = new Date(todayStr + 'T00:00:00Z');
+    var diff = Math.round((now - d) / 864e5);
+    if (diff <= 0 && diff > -1) return 'today';
+    if (diff === 1) return 'yesterday';
+    /* 本週起點（週一） */
+    var dow = (now.getUTCDay() + 6) % 7; // 週一=0
+    if (diff > 1 && diff <= dow) return 'thisweek';
+    if (diff > dow && diff <= dow + 7) return 'lastweek';
+    if (dateStr.slice(0, 7) === todayStr.slice(0, 7)) return 'thismonth';
+    return dateStr.slice(0, 7);
+  }
+
   var HANDS = {
     STREETS: STREETS,
     STREET_NAMES: STREET_NAMES,
@@ -152,7 +236,10 @@
     classifyDecision: classifyDecision,
     verdictText: verdictText,
     analyzeStreet: analyzeStreet,
-    leakSummary: leakSummary
+    leakSummary: leakSummary,
+    prettyCards: prettyCards,
+    handToText: handToText,
+    dateBucket: dateBucket
   };
   if (isNode) module.exports = HANDS;
   else global.HANDS = HANDS;

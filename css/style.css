@@ -884,6 +884,81 @@ a.ev-name:hover { text-decoration: underline; }
   font-size: 2.6rem; font-weight: 800; letter-spacing: -.5px; line-height: 1.15;
   margin: .45rem 0 .15rem; font-variant-numeric: tabular-nums;
 }
+/* ===== FAB ＋ bottom sheet（2026-08-15，新增改「＋」彈出）===== */
+.fab {
+  position: fixed; right: 18px;
+  bottom: calc(clamp(72px, 4.9rem, 92px) + env(safe-area-inset-bottom, 0px));
+  width: 54px; height: 54px; border-radius: 50%;
+  background: var(--accent); color: var(--on-accent);
+  font-size: 1.9rem; line-height: 1; border: 0; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .45);
+  z-index: 30;
+  transition: transform .15s;
+}
+.fab:active { transform: scale(.92); }
+.sheet-backdrop {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(0, 0, 0, .55);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.sheet {
+  background: var(--bg2); width: 100%; max-width: 640px;
+  max-height: 88vh; overflow-y: auto; overscroll-behavior: contain;
+  border-radius: 20px 20px 0 0;
+  padding: 6px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  animation: sheet-up .22s ease;
+}
+@keyframes sheet-up {
+  from { transform: translateY(48px); opacity: .5; }
+  to { transform: none; opacity: 1; }
+}
+.sheet-grip { width: 42px; height: 4px; border-radius: 2px; background: var(--border); margin: 4px auto 8px; }
+.sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .3rem; }
+.sheet-head h2 { margin: 0; }
+.sheet-close {
+  border: 0; background: var(--bg3); color: var(--muted); cursor: pointer;
+  width: 30px; height: 30px; border-radius: 50%; font-size: .95rem; flex: none;
+}
+:root[data-theme="light"] .sheet { background: #f4f2ea; }
+
+/* ===== 手牌記錄精靈＋列表分組（2026-08-15）===== */
+.wiz-dots { display: flex; justify-content: center; gap: 8px; margin: .3rem 0 .7rem; }
+.wiz-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+.wiz-dot.active { background: var(--accent); }
+.wiz-step h3 { margin: .2rem 0 .6rem; font-size: 1.02rem; }
+.wiz-nav { margin-top: .8rem; }
+.wiz-nav .btn { flex: 1; }
+.cards-preview { display: flex; gap: 6px; min-height: 46px; align-items: center; color: var(--neg); font-size: .85rem; }
+.card-chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 52px; border-radius: 6px; background: #f7f5ee;
+  font-weight: 800; font-size: 1.05rem; box-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+}
+.card-chip.suit-s { color: #22262e; }
+.card-chip.suit-h { color: #d02b3f; }
+.card-chip.suit-d { color: #1f6ff0; }
+.card-chip.suit-c { color: #1e9e4a; }
+.hand-preview {
+  background: var(--bg3); border: 1px solid var(--border-soft); border-radius: var(--radius-sm);
+  padding: .7rem .8rem; margin: .6rem 0; font-size: .8rem; line-height: 1.6;
+  white-space: pre-wrap; overflow-x: auto; font-variant-numeric: tabular-nums;
+}
+.group-head {
+  list-style: none; color: var(--muted); font-size: .8rem; font-weight: 700;
+  padding: .75rem 0 .25rem;
+}
+.fav-star {
+  border: 0; background: none; color: var(--border); font-size: 1.2rem;
+  cursor: pointer; padding: 0 .25rem; flex: none; align-self: center;
+}
+.fav-star.on { color: var(--accent2); }
+.fav-toggle {
+  border: 1px solid var(--border); background: var(--bg3); color: var(--muted);
+  width: 32px; height: 32px; border-radius: 999px; cursor: pointer; font-size: 1rem;
+}
+.fav-toggle.on { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.hand-search { margin: .4rem 0 .2rem; }
+
 /* 儀表板類型頁籤（全部/現金桌/錦標賽，2026-08-14） */
 .seg-tabs { display: flex; width: 100%; margin: 12px 0 0; }
 .seg-tabs .seg-btn { flex: 1; padding: .45rem 0; font-size: .88rem; }

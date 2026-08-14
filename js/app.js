@@ -136,6 +136,21 @@
   $('#periodPrev').addEventListener('click', function () { stepPeriod(-1); });
   $('#periodNext').addEventListener('click', function () { stepPeriod(1); });
 
+  /* --- bottom sheet 通用開關（2026-08-15 Tony「照 3」：新增改 FAB＋彈出表單）--- */
+  function openSheet(id) {
+    $('#' + id).hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSheet(id) {
+    $('#' + id).hidden = true;
+    document.body.style.overflow = '';
+  }
+  $$('.sheet-backdrop').forEach(function (bk) {
+    bk.addEventListener('click', function (e) { if (e.target === bk) closeSheet(bk.id); });
+  });
+  $('#fabAddSession').addEventListener('click', function () { openSheet('addSheet'); });
+  $('#btnCloseAddSheet').addEventListener('click', function () { closeSheet('addSheet'); });
+
   // 新增
   /* 幣別選單：新增用 fCur（記住上次選的）、右上角 dispCur = 統一顯示幣種 */
   (function initCurSelects() {
@@ -250,6 +265,7 @@
     $('#fHours').value = ''; $('#fBB').value = ''; $('#fNote').value = '';
     $('#fMood').querySelectorAll('.mood-chip.active').forEach(function (b) { b.classList.remove('active'); });
     $('#evtEditor').innerHTML = '';
+    closeSheet('addSheet');
     renderTracker();
   });
 
@@ -2884,6 +2900,152 @@
   function saveHands(list) { localStorage.setItem(HANDS_KEY, JSON.stringify(list)); }
   var handRecords = loadHands();
 
+  /* --- 手牌記錄精靈（2026-08-15 Tony 拍板照 3→1→2，參考 PokerAlpha 5 步流程）--- */
+  var HW_LAST_STEP = 5;
+  var hwStep = 1;
+  var HW_POSITIONS = ['UTG', 'UTG+1', 'MP', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
+  var SUIT_CHIP = { s: '♠', h: '♥', d: '♦', c: '♣' };
+
+  (function initHandWizard() {
+    var pSel = $('#hwPlayers');
+    for (var i = 2; i <= 10; i++) {
+      var o = document.createElement('option');
+      o.value = i;
+      o.textContent = i + t(' 人');
+      pSel.appendChild(o);
+    }
+    pSel.value = '8';
+    $('#hwDate').value = new Date().toISOString().slice(0, 10);
+    var dots = $('#hwDots');
+    for (var s = 1; s <= HW_LAST_STEP; s++) {
+      var d = document.createElement('span');
+      d.className = 'wiz-dot';
+      dots.appendChild(d);
+    }
+    $('#fabAddHand').addEventListener('click', function () {
+      openSheet('handSheet');
+      hwGo(1);
+    });
+    $('#btnCloseHandSheet').addEventListener('click', function () { closeSheet('handSheet'); });
+    $('#btnHwPrev').addEventListener('click', function () { hwGo(hwStep - 1); });
+    $('#btnHwNext').addEventListener('click', function () { hwGo(hwStep + 1); });
+    $('#hHero').addEventListener('input', renderHeroPreview);
+    $('#btnAddOpp').addEventListener('click', function () { addPosRow($('#hwOpps'), 'stack'); });
+    $('#btnAddShow').addEventListener('click', function () { addPosRow($('#hwShows'), 'cards'); });
+  })();
+
+  function hwGo(n) {
+    if (n < 1 || n > HW_LAST_STEP) return;
+    hwStep = n;
+    $$('#handSheet .wiz-step').forEach(function (el) { el.hidden = +el.dataset.step !== n; });
+    $$('#hwDots .wiz-dot').forEach(function (el, i) { el.classList.toggle('active', i < n); });
+    $('#btnHwPrev').hidden = n === 1;
+    $('#btnHwNext').hidden = n === HW_LAST_STEP;
+    if (n === HW_LAST_STEP) renderHandPreview();
+    $('#handSheet .sheet').scrollTop = 0;
+  }
+
+  function addPosRow(box, kind) {
+    var row = document.createElement('div');
+    row.className = 'evt-row';
+    var sel = document.createElement('select');
+    HW_POSITIONS.forEach(function (p) {
+      var o = document.createElement('option');
+      o.value = p;
+      o.textContent = p;
+      sel.appendChild(o);
+    });
+    var inp = document.createElement('input');
+    if (kind === 'stack') {
+      inp.type = 'number';
+      inp.inputMode = 'decimal';
+      inp.min = '0';
+      inp.step = 'any';
+      inp.placeholder = t('籌碼（bb）');
+    } else {
+      inp.type = 'text';
+      inp.autocapitalize = 'off';
+      inp.autocomplete = 'off';
+      inp.placeholder = t('牌（例：9s 8d）');
+    }
+    var del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'del-btn';
+    del.textContent = '✕';
+    del.addEventListener('click', function () { row.remove(); });
+    row.appendChild(sel);
+    row.appendChild(inp);
+    row.appendChild(del);
+    box.appendChild(row);
+  }
+  function readPosRows(box, kind) {
+    var out = [];
+    Array.prototype.forEach.call(box.querySelectorAll('.evt-row'), function (row) {
+      var pos = row.querySelector('select').value;
+      var v = row.querySelector('input').value;
+      if (kind === 'stack') {
+        var st = parseFloat(v);
+        out.push(st > 0 ? { pos: pos, stack: st } : { pos: pos });
+      } else if (v.trim()) {
+        out.push({ pos: pos, cards: v.trim() });
+      }
+    });
+    return out;
+  }
+
+  function cardChip(cs) {
+    var span = document.createElement('span');
+    var suit = cs[1];
+    span.className = 'card-chip suit-' + suit;
+    span.textContent = cs[0].toUpperCase() + (SUIT_CHIP[suit] || '');
+    return span;
+  }
+  function renderHeroPreview() {
+    var box = $('#hwHeroPrev');
+    box.innerHTML = '';
+    var txt = $('#hHero').value.trim();
+    if (!txt) return;
+    try {
+      HANDS.parseCards(txt, 2).forEach(function (c) {
+        box.appendChild(cardChip(Evaluator.cardToString(c)));
+      });
+    } catch (e) {
+      box.textContent = '⚠ ' + e.message;
+    }
+  }
+
+  function draftHandRec() {
+    return {
+      date: $('#hwDate').value || new Date().toISOString().slice(0, 10),
+      name: $('#hwName').value.trim(),
+      gtype: $('#hwType').value,
+      players: parseInt($('#hwPlayers').value, 10) || 0,
+      blinds: $('#hBlinds').value.trim(),
+      ante: parseFloat($('#hAnte').value) || 0,
+      stack: parseFloat($('#hStack').value) || 0,
+      pos: $('#hPos').value,
+      hero: $('#hHero').value.trim(),
+      result: $('#hResult').value === '' ? null : parseFloat($('#hResult').value),
+      note: $('#hNote').value.trim(),
+      opps: readPosRows($('#hwOpps'), 'stack'),
+      showdown: readPosRows($('#hwShows'), 'cards')
+    };
+  }
+  function renderHandPreview() {
+    var pre = $('#hwPreview');
+    var rec = draftHandRec();
+    try {
+      rec.streets = readStreetInputs().map(function (s) {
+        return { street: s.street, boardTxt: s.board.map(Evaluator.cardToString).join(' '),
+                 pot: s.pot, toCall: s.toCall, action: s.action, range: s.range };
+      });
+      pre.textContent = HANDS.handToText(rec);
+    } catch (err) {
+      rec.streets = [];
+      pre.textContent = HANDS.handToText(rec) + '\n\n⚠ ' + err.message;
+    }
+  }
+
   var HS_BOARD_LABEL = {
     flop: t('翻牌公牌（3 張，例：Qh 7d 2s）'),
     turn: t('轉牌（第 4 張，例：9c）'),
@@ -2967,23 +3129,19 @@
           s.boardTxt = s.board.map(Evaluator.cardToString).join(' ');
           delete s.board;
         });
-        var rec = {
-          id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
-          date: new Date().toISOString().slice(0, 10),
-          blinds: $('#hBlinds').value.trim(),
-          ante: parseFloat($('#hAnte').value) || 0,
-          stack: parseFloat($('#hStack').value) || 0,
-          pos: $('#hPos').value,
-          hero: heroCards.map(Evaluator.cardToString).join(' '),
-          result: $('#hResult').value === '' ? null : parseFloat($('#hResult').value),
-          note: $('#hNote').value.trim(),
-          streets: streets
-        };
+        var rec = draftHandRec();
+        rec.id = Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+        rec.hero = heroCards.map(Evaluator.cardToString).join(' ');
+        rec.streets = streets;
         handRecords.unshift(rec);
         if (handRecords.length > HANDS_CAP) handRecords = handRecords.slice(0, HANDS_CAP);
         saveHands(handRecords);
-        // 清空手牌相關輸入（保留盲注 / 籌碼 / 位置方便連續記錄）
+        // 清空手牌相關輸入（保留桌況：盲注 / 籌碼 / 位置 / 人數，方便連續記錄）
         $('#hHero').value = ''; $('#hResult').value = ''; $('#hNote').value = '';
+        $('#hwHeroPrev').innerHTML = '';
+        $('#hwOpps').innerHTML = '';
+        $('#hwShows').innerHTML = '';
+        closeSheet('handSheet');
         $$('#hStreets .hs-board').forEach(function (el) { el.value = ''; });
         $$('#hStreets .hs-pot').forEach(function (el) { el.value = ''; });
         $$('#hStreets .hs-call').forEach(function (el) { el.value = ''; });
@@ -3054,6 +3212,245 @@
       : t('目前跟注決策沒有 leak，繼續保持。');
   }
 
+  /* --- 手牌列表：搜尋 / 書籤 / 時間分組（2026-08-15，照 PokerAlpha）--- */
+  var handQuery = '';
+  var handFavOnly = false;
+  $('#handSearch').addEventListener('input', function () {
+    handQuery = this.value.trim().toLowerCase();
+    renderHandList();
+  });
+  $('#handFavToggle').addEventListener('click', function () {
+    handFavOnly = !handFavOnly;
+    this.classList.toggle('on', handFavOnly);
+    this.setAttribute('aria-pressed', String(handFavOnly));
+    renderHandList();
+  });
+  function handMatches(h, q) {
+    if (!q) return true;
+    var hay = [h.hero, HANDS.prettyCards(h.hero), h.name, h.pos, h.note, h.blinds, h.date]
+      .concat((h.streets || []).map(function (s) { return s.range; }))
+      .join(' ').toLowerCase();
+    return hay.indexOf(q) !== -1;
+  }
+
+  function copyText(txt, btn, normalLabel) {
+    function ok() {
+      btn.textContent = t('已複製 ✓');
+      setTimeout(function () { btn.textContent = normalLabel; }, 1500);
+    }
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = txt;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); ok(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(ok, fallback);
+    } else fallback();
+  }
+
+  /* 牌桌圖 PNG 匯出（PokerAlpha 式：桌面＋座位＋公牌＋逐街摘要） */
+  var SUIT_COLOR = { s: '#22262e', h: '#d02b3f', d: '#1f6ff0', c: '#1e9e4a' };
+  function rr(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function drawCardImg(ctx, x, y, w, h, tk) {
+    var m = /^([2-9TJQKA])([shdc])$/i.exec(String(tk).trim());
+    rr(ctx, x, y, w, h, 4);
+    ctx.fillStyle = '#f7f5ee';
+    ctx.fill();
+    if (!m) return;
+    var col = SUIT_COLOR[m[2].toLowerCase()];
+    ctx.fillStyle = col;
+    ctx.font = 'bold ' + Math.round(h * 0.42) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(m[1].toUpperCase(), x + w / 2, y + h * 0.45);
+    ctx.font = Math.round(h * 0.34) + 'px sans-serif';
+    ctx.fillText(SUIT_CHIP[m[2].toLowerCase()], x + w / 2, y + h * 0.82);
+  }
+  function handToImage(h) {
+    var scale = 2, W = 700;
+    var streets = h.streets || [];
+    var shows = h.showdown || [];
+    var listH = 0;
+    streets.forEach(function (st) { listH += st.analysis ? 66 : 46; });
+    var H = 96 + 330 + 26 + listH + (shows.length ? 26 + shows.length * 22 : 0) +
+            (h.result !== null && h.result !== undefined ? 36 : 0) + (h.note ? 26 : 0) + 30;
+    var cv = document.createElement('canvas');
+    cv.width = W * scale;
+    cv.height = H * scale;
+    var ctx = cv.getContext('2d');
+    ctx.scale(scale, scale);
+    ctx.fillStyle = '#101413';
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = '#c9a24b';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(8, 8, W - 16, H - 16);
+    // 標題列
+    ctx.fillStyle = '#e8c87e';
+    ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(h.name || (h.gtype === 'mtt' ? t('錦標賽') : t('現金局')), W / 2, 42);
+    ctx.fillStyle = '#8b91a3';
+    ctx.font = '13px sans-serif';
+    ctx.fillText(h.date +
+      (h.blinds ? '　' + t('盲注 ') + h.blinds : '') +
+      (h.players ? '　' + h.players + t(' 人桌') : '') +
+      (h.stack ? '　' + h.stack + ' bb' : ''), W / 2, 64);
+    // 桌面
+    var tcx = W / 2, tcy = 96 + 158, rx = 228, ry = 116;
+    ctx.beginPath();
+    ctx.ellipse(tcx, tcy, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#173428';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#c9a24b';
+    ctx.stroke();
+    // 座位：hero 固定在正下方，其他照牌桌相對位置排
+    var heroIdx = Math.max(0, HW_POSITIONS.indexOf(h.pos));
+    function seatXY(pos, inward) {
+      var idx = HW_POSITIONS.indexOf(pos);
+      if (idx < 0) idx = 0;
+      var a = Math.PI / 2 + (idx - heroIdx) * 2 * Math.PI / 9;
+      var f = inward ? 0.62 : 1;
+      return { x: tcx + (rx + 26) * f * Math.cos(a), y: tcy + (ry + 24) * f * Math.sin(a) };
+    }
+    var seatStacks = {};
+    (h.opps || []).forEach(function (o) { if (o.stack) seatStacks[o.pos] = o.stack; });
+    if (h.stack) seatStacks[h.pos] = h.stack;
+    var seatSet = {};
+    [h.pos].concat((h.opps || []).map(function (o) { return o.pos; }),
+      shows.map(function (s) { return s.pos; })).forEach(function (p) { seatSet[p] = true; });
+    Object.keys(seatSet).forEach(function (pos) {
+      var pt = seatXY(pos);
+      var isHero = pos === h.pos;
+      rr(ctx, pt.x - 30, pt.y - 13, 60, 26, 13);
+      ctx.fillStyle = isHero ? '#c9a24b' : '#242a28';
+      ctx.fill();
+      ctx.fillStyle = isHero ? '#141310' : '#d9ddd6';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(pos, pt.x, pt.y + 4);
+      if (seatStacks[pos]) {
+        ctx.fillStyle = '#8b91a3';
+        ctx.font = '11px sans-serif';
+        ctx.fillText(seatStacks[pos] + ' bb', pt.x, pt.y + (pt.y > tcy ? 26 : -18));
+      }
+    });
+    // hero 手牌＋攤牌玩家的牌（往桌心內縮畫）
+    function drawTokensAt(pos, cardsTxt) {
+      var toks = HANDS.prettyCards(cardsTxt) ? String(cardsTxt).trim().split(/[\s,]+/) : [];
+      var flat = [];
+      toks.forEach(function (tk2) {
+        if (tk2.length > 2 && tk2.length % 2 === 0) {
+          for (var i2 = 0; i2 < tk2.length; i2 += 2) flat.push(tk2.slice(i2, i2 + 2));
+        } else flat.push(tk2);
+      });
+      var pt = seatXY(pos, true);
+      var cw = 26, chh = 36, gap = 3;
+      var x0 = pt.x - (flat.length * (cw + gap) - gap) / 2;
+      flat.forEach(function (tk2, i2) {
+        drawCardImg(ctx, x0 + i2 * (cw + gap), pt.y - chh / 2, cw, chh, tk2);
+      });
+    }
+    if (h.hero) drawTokensAt(h.pos, h.hero);
+    shows.forEach(function (sd) { drawTokensAt(sd.pos, sd.cards); });
+    // 公牌（取最後一街的 board）＋底池
+    var lastBoard = '';
+    var lastPot = 0;
+    streets.forEach(function (st) {
+      if (st.boardTxt && st.boardTxt.length >= lastBoard.length) lastBoard = st.boardTxt;
+      lastPot = Math.max(lastPot, (st.pot || 0) + (st.toCall || 0));
+    });
+    if (lastBoard) {
+      var toks = lastBoard.split(/\s+/);
+      var bw = 30, bh = 42, bgap = 5;
+      var bx = tcx - (toks.length * (bw + bgap) - bgap) / 2;
+      toks.forEach(function (tk, i) {
+        drawCardImg(ctx, bx + i * (bw + bgap), tcy - bh / 2 - 8, bw, bh, tk);
+      });
+    }
+    if (lastPot) {
+      ctx.fillStyle = '#e8c87e';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Pot: ' + lastPot + ' bb', tcx, tcy + 38);
+    }
+    // 逐街摘要
+    var y = 96 + 330 + 18;
+    ctx.textAlign = 'left';
+    streets.forEach(function (st) {
+      ctx.fillStyle = '#e8c87e';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText(HANDS.STREET_NAMES[st.street] +
+        (st.boardTxt ? '  ' + HANDS.prettyCards(st.boardTxt) : '') +
+        t('｜底池 ') + st.pot + ' bb' +
+        (st.toCall ? t('｜需跟注 ') + st.toCall + ' bb' : '') +
+        t('｜') + HANDS.ACTION_NAMES[st.action], 30, y);
+      y += 20;
+      ctx.fillStyle = '#8b91a3';
+      ctx.font = '12px sans-serif';
+      ctx.fillText(t('對手 range：') + st.range, 30, y);
+      y += 18;
+      if (st.analysis) {
+        var a = st.analysis;
+        ctx.fillStyle = a.leak ? '#e8596a'
+          : (a.verdict === 'good_call' || a.verdict === 'good_fold' || a.verdict === 'raise_ahead')
+            ? '#46d183' : '#8b91a3';
+        ctx.fillText(t('需要勝率 ') + (a.needed * 100).toFixed(1) +
+          t('% vs 實際 ') + (a.equity * 100).toFixed(1) + '% → ' +
+          HANDS.verdictText(a.verdict), 30, y);
+        y += 20;
+      }
+      y += 8;
+    });
+    if (shows.length) {
+      ctx.fillStyle = '#e8c87e';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText(t('攤牌'), 30, y);
+      y += 20;
+      ctx.fillStyle = '#d9ddd6';
+      ctx.font = '12px sans-serif';
+      shows.forEach(function (sd) {
+        ctx.fillText(sd.pos + t('：') + HANDS.prettyCards(sd.cards), 30, y);
+        y += 22;
+      });
+      y += 4;
+    }
+    if (h.result !== null && h.result !== undefined) {
+      ctx.fillStyle = h.result > 0 ? '#46d183' : h.result < 0 ? '#e8596a' : '#8b91a3';
+      ctx.font = 'bold 17px sans-serif';
+      ctx.fillText(t('結果：') + (h.result > 0 ? '+' : '') + h.result + ' bb', 30, y);
+      y += 26;
+    }
+    if (h.note) {
+      ctx.fillStyle = '#8b91a3';
+      ctx.font = '12px sans-serif';
+      var noteTxt = h.note.length > 58 ? h.note.slice(0, 58) + '…' : h.note;
+      ctx.fillText(t('備註：') + noteTxt, 30, y);
+    }
+    cv.toBlob(function (blob) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'hand-' + (h.date || 'export') + '.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    }, 'image/png');
+  }
+
+  var BUCKET_NAMES = { today: t('今天'), yesterday: t('昨天'), thisweek: t('本週'),
+    lastweek: t('上週'), thismonth: t('本月'), unknown: t('其他') };
+
   function renderHandList(expandId) {
     var ul = $('#handList');
     ul.innerHTML = '';
@@ -3061,7 +3458,26 @@
       ul.innerHTML = t('<li class="empty-msg">尚無複盤紀錄</li>');
       return;
     }
-    handRecords.forEach(function (h) {
+    var list = handRecords.filter(function (h) {
+      return (!handFavOnly || h.fav) && handMatches(h, handQuery);
+    }).slice().sort(function (a, b) {
+      return b.date < a.date ? -1 : b.date > a.date ? 1 : (b.id < a.id ? -1 : 1);
+    });
+    if (!list.length) {
+      ul.innerHTML = t('<li class="empty-msg">沒有符合的手牌</li>');
+      return;
+    }
+    var today = new Date().toISOString().slice(0, 10);
+    var lastBucket = null;
+    list.forEach(function (h) {
+      var bk = HANDS.dateBucket(h.date, today);
+      if (bk !== lastBucket) {
+        lastBucket = bk;
+        var gh = document.createElement('li');
+        gh.className = 'group-head';
+        gh.textContent = BUCKET_NAMES[bk] || bk.replace('-', '/');
+        ul.appendChild(gh);
+      }
       var li = document.createElement('li');
       li.className = 'hand-item';
       var head = document.createElement('div');
@@ -3075,15 +3491,29 @@
       badge.textContent = h.pos;
       title.appendChild(badge);
       title.appendChild(document.createTextNode(
-        h.date + ' · ' + h.hero + (h.blinds ? ' · ' + h.blinds : '')));
+        HANDS.prettyCards(h.hero) + (h.name ? ' · ' + h.name : '') +
+        (h.blinds ? ' · ' + h.blinds : '')));
       var sub = document.createElement('div');
       sub.className = 'session-sub';
-      sub.textContent = (h.streets || []).map(function (st) {
-        return HANDS.STREET_NAMES[st.street] + HANDS.ACTION_NAMES[st.action] + t('：') +
-          HANDS.verdictText(st.analysis.verdict);
-      }).join(t(' ｜ '));
+      sub.textContent = h.date + (h.streets && h.streets.length
+        ? t(' ｜ ') + h.streets.map(function (st) {
+            return HANDS.STREET_NAMES[st.street] + HANDS.ACTION_NAMES[st.action] +
+              (st.analysis ? t('：') + HANDS.verdictText(st.analysis.verdict) : '');
+          }).join(t(' ｜ '))
+        : '');
       main.appendChild(title);
       main.appendChild(sub);
+      var fav = document.createElement('button');
+      fav.className = 'fav-star' + (h.fav ? ' on' : '');
+      fav.textContent = '★';
+      fav.setAttribute('aria-label', t('書籤'));
+      fav.addEventListener('click', function (e) {
+        e.stopPropagation();
+        h.fav = !h.fav;
+        saveHands(handRecords);
+        fav.classList.toggle('on', h.fav);
+        if (handFavOnly && !h.fav) renderHandList();
+      });
       var pl = document.createElement('span');
       pl.className = 'session-pl ' +
         (h.result > 0 ? 'pos' : h.result < 0 ? 'neg' : 'muted');
@@ -3101,6 +3531,7 @@
         renderHands();
       });
       head.appendChild(main);
+      head.appendChild(fav);
       head.appendChild(pl);
       head.appendChild(del);
       var detail = document.createElement('div');
@@ -3112,10 +3543,31 @@
           (h.ante ? t('，前注/人 ') + h.ante : '') + '</p>';
       }
       (h.streets || []).forEach(function (st) {
-        dHtml += '<div class="ev-result">' + streetDetailHtml(st) + '</div>';
+        if (st.analysis) dHtml += '<div class="ev-result">' + streetDetailHtml(st) + '</div>';
       });
+      if (h.showdown && h.showdown.length) {
+        dHtml += '<p class="hint">' + escapeHtml(t('攤牌：') + h.showdown.map(function (sd) {
+          return sd.pos + ' ' + HANDS.prettyCards(sd.cards);
+        }).join(t(' ｜ '))) + '</p>';
+      }
       if (h.note) dHtml += '<p class="hint">' + escapeHtml(h.note) + '</p>';
       detail.innerHTML = dHtml;
+      var tools = document.createElement('div');
+      tools.className = 'btn-row';
+      var btnCopy = document.createElement('button');
+      btnCopy.className = 'btn';
+      var copyLabel = t('📋 複製文字');
+      btnCopy.textContent = copyLabel;
+      btnCopy.addEventListener('click', function () {
+        copyText(HANDS.handToText(h), btnCopy, copyLabel);
+      });
+      var btnImg = document.createElement('button');
+      btnImg.className = 'btn';
+      btnImg.textContent = t('🖼 下載圖片');
+      btnImg.addEventListener('click', function () { handToImage(h); });
+      tools.appendChild(btnCopy);
+      tools.appendChild(btnImg);
+      detail.appendChild(tools);
       main.style.cursor = 'pointer';
       main.addEventListener('click', function () { detail.hidden = !detail.hidden; });
       li.appendChild(head);

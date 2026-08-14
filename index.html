@@ -12,8 +12,8 @@ try {
   if (fs >= 0.9 && fs <= 2) document.documentElement.style.fontSize = (16 * fs) + 'px';
 } catch (e) {}</script>
 <title>撲克工具箱 — 記帳 / EV / ICM</title>
-<link rel="stylesheet" href="css/style.css?v=45">
-<link rel="manifest" href="manifest.json?v=45">
+<link rel="stylesheet" href="css/style.css?v=46">
+<link rel="manifest" href="manifest.json?v=46">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
@@ -85,8 +85,15 @@ try {
 
   <div class="stat-tiles" id="statTiles"></div>
 
-  <div class="card">
-    <h2>新增紀錄</h2>
+  <button type="button" class="fab" id="fabAddSession" aria-label="新增紀錄">＋</button>
+
+  <div class="sheet-backdrop" id="addSheet" hidden>
+    <div class="sheet">
+    <div class="sheet-grip"></div>
+    <div class="sheet-head">
+      <h2>新增紀錄</h2>
+      <button type="button" class="sheet-close" id="btnCloseAddSheet" aria-label="關閉">✕</button>
+    </div>
     <form id="sessionForm">
       <div class="grid-2">
         <label>日期
@@ -146,6 +153,7 @@ try {
       <div class="mood-chips" id="fMood"></div>
       <button type="submit" class="btn primary full">新增</button>
     </form>
+    </div>
   </div>
 
   <div class="card">
@@ -735,47 +743,113 @@ try {
     <p class="hint" id="leakHint"></p>
   </div>
 
-  <div class="card">
-    <h2>記錄關鍵手牌</h2>
-    <p class="hint">每街記錄一個關鍵決策（選填街可留空行動）。金額一律用 bb。
-      牌用文字輸入（例：As Kd）；range 用記號（例：77+ A9s+ KQo）。</p>
-    <div class="grid-3">
-      <label>盲注
-        <input type="text" id="hBlinds" placeholder="例：5/10">
-      </label>
-      <label>前注/人
-        <input type="number" id="hAnte" inputmode="decimal" step="any" min="0" placeholder="0">
-      </label>
-      <label>有效籌碼（bb）
-        <input type="number" id="hStack" inputmode="decimal" step="any" min="0" placeholder="100">
-      </label>
+  <button type="button" class="fab" id="fabAddHand" aria-label="記錄手牌">＋</button>
+
+  <div class="sheet-backdrop" id="handSheet" hidden>
+    <div class="sheet">
+    <div class="sheet-grip"></div>
+    <div class="sheet-head">
+      <h2>記錄手牌</h2>
+      <button type="button" class="sheet-close" id="btnCloseHandSheet" aria-label="關閉">✕</button>
     </div>
-    <div class="grid-2">
-      <label>我的位置
-        <select id="hPos">
-          <option>UTG</option><option>HJ</option><option>CO</option>
-          <option selected>BTN</option><option>SB</option><option>BB</option>
-        </select>
-      </label>
-      <label>我的手牌（例：As Kd）
-        <input type="text" id="hHero" placeholder="As Kd" autocapitalize="off" autocomplete="off">
-      </label>
+    <div class="wiz-dots" id="hwDots"></div>
+
+    <div class="wiz-step" data-step="1">
+      <h3>1・桌況</h3>
+      <div class="grid-2">
+        <label>日期
+          <input type="date" id="hwDate">
+        </label>
+        <label>名稱 / 場地（選填）
+          <input type="text" id="hwName" placeholder="例：CTP、Daily Game…">
+        </label>
+      </div>
+      <div class="grid-2">
+        <label>類型
+          <select id="hwType">
+            <option value="cash">現金局</option>
+            <option value="mtt">錦標賽</option>
+          </select>
+        </label>
+        <label>桌上人數
+          <select id="hwPlayers"></select>
+        </label>
+      </div>
+      <div class="grid-3">
+        <label>盲注
+          <input type="text" id="hBlinds" placeholder="例：5/10">
+        </label>
+        <label>前注/人
+          <input type="number" id="hAnte" inputmode="decimal" step="any" min="0" placeholder="0">
+        </label>
+        <label>有效籌碼（bb）
+          <input type="number" id="hStack" inputmode="decimal" step="any" min="0" placeholder="100">
+        </label>
+      </div>
     </div>
-    <div id="hStreets"></div>
-    <div class="grid-2">
-      <label>淨結果（±bb，選填）
-        <input type="number" id="hResult" inputmode="decimal" step="any" placeholder="例：-35">
-      </label>
-      <label>備註（選填）
-        <input type="text" id="hNote" placeholder="對手 read、牌局脈絡…">
-      </label>
+
+    <div class="wiz-step" data-step="2" hidden>
+      <h3>2・我的位置與手牌</h3>
+      <div class="grid-2">
+        <label>我的位置
+          <select id="hPos">
+            <option>UTG</option><option>UTG+1</option><option>MP</option>
+            <option>LJ</option><option>HJ</option><option>CO</option>
+            <option selected>BTN</option><option>SB</option><option>BB</option>
+          </select>
+        </label>
+        <label>我的手牌（例：As Kd）
+          <input type="text" id="hHero" placeholder="As Kd" autocapitalize="off" autocomplete="off">
+        </label>
+      </div>
+      <div class="cards-preview" id="hwHeroPrev"></div>
     </div>
-    <button class="btn primary full big" id="btnSaveHand">儲存並分析</button>
-    <p class="hint">加注 / 全下的評估為簡化模型（未計 fold equity），僅顯示 vs range 勝率參考。</p>
+
+    <div class="wiz-step" data-step="3" hidden>
+      <h3>3・對手（選填）</h3>
+      <p class="hint">記下在池裡的對手位置與籌碼（bb），匯出的牌桌圖會畫出來。</p>
+      <div id="hwOpps"></div>
+      <button type="button" class="btn-link" id="btnAddOpp">＋ 加對手</button>
+    </div>
+
+    <div class="wiz-step" data-step="4" hidden>
+      <h3>4・逐街動作</h3>
+      <p class="hint">每街記錄一個關鍵決策（選填街可留空行動）。金額一律用 bb。
+        牌用文字輸入（例：Qh 7d 2s）；range 用記號（例：77+ A9s+ KQo）。</p>
+      <div id="hStreets"></div>
+      <div class="grid-2">
+        <label>淨結果（±bb，選填）
+          <input type="number" id="hResult" inputmode="decimal" step="any" placeholder="例：-35">
+        </label>
+        <label>備註（選填）
+          <input type="text" id="hNote" placeholder="對手 read、牌局脈絡…">
+        </label>
+      </div>
+    </div>
+
+    <div class="wiz-step" data-step="5" hidden>
+      <h3>5・攤牌與確認</h3>
+      <p class="hint">對手有亮牌就記一下（選填），下面是這手的文字預覽。</p>
+      <div id="hwShows"></div>
+      <button type="button" class="btn-link" id="btnAddShow">＋ 加攤牌</button>
+      <pre class="hand-preview" id="hwPreview"></pre>
+      <button class="btn primary full big" id="btnSaveHand">儲存並分析</button>
+      <p class="hint">加注 / 全下的評估為簡化模型（未計 fold equity），僅顯示 vs range 勝率參考。</p>
+    </div>
+
+    <div class="btn-row wiz-nav">
+      <button type="button" class="btn" id="btnHwPrev" hidden>上一步</button>
+      <button type="button" class="btn primary" id="btnHwNext">下一步</button>
+    </div>
+    </div>
   </div>
 
   <div class="card">
-    <h2>手牌紀錄</h2>
+    <div class="row-between">
+      <h2>手牌紀錄</h2>
+      <button type="button" class="fav-toggle" id="handFavToggle" aria-pressed="false" title="只看書籤">★</button>
+    </div>
+    <input type="search" id="handSearch" class="hand-search" placeholder="搜尋手牌、場地、位置、備註…" autocapitalize="off">
     <ul id="handList" class="session-list"></ul>
   </div>
 
@@ -812,26 +886,26 @@ try {
 <footer class="app-footer">純前端計算，資料存在此裝置的瀏覽器；右上角 Google 登入可跨裝置同步。<br>
 <a href="privacy.html">隱私政策</a> ｜ <a href="support.html">支援</a></footer>
 
-<script src="js/i18n-dict.js?v=45"></script>
-<script src="js/chip.js?v=45"></script>
-<script src="js/i18n.js?v=45"></script>
-<script src="js/theme.js?v=45"></script>
-<script src="js/fontsize.js?v=45"></script>
-<script src="js/pro.js?v=45"></script>
-<script src="js/schedule.js?v=45"></script>
-<script src="js/evaluator.js?v=45"></script>
-<script src="js/equity.js?v=45"></script>
-<script src="js/icm.js?v=45"></script>
-<script src="js/tracker-stats.js?v=45"></script>
-<script src="js/preflop-table.js?v=45"></script>
-<script src="js/pushfold.js?v=45"></script>
-<script src="js/ranges.js?v=45"></script>
-<script src="js/postflop.js?v=45"></script>
-<script src="js/hands.js?v=45"></script>
-<script src="js/nash.js?v=45"></script>
-<script src="js/app.js?v=45"></script>
-<script src="js/training.js?v=45"></script>
-<script src="js/sync.js?v=45"></script>
-<script src="js/native.js?v=45"></script>
+<script src="js/i18n-dict.js?v=46"></script>
+<script src="js/chip.js?v=46"></script>
+<script src="js/i18n.js?v=46"></script>
+<script src="js/theme.js?v=46"></script>
+<script src="js/fontsize.js?v=46"></script>
+<script src="js/pro.js?v=46"></script>
+<script src="js/schedule.js?v=46"></script>
+<script src="js/evaluator.js?v=46"></script>
+<script src="js/equity.js?v=46"></script>
+<script src="js/icm.js?v=46"></script>
+<script src="js/tracker-stats.js?v=46"></script>
+<script src="js/preflop-table.js?v=46"></script>
+<script src="js/pushfold.js?v=46"></script>
+<script src="js/ranges.js?v=46"></script>
+<script src="js/postflop.js?v=46"></script>
+<script src="js/hands.js?v=46"></script>
+<script src="js/nash.js?v=46"></script>
+<script src="js/app.js?v=46"></script>
+<script src="js/training.js?v=46"></script>
+<script src="js/sync.js?v=46"></script>
+<script src="js/native.js?v=46"></script>
 </body>
 </html>
