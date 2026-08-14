@@ -292,6 +292,22 @@ var aIns = TrackerStats.insights(asess).filter(function (x) { return x.k === 'ar
 assert(aIns && aIns.a === 60 && aIns.b === -20 && aIns.an === 5 && aIns.bn === 5,
   'insights: arena live +60 vs online -20, legacy defaults to live');
 
+// summary（統計磚：場次/平均/勝率/ROI/時薪）
+var ssess = [
+  { date: '2026-08-01', buyin: 100, cashout: 300, hours: 2 },  // +200
+  { date: '2026-08-02', buyin: 100, cashout: 0, hours: 2 },    // -100
+  { date: '2026-08-03', buyin: 100, cashout: 100 }             // 0，無時數
+];
+var sm = TrackerStats.summary(ssess);
+assert(sm.n === 3 && sm.pl === 100 && sm.buyin === 300, 'summary: n/pl/buyin');
+assert(Math.abs(sm.avg - 100 / 3) < 1e-9, 'summary: avg');
+assert(Math.abs(sm.winRate - 100 / 3) < 1e-9, 'summary: winRate counts pl>0 only');
+assert(Math.abs(sm.roi - 100 / 3) < 1e-9, 'summary: roi = pl/buyin');
+assert(sm.hours === 4 && sm.hourly === 25, 'summary: hourly over timed sessions only');
+var sm0 = TrackerStats.summary([]);
+assert(sm0.n === 0 && sm0.winRate === null && sm0.roi === null && sm0.hourly === null,
+  'summary: empty safe');
+
 // ---------- 4. Preflop table ----------
 console.log('--- Preflop table ---');
 

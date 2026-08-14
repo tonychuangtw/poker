@@ -166,8 +166,33 @@
     return out;
   }
 
+  /**
+   * 統計磚摘要（2026-08-14）：總場次/總盈虧/平均/勝率/ROI/時數/每小時損益。
+   * 勝率＝盈虧 > 0 的場次比例；ROI＝總盈虧/總買入；每小時損益只算有填時數的場次。
+   * @returns {{n:number,pl:number,buyin:number,avg:number,winRate:number|null,
+   *            roi:number|null,hours:number,hourly:number|null}}
+   */
+  function summary(list) {
+    var n = list.length, pl = 0, buyin = 0, wins = 0, hours = 0, hourPl = 0;
+    list.forEach(function (r) {
+      var p = plOf(r);
+      pl += p;
+      buyin += r.buyin;
+      if (p > 0) wins++;
+      if (r.hours > 0) { hours += r.hours; hourPl += p; }
+    });
+    return {
+      n: n, pl: pl, buyin: buyin,
+      avg: n ? pl / n : 0,
+      winRate: n ? wins / n * 100 : null,
+      roi: buyin > 0 ? pl / buyin * 100 : null,
+      hours: hours,
+      hourly: hours > 0 ? hourPl / hours : null
+    };
+  }
+
   var TrackerStats = { tagStats: tagStats, monthlyStats: monthlyStats, tiltStats: tiltStats,
-    moodStats: moodStats, insights: insights };
+    moodStats: moodStats, insights: insights, summary: summary };
   if (typeof module !== 'undefined' && module.exports) module.exports = TrackerStats;
   else global.TrackerStats = TrackerStats;
 })(typeof window !== 'undefined' ? window : this);

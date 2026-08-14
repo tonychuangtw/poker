@@ -95,6 +95,47 @@
   }
   var vSessions = sessions;
 
+  /* --- 儀表板篩選（2026-08-14 Tony，參考截圖）：類型頁籤 × 期間（月/年/全部）---
+     只影響 hero / 曲線圖 / 統計磚；下方各分析卡與紀錄列表維持全量。 */
+  var trkType = localStorage.getItem('poker.trkType') || 'all';
+  var heroScope = localStorage.getItem('poker.heroScope') || 'month';
+  if (heroScope !== 'month' && heroScope !== 'year' && heroScope !== 'all') heroScope = 'month';
+  var periodY = new Date().getFullYear();
+  var periodM = new Date().getMonth() + 1;
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function typeMatch(r) {
+    if (trkType === 'all') return true;
+    if (trkType === 'tourney') return r.type === 'mtt' || r.type === 'sng';
+    return isCashLike(r.type);
+  }
+  function periodMatch(r) {
+    if (heroScope === 'all') return true;
+    var d = String(r.date || '');
+    if (heroScope === 'year') return d.slice(0, 4) === String(periodY);
+    return d.slice(0, 7) === periodY + '-' + pad2(periodM);
+  }
+  function dashList() {
+    return vSessions.filter(function (r) { return typeMatch(r) && periodMatch(r); });
+  }
+  $('#trkTypeSeg').addEventListener('click', function (e) {
+    var btn = e.target.closest('.seg-btn');
+    if (!btn) return;
+    trkType = btn.dataset.ttype;
+    try { localStorage.setItem('poker.trkType', trkType); } catch (e2) {}
+    renderTracker();
+  });
+  function stepPeriod(dir) {
+    if (heroScope === 'year') { periodY += dir; }
+    else {
+      periodM += dir;
+      if (periodM < 1) { periodM = 12; periodY--; }
+      if (periodM > 12) { periodM = 1; periodY++; }
+    }
+    renderTracker();
+  }
+  $('#periodPrev').addEventListener('click', function () { stepPeriod(-1); });
+  $('#periodNext').addEventListener('click', function () { stepPeriod(1); });
+
   // 新增
   /* 幣別選單：新增用 fCur（記住上次選的）、右上角 dispCur = 統一顯示幣種 */
   (function initCurSelects() {
@@ -213,8 +254,16 @@
   });
 
   // 篩選
-  $('#filterType').addEventListener('change', renderList);
-  $('#filterArena').addEventListener('change', renderList);
+  $('#filterType').addEventListener('change', function () { listExpanded = false; renderList(); });
+  $('#filterArena').addEventListener('change', function () { listExpanded = false; renderList(); });
+
+  /* 歷史記錄先顯示 10 筆，其餘收折（2026-08-14 Tony） */
+  var LIST_LIMIT = 10;
+  var listExpanded = false;
+  $('#btnMoreSessions').addEventListener('click', function () {
+    listExpanded = !listExpanded;
+    renderList();
+  });
 
   function renderList() {
     var filter = $('#filterType').value;
@@ -230,9 +279,20 @@
       .sort(function (a, b) {
         return b.date < a.date ? -1 : b.date > a.date ? 1 : (b.id < a.id ? -1 : 1);
       });
+    var moreBtn = $('#btnMoreSessions');
     if (!shown.length) {
       ul.innerHTML = t('<li class="empty-msg">尚無紀錄</li>');
+      moreBtn.hidden = true;
       return;
+    }
+    if (shown.length > LIST_LIMIT) {
+      moreBtn.hidden = false;
+      moreBtn.textContent = listExpanded
+        ? t('收合')
+        : t('顯示其餘 ') + (shown.length - LIST_LIMIT) + t(' 筆');
+      if (!listExpanded) shown = shown.slice(0, LIST_LIMIT);
+    } else {
+      moreBtn.hidden = true;
     }
     shown.forEach(function (r) {
       var pl = r.cashout - r.buyin;
@@ -643,11 +703,28 @@
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, cssW, cssH);
 
-    var ordered = vSessions.slice().sort(function (a, b) {
+    var ordered = dashList().sort(function (a, b) {
       return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.id < b.id ? -1 : 1);
     });
-    var pts = [0], cum = 0;
-    ordered.forEach(function (r) { cum += r.cashout - r.buyin; pts.push(cum); });
+    /* x 位置（0~1）：月檢視照日、年檢視照月日、全部照場次序 */
+    function fracOf(r) {
+      var d = String(r.date || '');
+      if (heroScope === 'month') {
+        var days = new Date(periodY, periodM, 0).getDate();
+        return Math.min(1, (parseInt(d.slice(8, 10), 10) || 1) / days);
+      }
+      if (heroScope === 'year') {
+        var m = parseInt(d.slice(5, 7), 10) || 1;
+        var dim = new Date(periodY, m, 0).getDate();
+        return Math.min(1, (m - 1 + (parseInt(d.slice(8, 10), 10) || 1) / dim) / 12);
+      }
+      return 0; /* 全部：下面改成場次序 */
+    }
+    var pts = [0], xs = [0], cum = 0;
+    ordered.forEach(function (r) { cum += r.cashout - r.buyin; pts.push(cum); xs.push(fracOf(r)); });
+    if (heroScope === 'all') {
+      for (var xi = 0; xi < xs.length; xi++) xs[xi] = ordered.length ? xi / ordered.length : 0;
+    }
 
     /* 現場/線上分線（兩邊都有紀錄才畫）；比例尺要涵蓋三條線，不然分線會衝出畫布 */
     var hasLive = ordered.some(function (r) { return arenaOf(r) === 'live'; });
@@ -671,7 +748,7 @@
     var span = max - min;
     min -= span * 0.08; max += span * 0.08;
 
-    function x(i) { return padL + (pts.length === 1 ? 0 : i / (pts.length - 1) * w); }
+    function x(i) { return padL + xs[i] * w; }
     function y(v) { return padT + (max - v) / (max - min) * h; }
 
     // 格線 + Y 軸標籤
@@ -694,15 +771,26 @@
       ctx.beginPath(); ctx.moveTo(padL, y(0)); ctx.lineTo(cssW - padR, y(0)); ctx.stroke();
       ctx.setLineDash([]);
     }
-    // X 軸標籤（場次）
+    // X 軸刻度：月＝日、年＝月、全部＝場次
     ctx.textAlign = 'center';
     ctx.fillStyle = '#8b91a3';
-    ctx.fillText('0', x(0), cssH - 6);
-    if (pts.length > 1) ctx.fillText(String(pts.length - 1) + t(' 場'), x(pts.length - 1), cssH - 6);
+    if (heroScope === 'month') {
+      var days2 = new Date(periodY, periodM, 0).getDate();
+      [1, 6, 11, 16, 21, 26, days2].forEach(function (d2) {
+        ctx.fillText(pad2(d2), padL + d2 / days2 * w, cssH - 6);
+      });
+    } else if (heroScope === 'year') {
+      for (var mm = 1; mm <= 12; mm++) {
+        ctx.fillText(pad2(mm), padL + (mm - 0.5) / 12 * w, cssH - 6);
+      }
+    } else {
+      ctx.fillText('0', padL, cssH - 6);
+      if (pts.length > 1) ctx.fillText(String(pts.length - 1) + t(' 場'), padL + w, cssH - 6);
+    }
 
     if (pts.length < 2) {
       ctx.textAlign = 'center';
-      ctx.fillText('新增紀錄後顯示走勢', cssW / 2, cssH / 2);
+      ctx.fillText(t(vSessions.length ? '此期間尚無紀錄' : '新增紀錄後顯示走勢'), cssW / 2, cssH / 2);
       return;
     }
     function drawLine(series, color, width) {
@@ -740,7 +828,6 @@
   window.addEventListener('resize', drawChart);
 
   /* --- 大字盈虧 hero 卡（ivey 式，2026-08-11 Tony）--- */
-  var heroScope = localStorage.getItem('poker.heroScope') || 'month';
   $('#heroScope').addEventListener('click', function (e) {
     var btn = e.target.closest('.seg-btn');
     if (!btn) return;
@@ -754,15 +841,20 @@
     for (var i = 0; i < btns.length; i++) {
       btns[i].classList.toggle('active', btns[i].dataset.scope === heroScope);
     }
-    var month = new Date().toISOString().slice(0, 7);
-    var list = heroScope === 'month'
-      ? vSessions.filter(function (r) { return (r.date || '').slice(0, 7) === month; })
-      : vSessions;
+    var tbtns = $('#trkTypeSeg').querySelectorAll('.seg-btn');
+    for (var j = 0; j < tbtns.length; j++) {
+      tbtns[j].classList.toggle('active', tbtns[j].dataset.ttype === trkType);
+    }
+    var nav = $('#periodNav');
+    nav.hidden = heroScope === 'all';
+    $('#periodLabel').textContent =
+      heroScope === 'year' ? String(periodY) : periodY + '/' + pad2(periodM);
+    var list = dashList();
     var num = $('#heroNum'), sub = $('#heroSub');
     if (!list.length) {
       num.textContent = '—';
       num.className = 'hero-num muted';
-      sub.textContent = t(heroScope === 'month' ? '本月尚無紀錄' : '尚無紀錄');
+      sub.textContent = t(heroScope === 'all' ? '尚無紀錄' : '此期間尚無紀錄');
       return;
     }
     var s = advStats(list);
@@ -771,14 +863,42 @@
     num.textContent = fmtPL(Math.round(pl)) + ' ' + dispCur();
     num.className = 'hero-num ' + (pl > 0 ? 'pos' : pl < 0 ? 'neg' : 'muted');
     var bits = [list.length + t(' 場')];
-    if (s.hourly !== null) bits.push(t('時薪 ') + fmtPL(Math.round(s.hourly)));
     if (s.bbPerHr !== null) bits.push(fmtPL(Math.round(s.bbPerHr * 10) / 10) + ' bb/hr');
     sub.textContent = bits.join('　·　');
+  }
+
+  /* --- 統計磚 2×3（2026-08-14，參考截圖）--- */
+  var TILE_ICONS = {
+    n: '<path d="M4 6h16M4 12h16M4 18h10"/>',
+    hours: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
+    avg: '<path d="M3 17l6-6 4 4 8-8"/>',
+    win: '<path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4zM7 6H4a3 3 0 0 0 3 3M17 6h3a3 3 0 0 1-3 3"/>',
+    roi: '<circle cx="6.5" cy="6.5" r="2"/><circle cx="17.5" cy="17.5" r="2"/><path d="M19 5L5 19"/>',
+    hourly: '<path d="M12 3v18M16.5 7.5A3.5 3.5 0 0 0 13 5h-2a3 3 0 0 0 0 6h2a3 3 0 0 1 0 6h-2a3.5 3.5 0 0 1-3.5-2.5"/>'
+  };
+  function renderTiles() {
+    var box = $('#statTiles');
+    var s = TrackerStats.summary(dashList());
+    function plCls(v) { return v > 0 ? 'pos' : v < 0 ? 'neg' : ''; }
+    var tiles = [
+      [t('總場次'), s.n ? String(s.n) : '—', '', 'n'],
+      [t('總時數'), s.hours > 0 ? (Math.round(s.hours * 10) / 10) + ' h' : '—', '', 'hours'],
+      [t('平均損益'), s.n ? fmtPL(Math.round(s.avg * 10) / 10) : '—', plCls(s.avg), 'avg'],
+      [t('勝率'), s.winRate === null ? '—' : s.winRate.toFixed(1) + '%', '', 'win'],
+      ['ROI', s.roi === null ? '—' : (s.roi > 0 ? '+' : '') + s.roi.toFixed(1) + '%', plCls(s.roi), 'roi'],
+      [t('每小時損益'), s.hourly === null ? '—' : fmtPL(Math.round(s.hourly * 10) / 10), plCls(s.hourly), 'hourly']
+    ];
+    box.innerHTML = tiles.map(function (tl) {
+      return '<div class="stat-tile"><div class="stat-tile-head"><span>' + tl[0] +
+        '</span><svg viewBox="0 0 24 24" aria-hidden="true">' + TILE_ICONS[tl[3]] +
+        '</svg></div><div class="stat-tile-val ' + tl[2] + '">' + tl[1] + '</div></div>';
+    }).join('');
   }
 
   function renderTracker() {
     vSessions = viewSessions();
     renderHero();
+    renderTiles();
     renderList();
     renderStats();
     renderInsights();

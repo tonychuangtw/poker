@@ -11,7 +11,9 @@ const CJK = /[　-ヿ一-鿿＀-￯]/;
 const keys = new Set();
 
 /* ---- HTML ---- */
-const html = readFileSync(join(root, 'index.html'), 'utf8');
+/* inline <script> 的程式碼不是使用者可見字串，先剝掉再掃文字節點 */
+const html = readFileSync(join(root, 'index.html'), 'utf8')
+  .replace(/<script[\s\S]*?<\/script>/g, '<script></script>');
 for (const m of html.matchAll(/>([^<]+)</g)) {
   const norm = m[1].replace(/\s+/g, ' ').trim();
   if (norm && CJK.test(norm)) keys.add(norm);

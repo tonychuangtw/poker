@@ -69,7 +69,7 @@
   --inner-hi: inset 0 1px 0 rgba(255, 255, 255, .6);
 }
 /* 亮色主題：把深色版的半透明白改成實色面 */
-:root[data-theme="light"] .card { background: #fbfaf5; border-color: var(--border-soft); }
+:root[data-theme="light"] .card, :root[data-theme="light"] .stat-tile { background: #fbfaf5; border-color: var(--border-soft); }
 :root[data-theme="light"] input, :root[data-theme="light"] select, :root[data-theme="light"] textarea {
   background: #ffffff; border-color: var(--border);
 }
@@ -884,6 +884,46 @@ a.ev-name:hover { text-decoration: underline; }
   font-size: 2.6rem; font-weight: 800; letter-spacing: -.5px; line-height: 1.15;
   margin: .45rem 0 .15rem; font-variant-numeric: tabular-nums;
 }
+/* 儀表板類型頁籤（全部/現金桌/錦標賽，2026-08-14） */
+.seg-tabs { display: flex; width: 100%; margin: 12px 0 0; }
+.seg-tabs .seg-btn { flex: 1; padding: .45rem 0; font-size: .88rem; }
+
+/* 期間切換 ‹ 2026/08 › */
+.period-nav { display: flex; align-items: center; justify-content: center; gap: .3rem; margin-top: .55rem; }
+.period-btn {
+  border: 0; background: transparent; color: var(--muted); cursor: pointer;
+  font-size: 1.25rem; line-height: 1; width: 2rem; height: 2rem; border-radius: 50%;
+}
+.period-btn:hover { background: var(--bg3); color: var(--accent2); }
+.period-label {
+  min-width: 5.4rem; text-align: center; font-weight: 700; font-size: .95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 統計磚 2×3（2026-08-14，參考截圖） */
+.stat-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+.stat-tile {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .028), rgba(255, 255, 255, .012));
+  border: 1px solid rgba(255, 255, 255, .065);
+  border-radius: var(--radius); padding: 12px 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .25);
+}
+.stat-tile-head {
+  display: flex; justify-content: space-between; align-items: center;
+  color: var(--muted); font-size: .78rem;
+}
+.stat-tile-head svg {
+  width: 15px; height: 15px; flex: none; opacity: .65;
+  fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
+}
+.stat-tile-val {
+  font-size: 1.35rem; font-weight: 800; margin-top: .25rem;
+  font-variant-numeric: tabular-nums; letter-spacing: -.3px;
+}
+.stat-tile-val.pos { color: var(--pos); }
+.stat-tile-val.neg { color: var(--neg); }
+.chart-card { padding: 14px 10px 10px; }
+
 .hero-num.pos { color: var(--pos); }
 .hero-num.neg { color: var(--neg); }
 .hero-num.muted { color: var(--muted); }
