@@ -887,6 +887,7 @@ a.ev-name:hover { text-decoration: underline; }
   margin: .45rem 0 .15rem; font-variant-numeric: tabular-nums;
 }
 /* ===== FAB ＋ bottom sheet（2026-08-15，新增改「＋」彈出）===== */
+.desktop-add-row { display: none; }
 .fab {
   position: fixed; right: 18px;
   bottom: calc(clamp(72px, 4.9rem, 92px) + env(safe-area-inset-bottom, 0px));
@@ -1039,25 +1040,30 @@ a.ev-name:hover { text-decoration: underline; }
    手機與原生殼維持底部 tab bar；寬螢幕自動切成左側選單＋寬版儀表板。 */
 @media (min-width: 900px) {
   .tabs {
-    top: 0; bottom: 0; right: auto; width: 210px;
-    flex-direction: column; justify-content: flex-start; gap: 2px;
-    max-width: none; margin: 0; padding: 16px 10px;
+    top: 0; bottom: 0; right: auto; width: 236px;
+    flex-direction: column; justify-content: flex-start; gap: 6px;
+    max-width: none; margin: 0; padding: 20px 14px;
     border-top: none; border-right: 1px solid rgba(255, 255, 255, .07);
   }
   .tab-btn {
-    flex: none; flex-direction: row; justify-content: flex-start; gap: 12px;
-    padding: 11px 14px; font-size: .92rem; border-radius: 10px;
+    flex: none; flex-direction: row; justify-content: flex-start; gap: 14px;
+    padding: 12px 16px; font-size: 1.02rem; font-weight: 600; border-radius: 12px;
   }
+  .tab-btn svg { width: 23px; height: 23px; }
   .tab-btn::before {
-    top: 0; left: 0; width: 100%; height: 100%; margin: 0; border-radius: 10px;
+    top: 0; left: 0; width: 100%; height: 100%; margin: 0; border-radius: 12px;
   }
+  .tab-btn.active::before { background: rgba(var(--accent-rgb), .16); }
   .app-header, main {
     max-width: 980px;
-    margin-left: max(222px, calc(50vw - 385px));
+    margin-left: max(248px, calc(50vw - 372px));
     margin-right: auto;
   }
   .app-header { padding: 18px 26px 6px; }
   main { padding: 8px 26px 60px; }
+  /* 桌面版：FAB 收起來，改用內容區的「＋ 新增」按鈕 */
+  .fab { display: none; }
+  .desktop-add-row { display: flex; justify-content: flex-end; margin: 12px 0 0; }
   /* 記帳儀表板兩欄：曲線圖在左、統計磚在右，其他卡片維持整行 */
   #tab-tracker.active { display: grid; grid-template-columns: 3fr 2fr; gap: 0 16px; align-items: start; }
   #tab-tracker > * { grid-column: 1 / -1; }
@@ -1065,11 +1071,10 @@ a.ev-name:hover { text-decoration: underline; }
   #tab-tracker .stat-tiles { grid-column: 2; }
   .app-footer {
     max-width: 980px;
-    margin-left: max(222px, calc(50vw - 385px));
+    margin-left: max(248px, calc(50vw - 372px));
     margin-right: auto;
     padding-bottom: 28px;
   }
-  .fab { right: 34px; bottom: 34px; }
   /* sheet 在桌面改成置中對話框 */
   .sheet-backdrop { align-items: center; padding: 28px; }
   .sheet { max-width: 560px; border-radius: 20px; }

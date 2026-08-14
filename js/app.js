@@ -149,6 +149,7 @@
     bk.addEventListener('click', function (e) { if (e.target === bk) closeSheet(bk.id); });
   });
   $('#fabAddSession').addEventListener('click', function () { openSheet('addSheet'); });
+  $('#btnAddSessionDesk').addEventListener('click', function () { openSheet('addSheet'); });
   $('#btnCloseAddSheet').addEventListener('click', function () { closeSheet('addSheet'); });
 
   // 新增
@@ -2922,10 +2923,12 @@
       d.className = 'wiz-dot';
       dots.appendChild(d);
     }
-    $('#fabAddHand').addEventListener('click', function () {
+    function openHandWizard() {
       openSheet('handSheet');
       hwGo(1);
-    });
+    }
+    $('#fabAddHand').addEventListener('click', openHandWizard);
+    $('#btnAddHandDesk').addEventListener('click', openHandWizard);
     $('#btnCloseHandSheet').addEventListener('click', function () { closeSheet('handSheet'); });
     $('#btnHwPrev').addEventListener('click', function () { hwGo(hwStep - 1); });
     $('#btnHwNext').addEventListener('click', function () { hwGo(hwStep + 1); });
