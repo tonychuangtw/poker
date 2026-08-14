@@ -91,6 +91,8 @@
 :root[data-theme="light"] .card-slot { background: rgba(0, 0, 0, .03); border-color: #c9c2b0; color: #a6a292; }
 :root[data-theme="light"] .quiz-board { color: #26241d; }
 * { box-sizing: border-box; }
+/* hidden 屬性必須贏過任何 display 設定（.sheet-backdrop 的 flex 曾把它蓋掉，08-15 教訓） */
+[hidden] { display: none !important; }
 /* 全站尺寸以 rem 為主，改這個 font-size 就等於改字級（js/fontsize.js 會覆寫成 16×倍率） */
 html { color-scheme: dark; font-size: 16px; }
 html, body {
