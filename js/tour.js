@@ -34,7 +34,11 @@
   function visibleTarget(step) {
     for (var i = 0; i < step.target.length; i++) {
       var el = q(step.target[i]);
-      if (el && el.offsetParent !== null) return el;
+      /* 不能用 offsetParent 判斷可見：FAB 是 position:fixed，offsetParent 恆為 null
+         （08-15 Tony 回報手機版「新增紀錄」那步光圈沒跳過去，就是這裡） */
+      if (!el) continue;
+      var r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) return el;
     }
     return null;
   }
@@ -93,9 +97,15 @@
     });
   }
 
-  function render() {
+  function render(dir) {
     var step = STEPS[idx];
     switchTab(step.tab);
+    /* 目標真的不存在就自動往同方向跳過這一步，別讓光圈卡在原地 */
+    if (!visibleTarget(step)) {
+      var next = idx + (dir === -1 ? -1 : 1);
+      if (next < 0 || next >= STEPS.length) { end(); return; }
+      idx = next; render(dir); return;
+    }
     var dots = STEPS.map(function (_, i) {
       return '<span class="tour-dot' + (i === idx ? ' on' : '') + '"></span>';
     }).join('');

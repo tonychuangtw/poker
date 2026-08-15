@@ -1114,9 +1114,10 @@ a.ev-name:hover { text-decoration: underline; }
   background: rgba(var(--accent-rgb), .25); transition: background .2s, transform .2s;
 }
 .tour-dot.on { background: var(--accent); transform: scale(1.35); }
-.tour-btns { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.tour-btns { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 .tour-btns .tour-skip { margin-right: auto; }
-.tour-btns .btn { margin: 0; padding: 8px 16px; }
+/* 字級調大時按鈕不准字內直排，放不下就整顆換行 */
+.tour-btns .btn { margin: 0; padding: 8px 16px; white-space: nowrap; flex-shrink: 0; }
 
 /* ===== 桌面版佈局（≥900px，2026-08-15 Tony 定案「走 A」：同核雙版面）=====
    手機與原生殼維持底部 tab bar；寬螢幕自動切成左側選單＋寬版儀表板。 */
