@@ -135,6 +135,16 @@
       pill.className = "sync-login";
       pill.textContent = t("登入");
       pill.title = t("Google 登入，跨裝置同步");
+      /* GIS 載入成功時透明官方鈕會蓋住 pill 接走點擊，這裡只有 GIS 缺席才會進來
+         （LINE/Telegram 內建瀏覽器常擋 accounts.google.com，2026-08-15 全線檢修） */
+      pill.addEventListener("click", function () {
+        if (gisLoaded) return;
+        if (gisFailed) {
+          UI.info(t("這個 App 內建瀏覽器擋住 Google 登入，請改用 Safari / Chrome 等外部瀏覽器開啟本站再登入。"));
+        } else {
+          UI.toast(t("登入元件載入中，請稍候再點。"));
+        }
+      });
       var slot = document.createElement("div");
       slot.className = "gsi-slot";
       wrap.appendChild(pill);
@@ -159,6 +169,8 @@
     });
   }
 
+  var gisLoaded = false, gisFailed = false;
+
   function initGis() {
     google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onCredential, auto_select: true });
     renderUi();
@@ -170,11 +182,16 @@
     ui = document.createElement("div");
     ui.className = "sync-ui";
     header.appendChild(ui);
+    /* 先畫登入鈕，不等 GIS：webview 擋 accounts.google.com 時入口不能消失 */
+    renderUi();
 
     var s = document.createElement("script");
     s.src = "https://accounts.google.com/gsi/client";
     s.async = true;
-    s.onload = initGis;
+    s.onload = function () { gisLoaded = true; initGis(); };
+    s.onerror = function () { gisFailed = true; };
+    /* 有些 webview 不觸發 onerror、就是載不完：逾時當作失敗 */
+    setTimeout(function () { if (!gisLoaded) gisFailed = true; }, 6000);
     document.head.appendChild(s);
 
     setInterval(function () { if (signedIn()) push(currentLevel()); }, PUSH_INTERVAL_MS);

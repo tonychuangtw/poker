@@ -755,8 +755,10 @@ a.ev-name:hover { text-decoration: underline; }
 .gsi-slot {
   position: absolute; inset: 0; opacity: .0001;
   display: flex; align-items: center; justify-content: center;
+  /* 空 slot 不能攔截點擊：GIS 被 webview 擋掉時，點擊要落到底下自畫的登入 pill */
+  pointer-events: none;
 }
-.gsi-slot > div { transform: scale(2.2); transform-origin: center; }
+.gsi-slot > div { transform: scale(2.2); transform-origin: center; pointer-events: auto; }
 
 /* ===== 月報長條圖 ===== */
 .bar-chart { margin-top: 10px; }

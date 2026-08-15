@@ -7,3 +7,4 @@ ios/DerivedData/
 ios/App/output/
 *.ipa
 .DS_Store
+PROGRESS.md

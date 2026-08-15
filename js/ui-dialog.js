@@ -49,7 +49,8 @@
       btnOk.type = 'button';
       btnOk.className = 'btn primary';
       btnOk.textContent = opts.okLabel || tt('確定');
-      row.appendChild(btnNo); row.appendChild(btnOk);
+      if (!opts.hideCancel) row.appendChild(btnNo);
+      row.appendChild(btnOk);
       box.appendChild(body); box.appendChild(row);
       bk.appendChild(box);
       function done(val) {
@@ -120,6 +121,11 @@
     });
   }
 
-  window.UI = { toast: toast, confirm: confirmDlg, prompt: promptDlg };
+  /* 單鍵版：只有「知道了」，給純告知用（訊息太長不適合 toast 時） */
+  function infoDlg(msg) {
+    return confirmDlg(msg, { hideCancel: true, okLabel: tt('知道了') });
+  }
+
+  window.UI = { toast: toast, confirm: confirmDlg, prompt: promptDlg, info: infoDlg };
   window.alert = function (msg) { toast(msg); };
 })();
