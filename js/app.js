@@ -99,9 +99,12 @@
      只影響 hero / 曲線圖 / 統計磚；下方各分析卡與紀錄列表維持全量。 */
   var trkType = localStorage.getItem('poker.trkType') || 'all';
   var heroScope = localStorage.getItem('poker.heroScope') || 'month';
-  if (heroScope !== 'month' && heroScope !== 'year' && heroScope !== 'all') heroScope = 'month';
+  if (['month', 'year', 'all', 'custom'].indexOf(heroScope) < 0) heroScope = 'month';
   var periodY = new Date().getFullYear();
   var periodM = new Date().getMonth() + 1;
+  /* 自訂起訖日（2026-08-15 Tony：月/年/全部之外加自訂，進去可以選幾號到幾號） */
+  var customFrom = localStorage.getItem('poker.customFrom') || '';
+  var customTo = localStorage.getItem('poker.customTo') || '';
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
   function typeMatch(r) {
     if (trkType === 'all') return true;
@@ -111,6 +114,11 @@
   function periodMatch(r) {
     if (heroScope === 'all') return true;
     var d = String(r.date || '');
+    if (heroScope === 'custom') {
+      if (customFrom && d < customFrom) return false;
+      if (customTo && d > customTo) return false;
+      return true;
+    }
     if (heroScope === 'year') return d.slice(0, 4) === String(periodY);
     return d.slice(0, 7) === periodY + '-' + pad2(periodM);
   }
@@ -135,6 +143,16 @@
   }
   $('#periodPrev').addEventListener('click', function () { stepPeriod(-1); });
   $('#periodNext').addEventListener('click', function () { stepPeriod(1); });
+  $('#customFrom').addEventListener('change', function () {
+    customFrom = this.value;
+    try { localStorage.setItem('poker.customFrom', customFrom); } catch (e) {}
+    renderTracker();
+  });
+  $('#customTo').addEventListener('change', function () {
+    customTo = this.value;
+    try { localStorage.setItem('poker.customTo', customTo); } catch (e) {}
+    renderTracker();
+  });
 
   /* --- bottom sheet 通用開關（2026-08-15 Tony「照 3」：新增改 FAB＋彈出表單）--- */
   function openSheet(id) {
@@ -364,10 +382,12 @@
       del.textContent = '✕';
       del.setAttribute('aria-label', t('刪除'));
       del.addEventListener('click', function () {
-        if (!confirm(t('刪除這筆紀錄？'))) return;
-        sessions = sessions.filter(function (x) { return x.id !== r.id; });
-        saveSessions(sessions);
-        renderTracker();
+        UI.confirm(t('刪除這筆紀錄？')).then(function (ok) {
+          if (!ok) return;
+          sessions = sessions.filter(function (x) { return x.id !== r.id; });
+          saveSessions(sessions);
+          renderTracker();
+        });
       });
       li.appendChild(main); li.appendChild(plEl); li.appendChild(del);
       ul.appendChild(li);
@@ -459,11 +479,7 @@
   function renderAdvStats() {
     var s = advStats(vSessions);
     var tbl = $('#advStatsTable'), hint = $('#advStatsHint');
-    if (s.n < 2) {
-      tbl.innerHTML = '';
-      hint.textContent = t('至少 2 筆紀錄後顯示。填時數可算時薪。');
-      return;
-    }
+    /* 沒紀錄也照樣渲染 0 值表格（2026-08-15 Tony：空白時先以 0 撐出版面該有的樣子） */
     function row(k, v, cls) {
       return '<tr><td>' + k + '</td><td class="' + (cls || '') + '">' + v + '</td></tr>';
     }
@@ -493,8 +509,10 @@
       html += row(t('建議資金（破產風險 ≤1%）'), fmtMoney(Math.ceil(br1)));
       hint.textContent = t('資金建議用 Kelly 式破產風險模型 RoR = exp(−2μB/σ²)，') +
         t('假設每場盈虧近似常態且 winrate 不變，僅供參考。');
+    } else if (s.n < 2) {
+      hint.textContent = t('滿 2 筆紀錄後統計才有意義。填時數可算時薪。');
     } else {
-      hint.textContent = s.n >= 2 && s.mean <= 0
+      hint.textContent = s.mean <= 0
         ? t('平均盈虧 ≤ 0，任何資金長期都會歸零 — 資金建議不適用，先改善 winrate。')
         : '';
     }
@@ -683,10 +701,12 @@
       del.textContent = '✕';
       del.setAttribute('aria-label', t('刪除筆記'));
       del.addEventListener('click', function () {
-        if (!confirm(t('刪除這則筆記？'))) return;
-        notes = notes.filter(function (x) { return x.id !== nt.id; });
-        saveNotes(notes);
-        renderNotes();
+        UI.confirm(t('刪除這則筆記？')).then(function (ok) {
+          if (!ok) return;
+          notes = notes.filter(function (x) { return x.id !== nt.id; });
+          saveNotes(notes);
+          renderNotes();
+        });
       });
       li.appendChild(main); li.appendChild(del);
       ul.appendChild(li);
@@ -739,7 +759,7 @@
     }
     var pts = [0], xs = [0], cum = 0;
     ordered.forEach(function (r) { cum += r.cashout - r.buyin; pts.push(cum); xs.push(fracOf(r)); });
-    if (heroScope === 'all') {
+    if (heroScope === 'all' || heroScope === 'custom') {
       for (var xi = 0; xi < xs.length; xi++) xs[xi] = ordered.length ? xi / ordered.length : 0;
     }
 
@@ -863,15 +883,23 @@
       tbtns[j].classList.toggle('active', tbtns[j].dataset.ttype === trkType);
     }
     var nav = $('#periodNav');
-    nav.hidden = heroScope === 'all';
+    nav.hidden = heroScope === 'all' || heroScope === 'custom';
+    var cr = $('#customRange');
+    cr.hidden = heroScope !== 'custom';
+    if (heroScope === 'custom') {
+      $('#customFrom').value = customFrom;
+      $('#customTo').value = customTo;
+    }
     $('#periodLabel').textContent =
       heroScope === 'year' ? String(periodY) : periodY + '/' + pad2(periodM);
     var list = dashList();
     var num = $('#heroNum'), sub = $('#heroSub');
     if (!list.length) {
-      num.textContent = '—';
+      /* 空白也照版面該有的樣子顯示 0（2026-08-15 Tony） */
+      num.textContent = '0 ' + dispCur();
       num.className = 'hero-num muted';
-      sub.textContent = t(heroScope === 'all' ? '尚無紀錄' : '此期間尚無紀錄');
+      sub.textContent = '0' + t(' 場') + '　·　' +
+        t(heroScope === 'all' ? '尚無紀錄' : '此期間尚無紀錄');
       return;
     }
     var s = advStats(list);
@@ -897,13 +925,15 @@
     var box = $('#statTiles');
     var s = TrackerStats.summary(dashList());
     function plCls(v) { return v > 0 ? 'pos' : v < 0 ? 'neg' : ''; }
+    /* 完全沒紀錄時以 0 撐出版面；有紀錄但缺欄位（沒填時數等）維持 — */
+    var zero = !s.n;
     var tiles = [
-      [t('總場次'), s.n ? String(s.n) : '—', '', 'n'],
-      [t('總時數'), s.hours > 0 ? (Math.round(s.hours * 10) / 10) + ' h' : '—', '', 'hours'],
-      [t('平均損益'), s.n ? fmtPL(Math.round(s.avg * 10) / 10) : '—', plCls(s.avg), 'avg'],
-      [t('勝率'), s.winRate === null ? '—' : s.winRate.toFixed(1) + '%', '', 'win'],
-      ['ROI', s.roi === null ? '—' : (s.roi > 0 ? '+' : '') + s.roi.toFixed(1) + '%', plCls(s.roi), 'roi'],
-      [t('每小時損益'), s.hourly === null ? '—' : fmtPL(Math.round(s.hourly * 10) / 10), plCls(s.hourly), 'hourly']
+      [t('總場次'), String(s.n || 0), '', 'n'],
+      [t('總時數'), s.hours > 0 ? (Math.round(s.hours * 10) / 10) + ' h' : (zero ? '0 h' : '—'), '', 'hours'],
+      [t('平均損益'), s.n ? fmtPL(Math.round(s.avg * 10) / 10) : '0', plCls(zero ? 0 : s.avg), 'avg'],
+      [t('勝率'), s.winRate === null ? (zero ? '0%' : '—') : s.winRate.toFixed(1) + '%', '', 'win'],
+      ['ROI', s.roi === null ? (zero ? '0%' : '—') : (s.roi > 0 ? '+' : '') + s.roi.toFixed(1) + '%', plCls(zero ? 0 : s.roi), 'roi'],
+      [t('每小時損益'), s.hourly === null ? (zero ? '0' : '—') : fmtPL(Math.round(s.hourly * 10) / 10), plCls(zero ? 0 : s.hourly), 'hourly']
     ];
     box.innerHTML = tiles.map(function (tl) {
       return '<div class="stat-tile"><div class="stat-tile-head"><span>' + tl[0] +
@@ -974,10 +1004,12 @@
         valid.forEach(function (r) {
           if (!r.id) r.id = Date.now() + '-' + Math.random().toString(36).slice(2, 7);
         });
-        if (!confirm(t('匯入 ') + valid.length + t(' 筆紀錄？（將加到現有紀錄後）'))) return;
-        sessions = sessions.concat(valid);
-        saveSessions(sessions);
-        renderTracker();
+        UI.confirm(t('匯入 ') + valid.length + t(' 筆紀錄？（將加到現有紀錄後）')).then(function (ok) {
+          if (!ok) return;
+          sessions = sessions.concat(valid);
+          saveSessions(sessions);
+          renderTracker();
+        });
       } catch (e) {
         alert('匯入失敗：JSON 格式錯誤');
       }
@@ -1778,9 +1810,11 @@
     renderRfi();
   });
   $('#btnRfiReset').addEventListener('click', function () {
-    if (!confirm(t('確定捨棄這張圖的自訂內容，還原為建議 range？'))) return;
-    setRangeOverride(rfiChartKey(), null);
-    renderRfi();
+    UI.confirm(t('確定捨棄這張圖的自訂內容，還原為建議 range？')).then(function (ok) {
+      if (!ok) return;
+      setRangeOverride(rfiChartKey(), null);
+      renderRfi();
+    });
   });
   buildRfiPosRow();
   renderRfi();
@@ -1961,9 +1995,11 @@
     renderDef();
   });
   $('#btnDefReset').addEventListener('click', function () {
-    if (!confirm(t('確定捨棄這張圖的自訂內容，還原為建議 range？'))) return;
-    setRangeOverride(defChartKey(), null);
-    renderDef();
+    UI.confirm(t('確定捨棄這張圖的自訂內容，還原為建議 range？')).then(function (ok) {
+      if (!ok) return;
+      setRangeOverride(defChartKey(), null);
+      renderDef();
+    });
   });
   renderDef();
 
@@ -2097,9 +2133,11 @@
     renderV3b();
   });
   $('#btnV3bReset').addEventListener('click', function () {
-    if (!confirm(t('確定捨棄這張圖的自訂內容，還原為建議 range？'))) return;
-    setRangeOverride(v3bChartKey(), null);
-    renderV3b();
+    UI.confirm(t('確定捨棄這張圖的自訂內容，還原為建議 range？')).then(function (ok) {
+      if (!ok) return;
+      setRangeOverride(v3bChartKey(), null);
+      renderV3b();
+    });
   });
   renderV3b();
 
@@ -3528,10 +3566,12 @@
       del.setAttribute('aria-label', t('刪除手牌'));
       del.addEventListener('click', function (e) {
         e.stopPropagation();
-        if (!confirm(t('刪除這手複盤紀錄？'))) return;
-        handRecords = handRecords.filter(function (x) { return x.id !== h.id; });
-        saveHands(handRecords);
-        renderHands();
+        UI.confirm(t('刪除這手複盤紀錄？')).then(function (ok) {
+          if (!ok) return;
+          handRecords = handRecords.filter(function (x) { return x.id !== h.id; });
+          saveHands(handRecords);
+          renderHands();
+        });
       });
       head.appendChild(main);
       head.appendChild(fav);

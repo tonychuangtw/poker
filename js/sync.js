@@ -117,9 +117,9 @@
       chip.title = (p.email || "") + t(" — 點擊登出");
       chip.textContent = (p.given_name || p.name || "?").charAt(0).toUpperCase();
       chip.addEventListener("click", function () {
-        if (confirm(t("登出雲端同步？（本機資料會保留在此裝置）"))) {
-          clearToken(); lastPushedHash = null; renderUi();
-        }
+        UI.confirm(t("登出雲端同步？（本機資料會保留在此裝置）")).then(function (ok) {
+          if (ok) { clearToken(); lastPushedHash = null; renderUi(); }
+        });
       });
       statusEl = document.createElement("span");
       statusEl.className = "sync-status";
