@@ -42,6 +42,10 @@ var LIVE = {
   v3bCall: 0.90     // 被 3-bet 的跟注寬度 ×0.90
 };
 var FLOOR = { tb: 1.2, call: 0.8 };   // 寬度下限（%），避免產出空的 range
+/* 被 3-bet 時「純 equity 超過底池賠率這麼多就一定續玩」的餘裕（equity 點）。
+ * 餘裕 = equity 實現率的折價：3-bet 者是盲注時你翻後有位置，實現得比較好，折價小；
+ * 3-bet 者在你後面（例如 BTN 3-bet CO）則整局無位置，要留大一點。 */
+var EQ_FLOOR_MARGIN = { ip: 0.04, oop: 0.08 };
 
 /* 3-bet range 裡 bluff 的占比：純 equity 排序會產生「完全沒有 bluff」的線性 3-bet range，
  * 那不但不像真的策略，還會讓「被 3-bet」那張圖退化成「除了 AA/KK 全棄」。
@@ -195,10 +199,11 @@ function monotone(score) {
  * 先用 thresholdAt 把「總防守寬度」換成門檻取出防守集合，
  * 再把其中最強的部分當 3-bet 價值、剩下當跟注，
  * 最後從外面挑阻斷牌／同花連張補滿 3-bet 的 bluff 額度。 */
-function buildDefence(villainClasses, W, want) {
+function buildDefence(villainClasses, W, want, impliedW, floorEq) {
   var rawEq = Ranges.equityMapVs(villainClasses);
+  var wImp = impliedW == null ? LIVE.impliedW : impliedW;
   var raw = new Array(169), i;
-  for (i = 0; i < 169; i++) raw[i] = rawEq[i] + LIVE.impliedW * Ranges.impliedIndex(i);
+  for (i = 0; i < 169; i++) raw[i] = rawEq[i] + wImp * Ranges.impliedIndex(i);
   var score = monotone(raw);      // 選防守集合：含隱含賠率
   var eq = monotone(rawEq);       // 切價值 / 跟注：只看純 equity
 
@@ -206,9 +211,31 @@ function buildDefence(villainClasses, W, want) {
   var valueCombos = want.tb * (1 - ratio) / 100 * 1326;
   var totalCombos = (want.tb * (1 - ratio) + want.call) / 100 * 1326;
 
-  var thr = Ranges.thresholdAt(score, totalCombos);
-  var defended = [];
-  for (i = 0; i < 169; i++) if (score[i] >= thr) defended.push(i);
+  /* 由強到弱累加到目標寬度為止 —— 不要用「門檻 + 全部 >= 門檻」，
+   * 面對很窄的 3-bet range 時（例如 UTG 被 3-bet），對子的分數擠成一團，
+   * 門檻切下去會一口氣把 JJ-22 全掃進來，寬度直接超標一倍以上
+   * （2026-08-19 補早位格子時發現：UTG 續玩到自己開牌範圍的 68%）。
+   * score / eq 都已經家族單調化，所以照分數排序取前綴仍然不會切出破洞。 */
+  var order = [], defended = [], accDef = 0, inSet = {};
+  for (i = 0; i < 169; i++) order.push(i);
+  order.sort(function (a, b) { return score[b] - score[a] || eq[b] - eq[a] || a - b; });
+  /* floorEq：純 equity 已經明顯超過底池賠率的牌（實務上就是 AK 這類大牌）強制續玩。
+   * 隱含賠率加成最多值 0.1 個 equity 點，面對很窄的 3-bet range 時，小對子靠加成
+   * 會把 AK 擠出續玩範圍 —— 「跟 77、棄 AKo」是明顯錯的表，用這條保底擋掉。 */
+  if (floorEq != null) {
+    for (i = 0; i < 169; i++) {
+      if (eq[i] < floorEq) continue;
+      inSet[i] = true;
+      defended.push(i);
+      accDef += PushFold.comboCount(i);
+    }
+  }
+  for (i = 0; i < order.length && accDef < totalCombos; i++) {
+    if (inSet[order[i]]) continue;
+    inSet[order[i]] = true;
+    defended.push(order[i]);
+    accDef += PushFold.comboCount(order[i]);
+  }
 
   // 防守集合裡最強的當價值 3-bet，其餘落回跟注
   var byEq = defended.slice().sort(function (a, b) { return eq[b] - eq[a]; });
@@ -274,20 +301,29 @@ OPENERS.forEach(function (opener) {
 /* ---------- 5. 被 3-bet ----------
  * 續玩寬度用「相對於對手 3-bet 寬度的比例」來訂 —— 面對越寬的 3-bet 就續玩越多。
  * 比例同樣是從 6 個現成的 6-max 情境量出來的平均值。 */
-var v3bRatio = (function () {
+var V3B_SEED_KEYS = ['co_vs_bb3b', 'co_vs_sb3b', 'co_vs_btn3b',
+                     'btn_vs_sb3b', 'btn_vs_bb3b', 'sb_vs_bb3b'];
+var v3bBase = (function () {
+  /* 只量這 6 個手寫的 6-max 情境 —— 早期版本是量 VS3B_SPOT_KEYS 全部，
+   * 產生器一旦把自己的輸出貼回 ranges.js，下次重跑就會拿自己的結果再平均一次
+   * （比例會愈跑愈偏），所以種子固定成手寫的那 6 個。 */
   var fb = 0, ca = 0;
-  Ranges.VS3B_SPOT_KEYS.forEach(function (k) {
+  V3B_SEED_KEYS.forEach(function (k) {
     var s = Ranges.VS3B_SPOTS[k];
     var vr = pct(PushFold.rangeComboTotal(Ranges.vs3bVillainRange(k)));
     fb += pct(PushFold.rangeComboTotal(PushFold.rangeFromNotation(s.fourBet))) / vr;
     ca += pct(PushFold.rangeComboTotal(PushFold.rangeFromNotation(s.call))) / vr;
   });
-  var n = Ranges.VS3B_SPOT_KEYS.length;
-  return { fourBet: fb / n * LIVE.v3bFourBet, call: ca / n * LIVE.v3bCall };
+  var n = V3B_SEED_KEYS.length;
+  return { fourBet: fb / n, call: ca / n };
 })();
-log('=== 被 3-bet 的續玩比例（6 個 6-max 情境的平均 × 現場調整）===');
-log('  4-bet = %s × 對手 3-bet 寬度｜跟注 = %s ×',
+var v3bRatio = { fourBet: v3bBase.fourBet * LIVE.v3bFourBet,
+                 call: v3bBase.call * LIVE.v3bCall };
+log('=== 被 3-bet 的續玩比例（6 個手寫 6-max 情境的平均）===');
+log('  9-max（× 現場調整）：4-bet = %s × 對手 3-bet 寬度｜跟注 = %s ×',
   v3bRatio.fourBet.toFixed(3), v3bRatio.call.toFixed(3));
+log('  6-max（原值）      ：4-bet = %s × 對手 3-bet 寬度｜跟注 = %s ×',
+  v3bBase.fourBet.toFixed(3), v3bBase.call.toFixed(3));
 
 /* 3-bet 大小：有位置的冷 3-bet 約 3.2 倍，盲注 OOP 要更大。死錢 = 桌上其他人的盲注。 */
 function tbSize(villain, openBb) {
@@ -296,37 +332,65 @@ function tbSize(villain, openBb) {
 }
 function deadFor(villain) { return villain === 'BB' ? 0.5 : villain === 'SB' ? 1 : 1.5; }
 
-var V3B_VILLAINS = ['BTN', 'SB', 'BB'];   // 3-bet 實務上主要來自後位與盲注
-var v3bSpots = [], v3bKeys = [];
-['MP', 'LJ', 'HJ', 'CO', 'BTN', 'SB'].forEach(function (hero) {
-  var hi = SEATS9.indexOf(hero);
-  var openBb = hero === 'SB' ? 3 : 2.5;
-  V3B_VILLAINS.forEach(function (villain) {
-    if (SEATS9.indexOf(villain) <= hi) return;
-    var villainSpot = KEY9[villain] + '_vs_' + KEY9[hero] + '9';
-    if (!Ranges.DEF_SPOTS[villainSpot]) return;
-    var key = KEY9[hero] + '_vs_' + KEY9[villain] + '3b9';
-    var villainRange = PushFold.rangeFromNotation(Ranges.DEF_SPOTS[villainSpot].threeBet);
-    var vw = pct(PushFold.rangeComboTotal(villainRange));
-    var res = buildDefence(villainRange, vw, {
-      tb: Math.max(FLOOR.tb, vw * v3bRatio.fourBet),
-      call: Math.max(FLOOR.call, vw * v3bRatio.call)
+/* 每個「開牌位置 × 之後任一位置 3-bet」都要有一格 —— 之前只做 BTN/SB/BB 三個 3-bet 者、
+ * 而且開牌位置從 MP 起跳，所以 UTG 被 3-bet、被中位 3-bet 這些格子在圖上根本點不到
+ * （2026-08-19 Tony 回報）。現在跟「面對開牌」一樣走完整矩陣。 */
+function buildV3bSpots(seats, keyMap, defSuffix, keySuffix, tableTag, impliedW, ratio, mkName, mkNote) {
+  var spots = [], keys = [];
+  seats.slice(0, seats.length - 1).forEach(function (hero) {
+    var hi = seats.indexOf(hero);
+    var openBb = hero === 'SB' ? 3 : 2.5;
+    seats.slice(hi + 1).forEach(function (villain) {
+      var villainSpot = keyMap[villain] + '_vs_' + keyMap[hero] + defSuffix;
+      if (!Ranges.DEF_SPOTS[villainSpot]) return;
+      var key = keyMap[hero] + '_vs_' + keyMap[villain] + '3b' + keySuffix;
+      // 手寫的 6-max 種子格子不覆蓋（其餘格子每次重跑都重新產生，才會是冪等的）
+      if (V3B_SEED_KEYS.indexOf(key) >= 0) return;
+      var villainRange = PushFold.rangeFromNotation(Ranges.DEF_SPOTS[villainSpot].threeBet);
+      var vw = pct(PushFold.rangeComboTotal(villainRange));
+      var tbBb = tbSize(villain, openBb);
+      var needEq = (tbBb - openBb) / (tbBb * 2 + deadFor(villain));
+      var res = buildDefence(villainRange, vw, {
+        tb: Math.max(FLOOR.tb, vw * ratio.fourBet),
+        call: Math.max(FLOOR.call, vw * ratio.call)
+      }, impliedW, needEq +
+        (villain === 'SB' || villain === 'BB' ? EQ_FLOOR_MARGIN.ip : EQ_FLOOR_MARGIN.oop));
+      spots.push({
+        key: key, hero: hero, villain: villain, villainSpot: villainSpot, table: tableTag,
+        name: mkName(hero, villain),
+        openBb: openBb, tbBb: tbBb, deadBb: deadFor(villain),
+        note: mkNote(hero, villain, vw),
+        fourBet: PushFold.notationFromClasses(res.tb),
+        call: PushFold.notationFromClasses(res.call),
+        villainPct: vw,
+        fbPct: pct(PushFold.rangeComboTotal(res.tb)),
+        callPct: pct(PushFold.rangeComboTotal(res.call))
+      });
+      keys.push(key);
     });
-    v3bSpots.push({
-      key: key, hero: hero, villain: villain, villainSpot: villainSpot,
-      name: hero + ' 開牌 vs ' + villain + ' 3-bet（9-max）',
-      openBb: openBb, tbBb: tbSize(villain, openBb), deadBb: deadFor(villain),
-      note: '9-max 現場：' + villain + ' 在這裡的 3-bet 只有 ' + vw.toFixed(1) +
-        '%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多',
-      fourBet: PushFold.notationFromClasses(res.tb),
-      call: PushFold.notationFromClasses(res.call),
-      villainPct: vw,
-      fbPct: pct(PushFold.rangeComboTotal(res.tb)),
-      callPct: pct(PushFold.rangeComboTotal(res.call))
-    });
-    v3bKeys.push(key);
   });
-});
+  return { spots: spots, keys: keys };
+}
+
+var v3b9 = buildV3bSpots(SEATS9, KEY9, '9', '9', 9, LIVE.impliedW, v3bRatio,
+  function (hero, villain) { return hero + ' 開牌 vs ' + villain + ' 3-bet（9-max）'; },
+  function (hero, villain, vw) {
+    return '9-max 現場：' + villain + ' 在這裡的 3-bet 只有 ' + vw.toFixed(1) +
+      '%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多';
+  });
+var v3bSpots = v3b9.spots, v3bKeys = v3b9.keys;
+
+/* 6-max 只補「原本沒有的格子」（UTG / HJ 開牌被 3-bet），
+ * 既有 6 格是手寫的，也是上面比例的種子，不動它們。 */
+var KEY6 = { 'UTG': 'utg', 'HJ': 'hj', 'CO': 'co', 'BTN': 'btn', 'SB': 'sb', 'BB': 'bb' };
+var v3b6 = buildV3bSpots(SEATS6, KEY6, '', '', 6, Ranges.IMPLIED_W, v3bBase,
+  function (hero, villain) { return hero + ' 開牌 vs ' + villain + ' 3-bet'; },
+  function (hero, villain, vw) {
+    var ip = villain === 'SB' || villain === 'BB';
+    return villain + ' 在這裡的 3-bet 約 ' + vw.toFixed(1) + '%；' + (ip
+      ? '你翻後有位置 → 邊緣牌用跟注續玩，4-bet 留給價值與阻斷牌'
+      : '對方翻後有位置、你整局無位置 → 續玩要收窄，打不舒服的牌寧可棄或直接 4-bet');
+  });
 
 /* ---------- 6. 寬度檢查 ---------- */
 log('\n=== 9-max 防守寬度 ===');
@@ -337,12 +401,16 @@ defSpots.forEach(function (s) {
     s.W.toFixed(1).padStart(7), s.tbPct.toFixed(1).padStart(7),
     s.callPct.toFixed(1).padStart(7), (s.tbPct + s.callPct).toFixed(1).padStart(8));
 });
-log('\n=== 9-max 被 3-bet 寬度 ===');
-v3bSpots.forEach(function (s) {
-  log('  %s 開 vs %s 3-bet 到 %sbb（對手 %s%%）：4-bet %s%%、跟注 %s%%',
-    s.hero.padEnd(4), s.villain.padEnd(4), String(s.tbBb).padStart(4),
-    s.villainPct.toFixed(1).padStart(5), s.fbPct.toFixed(1), s.callPct.toFixed(1));
-});
+function logV3b(title, list) {
+  log('\n=== %s ===', title);
+  list.forEach(function (s) {
+    log('  %s 開 vs %s 3-bet 到 %sbb（對手 %s%%）：4-bet %s%%、跟注 %s%%',
+      s.hero.padEnd(4), s.villain.padEnd(4), String(s.tbBb).padStart(4),
+      s.villainPct.toFixed(1).padStart(5), s.fbPct.toFixed(1), s.callPct.toFixed(1));
+  });
+}
+logV3b('6-max 被 3-bet（補齊的格子）', v3b6.spots);
+logV3b('9-max 被 3-bet 寬度', v3bSpots);
 
 if (REPORT_ONLY) process.exit(0);
 
@@ -360,6 +428,8 @@ function wrap(str, indent) {
   }).join(' +\n');
 }
 
+function tq(s) { return 't(' + q(s) + ')'; }   // ranges.js 的中文字串都包 t()
+
 var out = [];
 out.push('  /* ===== 9-max Full Ring：面對開牌（現場取向） =====');
 out.push('   * 由 tools/gen-9max-ranges.js 產生，請改產生器後重跑，不要手改這一段。');
@@ -369,28 +439,39 @@ out.push('   * 選牌用 equity + 隱含賠率排序（權重 ' + LIVE.impliedW 
   '），3-bet 內含依開牌寬度遞增的 bluff 比例。 */');
 defSpots.forEach(function (s) {
   out.push('  ' + s.key + ': {');
-  out.push('    name: ' + q(s.name) + ', table: 9,');
+  out.push('    name: ' + tq(s.name) + ', table: 9,');
   out.push('    hero: ' + q(s.hero) + ', opener: ' + q(s.opener) +
     (s.openBb !== 2.5 ? ', openBb: ' + s.openBb : '') + ',');
-  out.push('    sizeTxt: ' + q(s.sizeTxt) + ',');
+  out.push('    sizeTxt: ' + tq(s.sizeTxt) + ',');
   out.push('    threeBet: ' + wrap(s.threeBet, '      ') + ',');
   out.push('    call: ' + wrap(s.call, '      '));
   out.push('  },');
 });
+function emitV3b(list, tableTag) {
+  list.forEach(function (s) {
+    out.push('  ' + s.key + ': {');
+    out.push('    name: ' + tq(s.name) + (tableTag === 9 ? ', table: 9,' : ','));
+    out.push('    hero: ' + q(s.hero) + ', villain: ' + q(s.villain) +
+      ', villainSpot: ' + q(s.villainSpot) + ',');
+    out.push('    openBb: ' + s.openBb + ', tbBb: ' + s.tbBb + ', deadBb: ' + s.deadBb + ',');
+    out.push('    note: ' + tq(s.note) + ',');
+    out.push('    fourBet: ' + wrap(s.fourBet, '      ') + ',');
+    out.push('    call: ' + wrap(s.call, '      '));
+    out.push('  },');
+  });
+}
+
+out.push('');
+out.push('  /* ===== 6-max：被 3-bet 的補齊格（同一支產生器） =====');
+out.push('   * 手寫的 6 格（CO / BTN / SB 開牌）在上面，這裡是 UTG / HJ 開牌被 3-bet 的部分，');
+out.push('   * 續玩寬度 = 對手 3-bet 寬度 × 手寫 6 格量出的比例（4-bet ' +
+  v3bBase.fourBet.toFixed(3) + '、跟注 ' + v3bBase.call.toFixed(3) + '）。 */');
+emitV3b(v3b6.spots, 6);
 out.push('');
 out.push('  /* ===== 9-max Full Ring：被 3-bet（同一支產生器） ===== */');
-v3bSpots.forEach(function (s) {
-  out.push('  ' + s.key + ': {');
-  out.push('    name: ' + q(s.name) + ', table: 9,');
-  out.push('    hero: ' + q(s.hero) + ', villain: ' + q(s.villain) +
-    ', villainSpot: ' + q(s.villainSpot) + ',');
-  out.push('    openBb: ' + s.openBb + ', tbBb: ' + s.tbBb + ', deadBb: ' + s.deadBb + ',');
-  out.push('    note: ' + q(s.note) + ',');
-  out.push('    fourBet: ' + wrap(s.fourBet, '      ') + ',');
-  out.push('    call: ' + wrap(s.call, '      '));
-  out.push('  },');
-});
+emitV3b(v3bSpots, 9);
 out.push('');
 out.push('  DEF_KEYS_9 = ' + JSON.stringify(defKeys) + ';');
+out.push('  VS3B_KEYS_6_NEW = ' + JSON.stringify(v3b6.keys) + ';');
 out.push('  VS3B_KEYS_9 = ' + JSON.stringify(v3bKeys) + ';');
 console.log(out.join('\n'));

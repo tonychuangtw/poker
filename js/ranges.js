@@ -472,14 +472,233 @@
       call: 'TT-77 AJs ATs KQs KJs QJs JTs T9s 98s AQo AJo'
     },
 
+  /* ===== 6-max：被 3-bet 的補齊格（同一支產生器） =====
+   * 手寫的 6 格（CO / BTN / SB 開牌）在上面，這裡是 UTG / HJ 開牌被 3-bet 的部分，
+   * 續玩寬度 = 對手 3-bet 寬度 × 手寫 6 格量出的比例（4-bet 0.357、跟注 0.886）。 */
+  utg_vs_hj3b: {
+    name: t('UTG 開牌 vs HJ 3-bet'),
+    hero: 'UTG', villain: 'HJ', villainSpot: 'hj_vs_utg',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('HJ 在這裡的 3-bet 約 3.6%；對方翻後有位置、你整局無位置 → 續玩要收窄，打不舒服的牌寧可棄或直接 4-bet'),
+    fourBet: 'QQ+',
+    call: 'JJ-88 AKs+ AKo+'
+  },
+  utg_vs_co3b: {
+    name: t('UTG 開牌 vs CO 3-bet'),
+    hero: 'UTG', villain: 'CO', villainSpot: 'co_vs_utg',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('CO 在這裡的 3-bet 約 3.9%；對方翻後有位置、你整局無位置 → 續玩要收窄，打不舒服的牌寧可棄或直接 4-bet'),
+    fourBet: 'QQ+ A5s',
+    call: 'JJ-55 AKs+ AKo+'
+  },
+  utg_vs_btn3b: {
+    name: t('UTG 開牌 vs BTN 3-bet'),
+    hero: 'UTG', villain: 'BTN', villainSpot: 'btn_vs_utg',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('BTN 在這裡的 3-bet 約 4.4%；對方翻後有位置、你整局無位置 → 續玩要收窄，打不舒服的牌寧可棄或直接 4-bet'),
+    fourBet: 'QQ+ AKs+',
+    call: 'JJ-66 AKo+'
+  },
+  utg_vs_sb3b: {
+    name: t('UTG 開牌 vs SB 3-bet'),
+    hero: 'UTG', villain: 'SB', villainSpot: 'sb_vs_utg',
+    openBb: 2.5, tbBb: 11, deadBb: 1,
+    note: t('SB 在這裡的 3-bet 約 3.9%；你翻後有位置 → 邊緣牌用跟注續玩，4-bet 留給價值與阻斷牌'),
+    fourBet: 'QQ+ A5s',
+    call: 'JJ-77 AKs+ AKo+'
+  },
+  utg_vs_bb3b: {
+    name: t('UTG 開牌 vs BB 3-bet'),
+    hero: 'UTG', villain: 'BB', villainSpot: 'bb_vs_utg',
+    openBb: 2.5, tbBb: 12, deadBb: 0.5,
+    note: t('BB 在這裡的 3-bet 約 3.2%；你翻後有位置 → 邊緣牌用跟注續玩，4-bet 留給價值與阻斷牌'),
+    fourBet: 'KK+ AKs+',
+    call: 'QQ-99 AKo+'
+  },
+  hj_vs_co3b: {
+    name: t('HJ 開牌 vs CO 3-bet'),
+    hero: 'HJ', villain: 'CO', villainSpot: 'co_vs_hj',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('CO 在這裡的 3-bet 約 4.4%；對方翻後有位置、你整局無位置 → 續玩要收窄，打不舒服的牌寧可棄或直接 4-bet'),
+    fourBet: 'QQ+ AKs+',
+    call: 'JJ-66 AKo+'
+  },
+  hj_vs_btn3b: {
+    name: t('HJ 開牌 vs BTN 3-bet'),
+    hero: 'HJ', villain: 'BTN', villainSpot: 'btn_vs_hj',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('BTN 在這裡的 3-bet 約 4.7%；對方翻後有位置、你整局無位置 → 續玩要收窄，打不舒服的牌寧可棄或直接 4-bet'),
+    fourBet: 'QQ+ AKs+ A5s',
+    call: 'JJ-55 AQs AKo+'
+  },
+  hj_vs_sb3b: {
+    name: t('HJ 開牌 vs SB 3-bet'),
+    hero: 'HJ', villain: 'SB', villainSpot: 'sb_vs_hj',
+    openBb: 2.5, tbBb: 11, deadBb: 1,
+    note: t('SB 在這裡的 3-bet 約 4.4%；你翻後有位置 → 邊緣牌用跟注續玩，4-bet 留給價值與阻斷牌'),
+    fourBet: 'QQ+ AKs+',
+    call: 'JJ-66 AKo+'
+  },
+  hj_vs_bb3b: {
+    name: t('HJ 開牌 vs BB 3-bet'),
+    hero: 'HJ', villain: 'BB', villainSpot: 'bb_vs_hj',
+    openBb: 2.5, tbBb: 12, deadBb: 0.5,
+    note: t('BB 在這裡的 3-bet 約 3.9%；你翻後有位置 → 邊緣牌用跟注續玩，4-bet 留給價值與阻斷牌'),
+    fourBet: 'QQ+ A5s',
+    call: 'JJ-77 AKs+ AKo+'
+  },
   /* ===== 9-max Full Ring：被 3-bet（同一支產生器） ===== */
+  utg_vs_utg13b9: {
+    name: t('UTG 開牌 vs UTG+1 3-bet（9-max）'), table: 9,
+    hero: 'UTG', villain: 'UTG+1', villainSpot: 'utg1_vs_utg9',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('9-max 現場：UTG+1 在這裡的 3-bet 只有 2.1%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'ATs+ KQs+'
+  },
+  utg_vs_mp3b9: {
+    name: t('UTG 開牌 vs MP 3-bet（9-max）'), table: 9,
+    hero: 'UTG', villain: 'MP', villainSpot: 'mp_vs_utg9',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('9-max 現場：MP 在這裡的 3-bet 只有 2.4%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ ATs+ KQs+'
+  },
+  utg_vs_lj3b9: {
+    name: t('UTG 開牌 vs LJ 3-bet（9-max）'), table: 9,
+    hero: 'UTG', villain: 'LJ', villainSpot: 'lj_vs_utg9',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('9-max 現場：LJ 在這裡的 3-bet 只有 2.9%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ ATs+ KJs+'
+  },
+  utg_vs_hj3b9: {
+    name: t('UTG 開牌 vs HJ 3-bet（9-max）'), table: 9,
+    hero: 'UTG', villain: 'HJ', villainSpot: 'hj_vs_utg9',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('9-max 現場：HJ 在這裡的 3-bet 只有 3.0%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ-99 AKs+ 76s+ 65s+ 54s+'
+  },
+  utg_vs_co3b9: {
+    name: t('UTG 開牌 vs CO 3-bet（9-max）'), table: 9,
+    hero: 'UTG', villain: 'CO', villainSpot: 'co_vs_utg9',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('9-max 現場：CO 在這裡的 3-bet 只有 3.3%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ-99 AKs+ AKo+'
+  },
+  utg_vs_btn3b9: {
+    name: t('UTG 開牌 vs BTN 3-bet（9-max）'), table: 9,
+    hero: 'UTG', villain: 'BTN', villainSpot: 'btn_vs_utg9',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('9-max 現場：BTN 在這裡的 3-bet 只有 3.8%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ-88 AKs+ AKo+'
+  },
+  utg_vs_sb3b9: {
+    name: t('UTG 開牌 vs SB 3-bet（9-max）'), table: 9,
+    hero: 'UTG', villain: 'SB', villainSpot: 'sb_vs_utg9',
+    openBb: 2.5, tbBb: 11, deadBb: 1,
+    note: t('9-max 現場：SB 在這裡的 3-bet 只有 3.3%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ-99 AKs+ AKo+'
+  },
+  utg_vs_bb3b9: {
+    name: t('UTG 開牌 vs BB 3-bet（9-max）'), table: 9,
+    hero: 'UTG', villain: 'BB', villainSpot: 'bb_vs_utg9',
+    openBb: 2.5, tbBb: 12, deadBb: 0.5,
+    note: t('9-max 現場：BB 在這裡的 3-bet 只有 3.0%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ-99 AKs+ 76s+ 65s+ 54s+'
+  },
+  utg1_vs_mp3b9: {
+    name: t('UTG+1 開牌 vs MP 3-bet（9-max）'), table: 9,
+    hero: 'UTG+1', villain: 'MP', villainSpot: 'mp_vs_utg19',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('9-max 現場：MP 在這裡的 3-bet 只有 2.4%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ ATs+ KQs+'
+  },
+  utg1_vs_lj3b9: {
+    name: t('UTG+1 開牌 vs LJ 3-bet（9-max）'), table: 9,
+    hero: 'UTG+1', villain: 'LJ', villainSpot: 'lj_vs_utg19',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('9-max 現場：LJ 在這裡的 3-bet 只有 3.0%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ-99 AKs+ 76s+ 65s+ 54s+'
+  },
+  utg1_vs_hj3b9: {
+    name: t('UTG+1 開牌 vs HJ 3-bet（9-max）'), table: 9,
+    hero: 'UTG+1', villain: 'HJ', villainSpot: 'hj_vs_utg19',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('9-max 現場：HJ 在這裡的 3-bet 只有 3.3%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ-99 AKs+ AKo+'
+  },
+  utg1_vs_co3b9: {
+    name: t('UTG+1 開牌 vs CO 3-bet（9-max）'), table: 9,
+    hero: 'UTG+1', villain: 'CO', villainSpot: 'co_vs_utg19',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('9-max 現場：CO 在這裡的 3-bet 只有 3.6%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ-88 AKs+ AKo+'
+  },
+  utg1_vs_btn3b9: {
+    name: t('UTG+1 開牌 vs BTN 3-bet（9-max）'), table: 9,
+    hero: 'UTG+1', villain: 'BTN', villainSpot: 'btn_vs_utg19',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('9-max 現場：BTN 在這裡的 3-bet 只有 3.8%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ-88 AKs+ AKo+'
+  },
+  utg1_vs_sb3b9: {
+    name: t('UTG+1 開牌 vs SB 3-bet（9-max）'), table: 9,
+    hero: 'UTG+1', villain: 'SB', villainSpot: 'sb_vs_utg19',
+    openBb: 2.5, tbBb: 11, deadBb: 1,
+    note: t('9-max 現場：SB 在這裡的 3-bet 只有 3.6%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ-88 AKs+ AKo+'
+  },
+  utg1_vs_bb3b9: {
+    name: t('UTG+1 開牌 vs BB 3-bet（9-max）'), table: 9,
+    hero: 'UTG+1', villain: 'BB', villainSpot: 'bb_vs_utg19',
+    openBb: 2.5, tbBb: 12, deadBb: 0.5,
+    note: t('9-max 現場：BB 在這裡的 3-bet 只有 3.0%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ-99 AKs+ 76s+ 65s+ 54s+'
+  },
+  mp_vs_lj3b9: {
+    name: t('MP 開牌 vs LJ 3-bet（9-max）'), table: 9,
+    hero: 'MP', villain: 'LJ', villainSpot: 'lj_vs_mp9',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('9-max 現場：LJ 在這裡的 3-bet 只有 3.0%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ-99 AKs+ 76s+ 65s+ 54s+'
+  },
+  mp_vs_hj3b9: {
+    name: t('MP 開牌 vs HJ 3-bet（9-max）'), table: 9,
+    hero: 'MP', villain: 'HJ', villainSpot: 'hj_vs_mp9',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('9-max 現場：HJ 在這裡的 3-bet 只有 3.3%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ-99 AKs+ AKo+'
+  },
+  mp_vs_co3b9: {
+    name: t('MP 開牌 vs CO 3-bet（9-max）'), table: 9,
+    hero: 'MP', villain: 'CO', villainSpot: 'co_vs_mp9',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('9-max 現場：CO 在這裡的 3-bet 只有 3.6%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ-88 AKs+ AKo+'
+  },
   mp_vs_btn3b9: {
     name: t('MP 開牌 vs BTN 3-bet（9-max）'), table: 9,
     hero: 'MP', villain: 'BTN', villainSpot: 'btn_vs_mp9',
     openBb: 2.5, tbBb: 8, deadBb: 1.5,
     note: t('9-max 現場：BTN 在這裡的 3-bet 只有 4.1%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
     fourBet: 'QQ+',
-    call: 'JJ-44 AKs+'
+    call: 'JJ-88 AKs+ AKo+'
   },
   mp_vs_sb3b9: {
     name: t('MP 開牌 vs SB 3-bet（9-max）'), table: 9,
@@ -487,7 +706,7 @@
     openBb: 2.5, tbBb: 11, deadBb: 1,
     note: t('9-max 現場：SB 在這裡的 3-bet 只有 4.1%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
     fourBet: 'QQ+',
-    call: 'JJ-44 AKs+'
+    call: 'JJ-88 AKs+ AKo+'
   },
   mp_vs_bb3b9: {
     name: t('MP 開牌 vs BB 3-bet（9-max）'), table: 9,
@@ -495,7 +714,23 @@
     openBb: 2.5, tbBb: 12, deadBb: 0.5,
     note: t('9-max 現場：BB 在這裡的 3-bet 只有 3.8%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
     fourBet: 'QQ+',
-    call: 'JJ-33 AKs+'
+    call: 'JJ-66 AKs+'
+  },
+  lj_vs_hj3b9: {
+    name: t('LJ 開牌 vs HJ 3-bet（9-max）'), table: 9,
+    hero: 'LJ', villain: 'HJ', villainSpot: 'hj_vs_lj9',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('9-max 現場：HJ 在這裡的 3-bet 只有 3.6%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ-88 AKs+ AKo+'
+  },
+  lj_vs_co3b9: {
+    name: t('LJ 開牌 vs CO 3-bet（9-max）'), table: 9,
+    hero: 'LJ', villain: 'CO', villainSpot: 'co_vs_lj9',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('9-max 現場：CO 在這裡的 3-bet 只有 3.8%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ-88 AKs+ AKo+'
   },
   lj_vs_btn3b9: {
     name: t('LJ 開牌 vs BTN 3-bet（9-max）'), table: 9,
@@ -503,7 +738,7 @@
     openBb: 2.5, tbBb: 8, deadBb: 1.5,
     note: t('9-max 現場：BTN 在這裡的 3-bet 只有 4.1%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
     fourBet: 'QQ+',
-    call: 'JJ-44 AKs+'
+    call: 'JJ-88 AKs+ AKo+'
   },
   lj_vs_sb3b9: {
     name: t('LJ 開牌 vs SB 3-bet（9-max）'), table: 9,
@@ -511,7 +746,7 @@
     openBb: 2.5, tbBb: 11, deadBb: 1,
     note: t('9-max 現場：SB 在這裡的 3-bet 只有 4.8%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
     fourBet: 'QQ+ A5s',
-    call: 'JJ-44 AQs+'
+    call: 'JJ-66 AKs+ AKo+'
   },
   lj_vs_bb3b9: {
     name: t('LJ 開牌 vs BB 3-bet（9-max）'), table: 9,
@@ -519,7 +754,15 @@
     openBb: 2.5, tbBb: 12, deadBb: 0.5,
     note: t('9-max 現場：BB 在這裡的 3-bet 只有 4.4%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
     fourBet: 'QQ+',
-    call: 'JJ-33 AKs+'
+    call: 'JJ-77 AKs+ AKo+'
+  },
+  hj_vs_co3b9: {
+    name: t('HJ 開牌 vs CO 3-bet（9-max）'), table: 9,
+    hero: 'HJ', villain: 'CO', villainSpot: 'co_vs_hj9',
+    openBb: 2.5, tbBb: 8, deadBb: 1.5,
+    note: t('9-max 現場：CO 在這裡的 3-bet 只有 4.1%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
+    fourBet: 'QQ+',
+    call: 'JJ-88 AKs+ AKo+'
   },
   hj_vs_btn3b9: {
     name: t('HJ 開牌 vs BTN 3-bet（9-max）'), table: 9,
@@ -527,7 +770,7 @@
     openBb: 2.5, tbBb: 8, deadBb: 1.5,
     note: t('9-max 現場：BTN 在這裡的 3-bet 只有 4.4%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
     fourBet: 'QQ+',
-    call: 'JJ-44 AKs+'
+    call: 'JJ-88 AQs+ AKo+'
   },
   hj_vs_sb3b9: {
     name: t('HJ 開牌 vs SB 3-bet（9-max）'), table: 9,
@@ -535,7 +778,7 @@
     openBb: 2.5, tbBb: 11, deadBb: 1,
     note: t('9-max 現場：SB 在這裡的 3-bet 只有 6.0%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
     fourBet: 'QQ+ AKs+ A5s',
-    call: 'JJ-33 AKo+'
+    call: 'JJ-44 AQs AKo+'
   },
   hj_vs_bb3b9: {
     name: t('HJ 開牌 vs BB 3-bet（9-max）'), table: 9,
@@ -543,7 +786,7 @@
     openBb: 2.5, tbBb: 12, deadBb: 0.5,
     note: t('9-max 現場：BB 在這裡的 3-bet 只有 5.6%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
     fourBet: 'QQ+ AKs+ A5s',
-    call: 'JJ-33 AKo+'
+    call: 'JJ-44 AKo+'
   },
   co_vs_btn3b9: {
     name: t('CO 開牌 vs BTN 3-bet（9-max）'), table: 9,
@@ -551,7 +794,7 @@
     openBb: 2.5, tbBb: 8, deadBb: 1.5,
     note: t('9-max 現場：BTN 在這裡的 3-bet 只有 4.7%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
     fourBet: 'QQ+ A5s',
-    call: 'JJ-33 AKs+'
+    call: 'JJ-77 AQs+ AKo+'
   },
   co_vs_sb3b9: {
     name: t('CO 開牌 vs SB 3-bet（9-max）'), table: 9,
@@ -559,7 +802,7 @@
     openBb: 2.5, tbBb: 11, deadBb: 1,
     note: t('9-max 現場：SB 在這裡的 3-bet 只有 6.9%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
     fourBet: 'JJ+ AKs+',
-    call: 'TT-22 AQs AKo+'
+    call: 'TT-44 AQs AQo+'
   },
   co_vs_bb3b9: {
     name: t('CO 開牌 vs BB 3-bet（9-max）'), table: 9,
@@ -567,7 +810,7 @@
     openBb: 2.5, tbBb: 12, deadBb: 0.5,
     note: t('9-max 現場：BB 在這裡的 3-bet 只有 6.9%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
     fourBet: 'JJ+ AKs+',
-    call: 'TT-22 AQs AKo+'
+    call: 'TT-44 AQs AQo+'
   },
   btn_vs_sb3b9: {
     name: t('BTN 開牌 vs SB 3-bet（9-max）'), table: 9,
@@ -575,7 +818,7 @@
     openBb: 2.5, tbBb: 11, deadBb: 1,
     note: t('9-max 現場：SB 在這裡的 3-bet 只有 12.8%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
     fourBet: 'TT+ AKs+ A5s-A4s AKo+',
-    call: '99-22 AQs-A6s A3s KJs+ QTs+ J9s+ T8s+ 97s+ 87s+ AQo'
+    call: '99-22 AQs-A7s KTs+ QTs+ JTs+ T9s+ AQo-ATo'
   },
   btn_vs_bb3b9: {
     name: t('BTN 開牌 vs BB 3-bet（9-max）'), table: 9,
@@ -583,7 +826,7 @@
     openBb: 2.5, tbBb: 12, deadBb: 0.5,
     note: t('9-max 現場：BB 在這裡的 3-bet 只有 13.3%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
     fourBet: 'TT+ AKs+ A5s-A4s AKo+',
-    call: '99-22 AQs-A6s A3s KJs+ QTs+ J9s+ T8s+ 97s+ 87s+ AQo'
+    call: '99-22 AQs-A8s KJs+ QTs+ J9s+ T8s+ 98s+ AQo-ATo'
   },
   sb_vs_bb3b9: {
     name: t('SB 開牌 vs BB 3-bet（9-max）'), table: 9,
@@ -591,14 +834,20 @@
     openBb: 3, tbBb: 14.5, deadBb: 0.5,
     note: t('9-max 現場：BB 在這裡的 3-bet 只有 10.1%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多'),
     fourBet: 'JJ+ AKs+ A5s AKo+',
-    call: 'TT-22 AQs-ATs KJs+ QTs+ JTs+ T9s+ AQo'
+    call: 'TT-22 AQs-ATs KJs+ QJs+ AQo-AJo'
   },
   };
 
   var VS3B_SPOT_KEYS = [
-    'co_vs_bb3b', 'co_vs_sb3b', 'co_vs_btn3b', 'btn_vs_sb3b', 'btn_vs_bb3b', 'sb_vs_bb3b',
-    'mp_vs_btn3b9', 'mp_vs_sb3b9', 'mp_vs_bb3b9', 'lj_vs_btn3b9', 'lj_vs_sb3b9',
-    'lj_vs_bb3b9', 'hj_vs_btn3b9', 'hj_vs_sb3b9', 'hj_vs_bb3b9', 'co_vs_btn3b9',
+    'utg_vs_hj3b', 'utg_vs_co3b', 'utg_vs_btn3b', 'utg_vs_sb3b', 'utg_vs_bb3b',
+    'hj_vs_co3b', 'hj_vs_btn3b', 'hj_vs_sb3b', 'hj_vs_bb3b', 'co_vs_btn3b', 'co_vs_sb3b',
+    'co_vs_bb3b', 'btn_vs_sb3b', 'btn_vs_bb3b', 'sb_vs_bb3b', 'utg_vs_utg13b9',
+    'utg_vs_mp3b9', 'utg_vs_lj3b9', 'utg_vs_hj3b9', 'utg_vs_co3b9', 'utg_vs_btn3b9',
+    'utg_vs_sb3b9', 'utg_vs_bb3b9', 'utg1_vs_mp3b9', 'utg1_vs_lj3b9', 'utg1_vs_hj3b9',
+    'utg1_vs_co3b9', 'utg1_vs_btn3b9', 'utg1_vs_sb3b9', 'utg1_vs_bb3b9', 'mp_vs_lj3b9',
+    'mp_vs_hj3b9', 'mp_vs_co3b9', 'mp_vs_btn3b9', 'mp_vs_sb3b9', 'mp_vs_bb3b9',
+    'lj_vs_hj3b9', 'lj_vs_co3b9', 'lj_vs_btn3b9', 'lj_vs_sb3b9', 'lj_vs_bb3b9',
+    'hj_vs_co3b9', 'hj_vs_btn3b9', 'hj_vs_sb3b9', 'hj_vs_bb3b9', 'co_vs_btn3b9',
     'co_vs_sb3b9', 'co_vs_bb3b9', 'btn_vs_sb3b9', 'btn_vs_bb3b9', 'sb_vs_bb3b9'
   ];
 
@@ -710,6 +959,13 @@
     return fams;
   })();
 
+  /* 單調化會壓出「同分平台」（例如面對很窄的 3-bet range 時，22–99 的 equity 幾乎一樣，
+   * 一路被壓成同一個值）。門檻是「score >= thr」，同分平台會一次整排掃進來 ——
+   * 目標 52 combo 卻拿到 94 combo，圖上就變成「JJ-22 全部跟注」。
+   * 這裡在單調化後減掉 index × 1e-9，讓同分平台變成嚴格遞減、門檻切得準；
+   * index 在家族內就是由強到弱，所以切出來仍是連續一段。 */
+  var TIE_EPS = 1e-9;
+
   function monotoneFamilies(arr) {
     var out = arr.slice();
     for (var f = 0; f < FAMILIES.length; f++) {
@@ -718,6 +974,7 @@
         if (out[fam[i]] > out[fam[i - 1]]) out[fam[i]] = out[fam[i - 1]];
       }
     }
+    for (var j = 0; j < out.length; j++) out[j] -= j * TIE_EPS;
     return out;
   }
 

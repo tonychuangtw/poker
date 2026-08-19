@@ -647,7 +647,7 @@ assert(badSb.length === 0, '9-max: SB cold-calls tighter than BB everywhere (' +
 
 // 被 3-bet：對手 3-bet 越寬，續玩越寬
 var v3b9 = Ranges.VS3B_SPOT_KEYS.filter(function (k) { return Ranges.VS3B_SPOTS[k].table === 9; });
-assert(v3b9.length === 15, '15 nine-max facing-3-bet spots');
+assert(v3b9.length === 36, '36 nine-max facing-3-bet spots (8 開牌位置 × 之後每個位置各一格)');
 var pairsChecked = 0, badCont = [];
 v3b9.forEach(function (a) {
   v3b9.forEach(function (b) {
@@ -673,15 +673,31 @@ assert(pairsChecked > 0 && badCont.length === 0,
 // ---------- 5d-2. 被 3-bet 的 4-bet / 跟注 range ----------
 console.log('--- Facing a 3-bet (4-bet / call) ---');
 
-assert(Array.isArray(Ranges.VS3B_SPOT_KEYS) && Ranges.VS3B_SPOT_KEYS.length === 21 &&
-  Object.keys(Ranges.VS3B_SPOTS).length === 21,
-  '21 vs-3bet spots defined, keys and definitions in sync');
+// 6-max 15 格（UTG…SB 開牌 × 之後每個位置）+ 9-max 36 格 = 完整矩陣，不能有缺角
+assert(Array.isArray(Ranges.VS3B_SPOT_KEYS) && Ranges.VS3B_SPOT_KEYS.length === 51 &&
+  Object.keys(Ranges.VS3B_SPOTS).length === 51,
+  '51 vs-3bet spots defined, keys and definitions in sync');
 assert(Ranges.VS3B_SPOT_KEYS.every(function (k) { return Ranges.VS3B_SPOTS[k]; }),
   'every vs-3bet key resolves to a spot definition');
 // CO / BTN 被 SB、BB 3-bet 這 4 個核心情境都要有
 assert(['co_vs_sb3b', 'co_vs_bb3b', 'btn_vs_sb3b', 'btn_vs_bb3b']
   .every(function (k) { return Ranges.VS3B_SPOTS[k]; }),
   'CO/BTN vs SB/BB 3-bet all covered');
+/* 完整矩陣：每個會開牌的位置 × 它後面每個位置都要有一格。
+ * 2026-08-19 Tony 回報「UTG 被 3-bet 沒有」—— 當時 6-max 只做到 CO 起跳、
+ * 9-max 只做 BTN/SB/BB 3-bet，缺角在圖上就是點不到的情境。 */
+[[['utg', 'hj', 'co', 'btn', 'sb', 'bb'], ''],
+ [['utg', 'utg1', 'mp', 'lj', 'hj', 'co', 'btn', 'sb', 'bb'], '9']].forEach(function (tbl) {
+  var seats = tbl[0], suffix = tbl[1], missing = [];
+  seats.slice(0, seats.length - 1).forEach(function (h, hi) {
+    seats.slice(hi + 1).forEach(function (v) {
+      var k = h + '_vs_' + v + '3b' + suffix;
+      if (!Ranges.VS3B_SPOTS[k]) missing.push(k);
+    });
+  });
+  assert(missing.length === 0, (suffix ? '9' : '6') + '-max vs-3bet 矩陣無缺角 (' +
+    (missing.join(',') || 'ok') + ')');
+});
 
 var RFI_BY_NAME = { 6: {}, 9: {} };
 Ranges.RFI_POS_6.forEach(function (k) {
