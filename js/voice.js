@@ -61,7 +61,8 @@
     ['REINA', 'Q'], ['DAMA', 'Q'], ['DAME', 'Q'], ['ДАМА', 'Q'], ['ĐẦM', 'Q'], ['ควีน', 'Q'],
     ['傑克', 'J'], ['杰克', 'J'], ['勾', 'J'], ['JACK', 'J'], ['ジャック', 'J'], ['잭', 'J'],
     ['JOTA', 'J'], ['VALETE', 'J'], ['VALET', 'J'], ['BUBE', 'J'], ['ВАЛЕТ', 'J'], ['BỒI', 'J'], ['แจ็ค', 'J'],
-    ['NINE', '9'], ['九', '9'], ['EIGHT', '8'], ['八', '8'], ['SEVEN', '7'], ['七', '7'],
+    ['NINE', '9'], ['九', '9'], ['酒', '9'], // 酒＝whisper 常把「九」聽成的同音字
+    ['EIGHT', '8'], ['八', '8'], ['SEVEN', '7'], ['七', '7'],
     ['SIX', '6'], ['六', '6'], ['FIVE', '5'], ['五', '5'], ['FOUR', '4'], ['四', '4'],
     ['THREE', '3'], ['三', '3'], ['DEUCE', '2'], ['TWO', '2'], ['二', '2'], ['兩', '2'], ['两', '2'],
     ['A', 'A'], ['K', 'K'], ['Q', 'Q'], ['J', 'J'], ['T', 'T'],
@@ -259,7 +260,147 @@
     return { clear: clear, entries: entries, errors: errors, maxVillain: maxV };
   }
 
-  var VoiceCards = { parse: parse, normalize: normalize };
+  /* ================= 複盤精靈用：位置與逐街解析 ================= */
+
+  // 輕量正規化：只把全形轉半形、標點轉空白（保留「跟」「的」這些字，
+  // 因為「跟注 30」「需跟 30」的金額詞會用到）
+  function liteNormalize(text) {
+    var s = String(text || '');
+    s = s.replace(/[！-～]/g, function (ch) {
+      return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0);
+    });
+    s = s.replace(/[、，。．；：！？…·,.;:!?'"“”„«»‹›「」『』()（）[\]—–~]/g, ' ');
+    return s.replace(/\s{2,}/g, ' ').replace(/^\s+|\s+$/g, '');
+  }
+
+  var POSITION_WORDS = [
+    ['UTG+1', 'UTG+1'], ['UTG加一', 'UTG+1'], ['槍口加一', 'UTG+1'], ['枪口加一', 'UTG+1'],
+    ['UNDER THE GUN', 'UTG'], ['UTG', 'UTG'], ['槍口', 'UTG'], ['枪口', 'UTG'],
+    ['MIDDLE', 'MP'], ['中位', 'MP'], ['MP', 'MP'],
+    ['LOJACK', 'LJ'], ['LJ', 'LJ'],
+    ['HIJACK', 'HJ'], ['HJ', 'HJ'],
+    ['CUTOFF', 'CO'], ['CEO', 'CO'], ['CO', 'CO'], // CEO＝whisper 常聽成的版本
+    ['BUTTON', 'BTN'], ['按鈕', 'BTN'], ['按钮', 'BTN'], ['BTN', 'BTN'],
+    ['SMALL BLIND', 'SB'], ['小盲', 'SB'], ['SB', 'SB'],
+    ['BIG BLIND', 'BB'], ['大盲', 'BB'], ['BB', 'BB']
+  ].sort(byLenDesc);
+
+  // 「我在CO」「button」→ hPos 的選項值；沒講就回 null
+  function parsePosition(text) {
+    var raw = liteNormalize(text);
+    var U = upperAligned(raw);
+    for (var i = 0; i < U.length; i++) {
+      var hit = matchIn(POSITION_WORDS, U, i);
+      if (hit) return hit.val;
+    }
+    return null;
+  }
+
+  var STREET_SEG = [
+    ['翻前', 'preflop'], ['PREFLOP', 'preflop'],
+    ['翻牌', 'flop'], ['FLOP', 'flop'],
+    ['轉牌', 'turn'], ['转牌', 'turn'], ['TURN', 'turn'],
+    ['河牌', 'river'], ['RIVER', 'river']
+  ].sort(byLenDesc);
+
+  // 底持/須跟/家住＝whisper 對「底池/需跟/加注」的常見同音輸出
+  var AMOUNT_POT = /(?:底池|底持|POT)\s*(\d+(?:\.\d+)?)/gi;
+  var AMOUNT_CALL = /(?:需跟注|須跟注|需跟|須跟|跟注|TO CALL|CALL)\s*(\d+(?:\.\d+)?)/gi;
+  var ACTION_WORDS = [
+    [/全下|ALL ?IN|SHOVE|推入/i, 'allin'],
+    [/加注|家住|下注|RAISE|BET/i, 'raise'],
+    [/蓋牌|盖牌|棄牌|弃牌|FOLD/i, 'fold'],
+    [/過牌|过牌|CHECK/i, 'call'],   // 模型無 check，視為跟 0
+    [/跟注|CALL|我跟/i, 'call']
+  ];
+
+  /* --- 口語 range → pushfold 記號（「口袋七以上」→ 77+、「AK」→ AKs AKo） --- */
+  var RANGE_RANK = {
+    '10': 'T', '十': 'T', '拾': 'T', '石': 'T', '么': 'A', '幺': 'A',
+    '二': '2', '两': '2', '兩': '2', '三': '3', '四': '4', '五': '5',
+    '六': '6', '七': '7', '八': '8', '九': '9', '酒': '9',
+    'ACE': 'A', 'KING': 'K', 'QUEEN': 'Q', 'JACK': 'J', 'TEN': 'T', 'NINE': '9',
+    'EIGHT': '8', 'SEVEN': '7', 'SIX': '6', 'FIVE': '5', 'FOUR': '4', 'THREE': '3', 'TWO': '2'
+  };
+  function rangeRank(txt) {
+    var u = txt.toUpperCase();
+    return RANGE_RANK[u] || u;
+  }
+  var RANK_ORDER = '23456789TJQKA';
+  var POCKET_RE = /(?:口袋|對子|对子|POCKET)\s*(10|[AKQJT2-9]|[十拾石酒么幺二两兩三四五六七八九]|ACE|KING|QUEEN|JACK|TEN|NINE|EIGHT|SEVEN|SIX|FIVE|FOUR|THREE|TWO)S?\s*(以上|\+|PLUS)?/gi;
+  var PAIR_RE = /(10|[AKQJT2-9]) ?(10|[AKQJT2-9])\s*(同花|雜色|杂色|不同花|SUITED|OFFSUIT)?\s*(以上|\+|PLUS)?/gi;
+
+  function rangeTokens(body) {
+    var toks = [], m;
+    POCKET_RE.lastIndex = 0;
+    var rest = body.replace(POCKET_RE, function (all, rk, plus) {
+      var r = rangeRank(rk);
+      toks.push(r + r + (plus ? '+' : ''));
+      return ' ';
+    });
+    PAIR_RE.lastIndex = 0;
+    while ((m = PAIR_RE.exec(rest))) {
+      // latin 邊界：像 TAKE/STACK 這種字裡的 TA 不能當 range
+      if (/[A-Za-z0-9]/.test(rest.charAt(m.index - 1)) ||
+          /[A-Za-z0-9]/.test(rest.charAt(PAIR_RE.lastIndex))) continue;
+      var a = rangeRank(m[1]), b = rangeRank(m[2]);
+      var suf = m[3] || '';
+      var plus = m[4] ? '+' : '';
+      var suited = /同花|SUITED/i.test(suf) ? 's' : suf ? 'o' : '';
+      if (a === b) {
+        if (!suited) toks.push(a + a + plus); // 「JJ」「JJ以上」
+        continue;
+      }
+      // 沒講同花/雜色也沒講以上的裸對，只收字母牌（AK/AQ…）；
+      // 純數字（如 95）太容易跟一般數字撞，略過
+      if (!suited && !plus && !(/[AKQJT]/.test(m[1].toUpperCase()) && /[AKQJT]/.test(m[2].toUpperCase()))) continue;
+      if (RANK_ORDER.indexOf(a) < RANK_ORDER.indexOf(b)) { var sw = a; a = b; b = sw; }
+      if (suited) toks.push(a + b + suited + plus);
+      else { toks.push(a + b + 's' + plus); toks.push(a + b + 'o' + plus); }
+    }
+    return toks;
+  }
+
+  /* parseStreets(text) → { cleaned, segs }
+   * segs = { flop: {pot?, call?, action?}, … } 只含有講到的街。
+   * cleaned = 把「底池 N／跟注 N」金額整段拿掉後的字串（拿去給 parse() 抓牌，
+   * 避免「底池10 梅花2」被誤讀成 rank10+梅花）。 */
+  function parseStreets(text) {
+    var s = liteNormalize(text);
+    var U = upperAligned(s);
+
+    // 找出各街關鍵字位置，切成路段
+    var marks = [], i, hit;
+    for (i = 0; i < U.length;) {
+      hit = matchIn(STREET_SEG, U, i);
+      if (hit) { marks.push({ at: i, len: hit.len, street: hit.val }); i += hit.len; }
+      else i++;
+    }
+    var segs = {};
+    for (i = 0; i < marks.length; i++) {
+      var from = marks[i].at + marks[i].len;
+      var to = i + 1 < marks.length ? marks[i + 1].at : s.length;
+      var body = s.slice(from, to);
+      var seg = segs[marks[i].street] || (segs[marks[i].street] = {});
+      var m;
+      AMOUNT_POT.lastIndex = 0;
+      while ((m = AMOUNT_POT.exec(body))) seg.pot = parseFloat(m[1]);
+      AMOUNT_CALL.lastIndex = 0;
+      while ((m = AMOUNT_CALL.exec(body))) seg.call = parseFloat(m[1]);
+      var noAmt = body.replace(AMOUNT_POT, ' ').replace(AMOUNT_CALL, ' ');
+      for (var a = 0; a < ACTION_WORDS.length; a++) {
+        if (ACTION_WORDS[a][0].test(noAmt)) { seg.action = ACTION_WORDS[a][1]; break; }
+      }
+      var rng = rangeTokens(noAmt);
+      if (rng.length) seg.range = rng.join(' ');
+    }
+    return { cleaned: s.replace(AMOUNT_POT, ' ').replace(AMOUNT_CALL, ' '), segs: segs };
+  }
+
+  var VoiceCards = {
+    parse: parse, normalize: normalize,
+    parsePosition: parsePosition, parseStreets: parseStreets
+  };
   if (isNode) { module.exports = VoiceCards; return; }
   global.VoiceCards = VoiceCards;
 
@@ -276,8 +417,8 @@
 
   function hotwords() {
     return sttLang() === 'zh'
-      ? '黑桃、紅心、方塊、梅花、黑桃10、紅心9、老K、對手、公牌、翻牌、轉牌、河牌、清除'
-      : 'spades, hearts, diamonds, clubs, ace, king, queen, jack, ten, hero, villain, board, flop, turn, river';
+      ? '黑桃、紅心、方塊、梅花、黑桃10、紅心9、紅心A、老K、對手、公牌、翻牌、轉牌、河牌、底池、需跟、加注、跟注、全下、蓋牌、口袋、以上、同花、CO、BTN、清除'
+      : 'spades, hearts, diamonds, clubs, ace, king, queen, jack, ten, hero, villain, board, flop, turn, river, pot, call, raise, fold, pocket, suited';
   }
 
   function pickMime() {
@@ -371,6 +512,12 @@
     return Math.max(1, Math.round(slots / 2));
   }
 
+  function setInput(el, value) {
+    el.value = value;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
   function handleEquityText(text, status) {
     var parsed = parse(text, { villains: currentVillains() });
     var out = global.VoiceCardsApply
@@ -382,26 +529,120 @@
     status(msg);
   }
 
+  /* 複盤精靈步驟 2：「我在CO 紅心A 黑桃K」→ 位置 + 手牌 */
+  function handleHeroText(text, status) {
+    var parsed = parse(text, { villains: 1 });
+    for (var i = 0; i < parsed.errors.length; i++) {
+      if (parsed.errors[i].code === 'dup') { status(t('聽到：') + text + ' → ' + t('沒聽到可用的牌，再試一次')); return; }
+    }
+    var cards = [];
+    parsed.entries.forEach(function (en) {
+      if (en.slot === 'hero0' || en.slot === 'hero1') cards.push(en.card);
+    });
+    var pos = parsePosition(text);
+    if (pos) setInput(document.getElementById('hPos'), pos);
+    if (cards.length < 2) {
+      status(t('聽到：') + text + ' → ' + (pos ? pos : t('沒聽到可用的牌，再試一次')));
+      return;
+    }
+    var txt = cards.slice(0, 2).map(function (c) { return Evaluator.cardToString(c); }).join(' ');
+    setInput(document.getElementById('hHero'), txt);
+    status(t('聽到：') + text + ' → ' + (pos ? pos + ' · ' : '') + txt);
+  }
+
+  /* 複盤精靈步驟 4：「翻牌 黑桃10 紅心9 梅花2 底池45 需跟30 我加注，轉牌…」
+     → 各街公牌（翻牌 3 張、轉牌 1 張、河牌 1 張）＋底池／需跟／行動 */
+  function handleStreetsText(text, status) {
+    var st = parseStreets(text);
+    var parsed = parse(st.cleaned, { villains: 1 });
+    for (var i = 0; i < parsed.errors.length; i++) {
+      if (parsed.errors[i].code === 'dup') { status(t('聽到：') + text + ' → ' + t('沒聽到可用的牌，再試一次')); return; }
+    }
+    var boards = { flop: [], turn: [], river: [] };
+    parsed.entries.forEach(function (en) {
+      var m = /^board(\d)$/.exec(en.slot);
+      if (!m) return;
+      var b = +m[1];
+      boards[b < 3 ? 'flop' : b === 3 ? 'turn' : 'river'].push({ b: b, card: en.card });
+    });
+    var anySeg = false, k;
+    for (k in st.segs) { anySeg = true; break; }
+    if (!boards.flop.length && !boards.turn.length && !boards.river.length && !anySeg) {
+      status(t('聽到：') + text + ' → ' + t('先說「翻牌／轉牌／河牌」再接牌'));
+      return;
+    }
+    if ((boards.flop.length && boards.flop.length !== 3) || boards.turn.length > 1 || boards.river.length > 1) {
+      status(t('聽到：') + text + ' → ' + t('公牌張數不對（翻牌 3 張、轉牌 1 張、河牌 1 張）'));
+      return;
+    }
+    var updated = [];
+    ['flop', 'turn', 'river'].forEach(function (street) {
+      if (!boards[street].length) return;
+      boards[street].sort(function (a, b2) { return a.b - b2.b; });
+      var el = document.querySelector('#hStreets .street-block[data-street="' + street + '"] .hs-board');
+      if (!el) return;
+      setInput(el, boards[street].map(function (en) { return Evaluator.cardToString(en.card); }).join(' '));
+      if (updated.indexOf(street) === -1) updated.push(street);
+    });
+    ['preflop', 'flop', 'turn', 'river'].forEach(function (street) {
+      var seg = st.segs[street];
+      if (!seg) return;
+      var block = document.querySelector('#hStreets .street-block[data-street="' + street + '"]');
+      if (!block) return;
+      if (seg.pot !== undefined) setInput(block.querySelector('.hs-pot'), seg.pot);
+      if (seg.call !== undefined) setInput(block.querySelector('.hs-call'), seg.call);
+      if (seg.action) setInput(block.querySelector('.hs-action'), seg.action);
+      if (seg.range) setInput(block.querySelector('.hs-range'), seg.range);
+      if (updated.indexOf(street) === -1) updated.push(street);
+    });
+    var names = global.HANDS && global.HANDS.STREET_NAMES;
+    status(t('聽到：') + text + ' → ' + t('已更新：') + updated.map(function (street) {
+      return names && names[street] ? names[street] : street;
+    }).join('、'));
+  }
+
   function init() {
-    var btn = document.getElementById('btnVoiceEquity');
-    var row = document.getElementById('voiceEquityRow');
-    var statusEl = document.getElementById('voiceEquityStatus');
-    if (!btn || !row || !statusEl) return;
-    // 健康檢查通過才亮 🎤（拿不到 STT 服務的部署整組隱藏，不影響點選操作）
+    var MICS = [
+      { btn: 'btnVoiceEquity', row: 'voiceEquityRow', status: 'voiceEquityStatus',
+        example: '語音範例：「我 紅心A 黑桃K，對手 方塊Q 方塊J，公牌 黑桃10 紅心9 梅花2」',
+        handler: handleEquityText },
+      { btn: 'btnVoiceHandHero', row: 'voiceHandHeroRow', status: 'voiceHandHeroStatus',
+        example: '語音範例：「我在CO 紅心A 黑桃K」',
+        handler: handleHeroText },
+      { btn: 'btnVoiceStreets', row: 'voiceStreetsRow', status: 'voiceStreetsStatus',
+        example: '語音範例：「翻牌 黑桃10 紅心9 梅花2 底池45 需跟30 我加注 對手 口袋七以上 AK，轉牌 黑桃2 底池105 我跟注」',
+        handler: handleStreetsText }
+    ];
+    var targets = [];
+    MICS.forEach(function (m) {
+      var btn = document.getElementById(m.btn);
+      var row = document.getElementById(m.row);
+      var statusEl = document.getElementById(m.status);
+      if (btn && row && statusEl) targets.push({ btn: btn, row: row, statusEl: statusEl, cfg: m });
+    });
+    if (!targets.length) return;
+    // 健康檢查通過才亮 🎤（拿不到 STT 服務的部署整組隱藏，不影響原本操作）
     var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     if (ctrl) setTimeout(function () { ctrl.abort(); }, 5000);
     fetch(BASE + '/health', ctrl ? { signal: ctrl.signal } : undefined)
       .then(function (resp) { return resp.ok ? resp.json() : null; })
       .then(function (d) {
         if (!d || !d.ok) return;
-        var example = t('語音範例：「我 紅心A 黑桃K，對手 方塊Q 方塊J，公牌 黑桃10 紅心9 梅花2」');
-        row.hidden = false;
-        statusEl.hidden = false;
-        statusEl.textContent = example;
-        setupMic(btn, statusEl, example, handleEquityText);
+        targets.forEach(function (tg) {
+          var example = t(tg.cfg.example);
+          tg.row.hidden = false;
+          tg.statusEl.hidden = false;
+          tg.statusEl.textContent = example;
+          setupMic(tg.btn, tg.statusEl, example, tg.cfg.handler);
+        });
       })
       .catch(function () {});
   }
+
+  // 供 console 除錯／測試直接餵文字（跳過錄音）
+  VoiceCards.handleEquityText = handleEquityText;
+  VoiceCards.handleHeroText = handleHeroText;
+  VoiceCards.handleStreetsText = handleStreetsText;
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

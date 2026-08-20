@@ -1916,6 +1916,103 @@ var voiceExamplesOk = [voiceExampleKey].concat(voiceLangs.map(function (lang) {
 });
 assert(voiceExamplesOk, 'voice: 12 語系的語音範例字串全數可解析成同樣 7 張牌');
 
+// ---------- 9. 複盤語音（位置＋逐街） ----------
+console.log('--- VoiceCards streets ---');
+
+assert(Voice.parsePosition('我在CO 紅心A 黑桃K') === 'CO', 'voice: parsePosition 我在CO');
+assert(Voice.parsePosition('button') === 'BTN' && Voice.parsePosition('按鈕位') === 'BTN',
+  'voice: parsePosition button/按鈕');
+assert(Voice.parsePosition('under the gun') === 'UTG' && Voice.parsePosition('UTG+1') === 'UTG+1',
+  'voice: parsePosition UTG 家族');
+assert(Voice.parsePosition('小盲') === 'SB' && Voice.parsePosition('大盲') === 'BB',
+  'voice: parsePosition 盲注位');
+assert(Voice.parsePosition('as de corazones rey de picas') === null,
+  'voice: corazones 裡的 CO 不會誤判成位置');
+
+var vs = Voice.parseStreets('翻牌 黑桃10 紅心9 梅花2 底池45 需跟30 我加注，轉牌 黑桃2 底池105 我跟注');
+assert(vs.segs.flop && vs.segs.flop.pot === 45 && vs.segs.flop.call === 30 && vs.segs.flop.action === 'raise',
+  'voice: 翻牌段 底池/需跟/加注');
+assert(vs.segs.turn && vs.segs.turn.pot === 105 && vs.segs.turn.action === 'call' && vs.segs.turn.call === undefined,
+  'voice: 轉牌段 底池/跟注');
+vp = vparse(vs.cleaned);
+vm = vslots(vp);
+assert(vm.board0 === 'Ts' && vm.board1 === '9h' && vm.board2 === '2c' && vm.board3 === '2s',
+  'voice: 逐街公牌 flop 3 張 + turn 1 張');
+
+vs = Voice.parseStreets('翻前 底池15 需跟10 全下');
+assert(vs.segs.preflop && vs.segs.preflop.pot === 15 && vs.segs.preflop.call === 10 &&
+  vs.segs.preflop.action === 'allin', 'voice: 翻前段 全下');
+
+vs = Voice.parseStreets('river 梅花A 過牌');
+assert(vs.segs.river && vs.segs.river.action === 'call', 'voice: 過牌視為跟 0');
+vs = Voice.parseStreets('轉牌 蓋牌');
+assert(vs.segs.turn && vs.segs.turn.action === 'fold', 'voice: 蓋牌');
+
+// 口語 range → 記號（產出必須能被 rangeFromNotation 吃下去）
+vs = Voice.parseStreets('翻牌 對手 口袋七以上 AK');
+assert(vs.segs.flop.range === '77+ AKs AKo', 'voice: 口袋七以上 AK → 77+ AKs AKo');
+assert(!!PushFold.rangeFromNotation(vs.segs.flop.range), 'voice: 產出的 range 記號合法');
+vs = Voice.parseStreets('turn A9同花以上 KQ雜色');
+assert(vs.segs.turn.range === 'A9s+ KQo', 'voice: A9同花以上 KQ雜色');
+assert(!!PushFold.rangeFromNotation(vs.segs.turn.range), 'voice: s/o 記號合法');
+vs = Voice.parseStreets('river 口袋Q JJ以上 A10同花');
+assert(vs.segs.river.range === 'QQ JJ+ ATs', 'voice: 口袋Q / JJ以上 / A10同花');
+vs = Voice.parseStreets('flop pocket sevens plus AQ suited');
+assert(vs.segs.flop.range === '77+ AQs', 'voice: 英文 pocket sevens plus + AQ suited');
+vs = Voice.parseStreets('翻牌 底池95 我加注');   // 95 是底池不是 range
+assert(vs.segs.flop.range === undefined && vs.segs.flop.pot === 95, 'voice: 純數字不誤判成 range');
+vs = Voice.parseStreets('flop take the stack and raise'); // TAKE/STACK 裡的 TA 不是 range
+assert(vs.segs.flop.range === undefined, 'voice: 英文單字內的字母對不誤判');
+
+// 「底池10 梅花2」不可誤讀成 rank10+梅花（金額先拔掉再抓牌）
+vs = Voice.parseStreets('翻牌 底池10 梅花2 梅花3 梅花4');
+vp = vparse(vs.cleaned);
+vm = vslots(vp);
+assert(vs.segs.flop.pot === 10 && vm.board0 === '2c' && vm.board1 === '3c' && vm.board2 === '4c' &&
+  vp.entries.length === 3, 'voice: 金額不會黏成牌');
+
+// whisper 真音檔同音字回歸（2026-08-20：底持/須跟/家住/酒/CEO）
+vs = Voice.parseStreets('翻牌黑桃、紅心、酒梅花2、底持45須跟30我家住,對手口袋7以上AK。');
+assert(vs.segs.flop.pot === 45 && vs.segs.flop.call === 30 && vs.segs.flop.action === 'raise' &&
+  vs.segs.flop.range === '77+ AKs AKo', 'voice: 底持/須跟/家住 同音字');
+vp = vparse(vs.cleaned);
+vm = vslots(vp);
+assert(vm.board0 === '9h' && vm.board1 === '2c', 'voice: 紅心酒 → 9h');
+assert(Voice.parsePosition('我在CEO') === 'CO', 'voice: CEO → CO');
+
+// 兩個新語音範例：12 語系都要能解出正確結果
+var heroExKey = '語音範例：「我在CO 紅心A 黑桃K」';
+var streetExKey = '語音範例：「翻牌 黑桃10 紅心9 梅花2 底池45 需跟30 我加注 對手 口袋七以上 AK，轉牌 黑桃2 底池105 我跟注」';
+var langTables = { 'zh-TW': null };
+voiceLangs.forEach(function (lang) {
+  langTables[lang] = JSON.parse(require('fs').readFileSync(
+    __dirname + '/../tools/i18n-src/' + lang + '.json', 'utf8'));
+});
+var heroExOk = Object.keys(langTables).every(function (lang) {
+  var ex = langTables[lang] ? langTables[lang][heroExKey] : heroExKey;
+  var p = Voice.parse(ex, { villains: 1 });
+  var m = vslots(p);
+  var ok = m.hero0 === 'Ah' && m.hero1 === 'Ks' && Voice.parsePosition(ex) === 'CO';
+  if (!ok) console.log('  hero 範例失敗 [' + lang + ']: ' + ex + ' → ' + JSON.stringify(m) +
+    ' pos=' + Voice.parsePosition(ex));
+  return ok;
+});
+assert(heroExOk, 'voice: 12 語系「位置+手牌」範例全數可解析');
+var streetExOk = Object.keys(langTables).every(function (lang) {
+  var ex = langTables[lang] ? langTables[lang][streetExKey] : streetExKey;
+  var st = Voice.parseStreets(ex);
+  var p = Voice.parse(st.cleaned, { villains: 1 });
+  var m = vslots(p);
+  var ok = m.board0 === 'Ts' && m.board1 === '9h' && m.board2 === '2c' && m.board3 === '2s' &&
+    st.segs.flop && st.segs.flop.pot === 45 && st.segs.flop.call === 30 && st.segs.flop.action === 'raise' &&
+    st.segs.flop.range === '77+ AKs AKo' &&
+    st.segs.turn && st.segs.turn.pot === 105 && st.segs.turn.action === 'call';
+  if (!ok) console.log('  street 範例失敗 [' + lang + ']: ' + ex + ' → ' + JSON.stringify(m) +
+    ' segs=' + JSON.stringify(st.segs));
+  return ok;
+});
+assert(streetExOk, 'voice: 12 語系「逐街」範例全數可解析');
+
 // ---------- summary ----------
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 if (failed > 0) process.exit(1);
