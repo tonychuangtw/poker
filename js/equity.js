@@ -239,7 +239,42 @@
              combos: valid.length, trials: trials, method: 'montecarlo' };
   }
 
-  var EquityLib = { computeEquity: computeEquity, computeEquityMulti: computeEquityMulti, computeEquityVsCombos: computeEquityVsCombos, callEV: callEV, buildDeck: buildDeck };
+  /* 任意 5～7 張取最佳 5 張的分數（給翻牌 5、轉牌 6、河牌 7 張用） */
+  function bestScore(cards) {
+    if (cards.length === 7) return Evaluator.evaluate7(cards);
+    if (cards.length === 5) return Evaluator.evaluate5(cards);
+    if (cards.length !== 6) throw new Error('bestScore needs 5-7 cards');
+    var best = null;
+    for (var skip = 0; skip < 6; skip++) {
+      var five = [];
+      for (var i = 0; i < 6; i++) if (i !== skip) five.push(cards[i]);
+      var s = Evaluator.evaluate5(five);
+      if (best === null || Evaluator.compareScore(s, best) > 0) best = s;
+    }
+    return best;
+  }
+
+  /* Heads-up 翻牌/轉牌：數下一張牌能讓「目前落後方」反超的 outs。
+     回傳 { trail: 落後方 index, outs: [card…] }；
+     平手、非 heads-up、或不是翻牌/轉牌時回 null。 */
+  function outsNext(hands, board) {
+    if (hands.length !== 2 || (board.length !== 3 && board.length !== 4)) return null;
+    var s0 = bestScore(hands[0].concat(board));
+    var s1 = bestScore(hands[1].concat(board));
+    var cmp = Evaluator.compareScore(s0, s1);
+    if (cmp === 0) return null;
+    var trail = cmp < 0 ? 0 : 1;
+    var deck = buildDeck(hands[0].concat(hands[1], board));
+    var outs = [];
+    for (var k = 0; k < deck.length; k++) {
+      var b2 = board.concat([deck[k]]);
+      var d = Evaluator.compareScore(bestScore(hands[0].concat(b2)), bestScore(hands[1].concat(b2)));
+      if (trail === 0 ? d > 0 : d < 0) outs.push(deck[k]);
+    }
+    return { trail: trail, outs: outs };
+  }
+
+  var EquityLib = { computeEquity: computeEquity, computeEquityMulti: computeEquityMulti, computeEquityVsCombos: computeEquityVsCombos, callEV: callEV, buildDeck: buildDeck, bestScore: bestScore, outsNext: outsNext };
   if (typeof module !== 'undefined' && module.exports) module.exports = EquityLib;
   else global.EquityLib = EquityLib;
 })(typeof window !== 'undefined' ? window : this);
