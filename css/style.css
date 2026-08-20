@@ -1175,3 +1175,15 @@ a.ev-name:hover { text-decoration: underline; }
   .sheet-backdrop { align-items: center; padding: 28px; }
   .sheet { max-width: 560px; border-radius: 20px; }
 }
+
+/* ===== 語音選牌（js/voice.js） ===== */
+.btn.voice-rec {
+  color: var(--neg);
+  border-color: var(--neg);
+  animation: voice-pulse 1.1s ease-in-out infinite;
+}
+.btn.voice-busy { opacity: .55; pointer-events: none; }
+@keyframes voice-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .45; }
+}
