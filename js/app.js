@@ -1224,6 +1224,7 @@
           : t('Monte Carlo 模擬 ') + res.trials.toLocaleString() + t(' 次（誤差約 ±0.5%）')) +
           (hands.length > 2 ? ' · ' + hands.length + t(' 人 all-in，平手依人數均分') : '');
         renderEV();
+        renderEqAnalysis(res, hands, names, board);
       } catch (err) {
         alert('計算失敗：' + err.message);
       } finally {
@@ -1233,10 +1234,60 @@
     }, 30);
   });
 
+  /* --- 牌局分析：成牌、領先/落後、反超 outs（語音或手動計算勝率後都會出現） --- */
+  function rankChar(r) {
+    return r === 14 ? 'A' : r === 13 ? 'K' : r === 12 ? 'Q' : r === 11 ? 'J' : r === 10 ? '10' : String(r);
+  }
+
+  function scoreDesc(score) {
+    var main = (score[0] === 2 || score[0] === 6)
+      ? rankChar(score[1]) + '・' + rankChar(score[2]) // 兩對 / 葫蘆秀兩個 rank
+      : rankChar(score[1]);
+    return Evaluator.CATEGORY_NAMES[score[0]] + ' (' + main + ')';
+  }
+
+  function holeDesc(cards) {
+    var r0 = Evaluator.cardRank(cards[0]), r1 = Evaluator.cardRank(cards[1]);
+    if (r0 === r1) return t('口袋對子') + ' ' + rankChar(r0);
+    var hi = Math.max(r0, r1), lo = Math.min(r0, r1);
+    return rankChar(hi) + rankChar(lo) + ' ' +
+      (Evaluator.cardSuit(cards[0]) === Evaluator.cardSuit(cards[1]) ? t('同花') : t('不同花'));
+  }
+
+  function renderEqAnalysis(res, hands, names, board) {
+    var el = $('#eqAnalysis');
+    if (!el) return;
+    var lines = [];
+    hands.forEach(function (h, i) {
+      var desc = board.length >= 3 ? scoreDesc(EquityLib.bestScore(h.concat(board))) : holeDesc(h);
+      lines.push('<b>' + names[i] + '</b>：' + desc);
+    });
+    var heroEq = res.players[0].equity, maxEq = 0;
+    res.players.forEach(function (p) { if (p.equity > maxEq) maxEq = p.equity; });
+    lines.push(heroEq >= maxEq - 1e-9
+      ? '<span class="pos">' + t('你目前領先') + '</span>'
+      : '<span class="neg">' + t('你目前落後') + '</span>');
+    var o = EquityLib.outsNext(hands, board);
+    if (o) {
+      if (o.outs.length) {
+        lines.push('<b>' + names[o.trail] + '</b>' + t(' 的反超 outs：') + o.outs.length + t(' 張') +
+          '<br><span class="muted">' + o.outs.map(voiceCardTxt).join(' ') + '</span>');
+      } else {
+        lines.push('<b>' + names[o.trail] + '</b>' + t(' 已無反超 outs（drawing dead）'));
+      }
+    }
+    var pot = parseFloat($('#fPot').value), call = parseFloat($('#fCall').value);
+    if (!(pot >= 0) || !(call > 0)) {
+      lines.push('<span class="muted">' + t('輸入底池與需跟金額（或語音直接說「底池100 需跟30」），即自動算跟注建議。') + '</span>');
+    }
+    el.innerHTML = '<h3>' + t('牌局分析') + '</h3>' + lines.join('<br>');
+    el.hidden = false;
+  }
+
   /* 語音選牌（js/voice.js）：把解析出的 {slot, card} 灌進牌位。
      語音提到的區塊整組換新（公牌從最小提到的位置往後清，翻牌重講不會殘留舊轉牌），
      沒提到的區塊保持不動。回傳 {ok, n?, msg?} 給 voice.js 顯示狀態。 */
-  window.VoiceCardsApply = function (parsed) {
+  window.VoiceCardsApply = function (parsed, amounts) {
     if (parsed.clear) {
       slotCards = {};
       activeSlot = 'hero0';
@@ -1289,8 +1340,13 @@
     slotCards = next;
     activeSlot = nextEmptySlot(parsed.entries[parsed.entries.length - 1].slot);
     renderVillainRows(); // 內含 refreshCardUI
-    voiceAutoCalc();
-    return { ok: true, n: parsed.entries.length };
+    if (amounts) { // 語音講的「底池 N／需跟 N」直接灌進 EV 欄位
+      if (amounts.pot !== undefined) $('#fPot').value = amounts.pot;
+      if (amounts.call !== undefined) $('#fCall').value = amounts.call;
+    }
+    var analyzed = voiceAutoCalc();
+    if (!analyzed) renderEV();
+    return { ok: true, n: parsed.entries.length, analyzed: analyzed };
   };
 
   function voiceCardTxt(c) {
@@ -1298,22 +1354,23 @@
     return s[0] + Evaluator.SUIT_SYMBOLS[s[1]];
   }
 
-  /* Hero + 至少一位完整對手齊了就自動算，一句話直接出勝率 */
+  /* Hero + 至少一位完整對手齊了就自動算，一句話直接出勝率＋牌局分析 */
   function voiceAutoCalc() {
-    if (slotCards.hero0 === undefined || slotCards.hero1 === undefined) return;
+    if (slotCards.hero0 === undefined || slotCards.hero1 === undefined) return false;
     var full = 0, vi, a, b;
     for (vi = 0; vi < villainCount; vi++) {
       a = slotCards['v' + vi + 'a'];
       b = slotCards['v' + vi + 'b'];
       if (a === undefined && b === undefined) continue;
-      if (a === undefined || b === undefined) return; // 半套對手先不吵
+      if (a === undefined || b === undefined) return false; // 半套對手先不吵
       full++;
     }
-    if (!full) return;
+    if (!full) return false;
     var bn = 0;
     for (vi = 0; vi < 5; vi++) if (slotCards['board' + vi] !== undefined) bn++;
-    if (bn === 1 || bn === 2) return;
+    if (bn === 1 || bn === 2) return false;
     $('#btnCalcEquity').click();
+    return true;
   }
 
   renderVillainRows();

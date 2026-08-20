@@ -451,6 +451,12 @@ canvas { width: 100%; display: block; border-radius: 8px; }
   font-weight: 800; font-size: 1.05rem; font-variant-numeric: tabular-nums;
 }
 .eqp-row { margin: 10px 0; }
+.eq-analysis {
+  margin-top: 12px; padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+  font-size: .92rem; line-height: 1.8;
+}
+.eq-analysis h3 { margin: 0 0 4px; font-size: .95rem; }
 .eqp-head { display: flex; justify-content: space-between; font-size: .92rem; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
 .eqp-bar { height: 16px; }
 .ev-result {

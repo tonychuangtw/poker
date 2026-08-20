@@ -397,9 +397,22 @@
     return { cleaned: s.replace(AMOUNT_POT, ' ').replace(AMOUNT_CALL, ' '), segs: segs };
   }
 
+  /* 勝率分頁用：抓整句的底池/需跟金額（不分街）。
+     回傳 { pot, call, cleaned }；cleaned 已把金額整段拿掉，
+     避免「底池45」的 4、5 被 parse() 當成牌。 */
+  function parseAmounts(text) {
+    var s = liteNormalize(text);
+    var pot, call, m;
+    AMOUNT_POT.lastIndex = 0;
+    while ((m = AMOUNT_POT.exec(s))) pot = parseFloat(m[1]);
+    AMOUNT_CALL.lastIndex = 0;
+    while ((m = AMOUNT_CALL.exec(s))) call = parseFloat(m[1]);
+    return { pot: pot, call: call, cleaned: s.replace(AMOUNT_POT, ' ').replace(AMOUNT_CALL, ' ') };
+  }
+
   var VoiceCards = {
     parse: parse, normalize: normalize,
-    parsePosition: parsePosition, parseStreets: parseStreets
+    parsePosition: parsePosition, parseStreets: parseStreets, parseAmounts: parseAmounts
   };
   if (isNode) { module.exports = VoiceCards; return; }
   global.VoiceCards = VoiceCards;
@@ -519,13 +532,16 @@
   }
 
   function handleEquityText(text, status) {
-    var parsed = parse(text, { villains: currentVillains() });
+    var amt = parseAmounts(text);
+    var parsed = parse(amt.cleaned, { villains: currentVillains() });
     var out = global.VoiceCardsApply
-      ? global.VoiceCardsApply(parsed)
+      ? global.VoiceCardsApply(parsed, amt)
       : { ok: false, msg: 'voice hook missing' };
     var msg = t('聽到：') + text;
-    if (out.ok && out.n) msg += ' → ' + t('已填入 ') + out.n + t(' 張牌');
-    else if (out.msg) msg += ' → ' + out.msg;
+    if (out.ok && out.n) {
+      msg += ' → ' + t('已填入 ') + out.n + t(' 張牌');
+      if (out.analyzed) msg += t('，分析見下方');
+    } else if (out.msg) msg += ' → ' + out.msg;
     status(msg);
   }
 
@@ -604,7 +620,7 @@
   function init() {
     var MICS = [
       { btn: 'btnVoiceEquity', row: 'voiceEquityRow', status: 'voiceEquityStatus',
-        example: '語音範例：「我 紅心A 黑桃K，對手 方塊Q 方塊J，公牌 黑桃10 紅心9 梅花2」',
+        example: '語音範例：「我 紅心A 黑桃K，對手 方塊Q 方塊J，公牌 黑桃10 紅心9 梅花2，底池100 需跟30」',
         handler: handleEquityText },
       { btn: 'btnVoiceHandHero', row: 'voiceHandHeroRow', status: 'voiceHandHeroStatus',
         example: '語音範例：「我在CO 紅心A 黑桃K」',

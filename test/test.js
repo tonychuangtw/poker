@@ -85,6 +85,27 @@ assert(r5.method === 'exact' && r5.trials === (45 * 44) / 2,
 var evVal = EquityLib.callEV(0.5, 100, 50);
 assert(Math.abs(evVal - 25) < 1e-9, 'callEV(0.5, 100, 50) = 25');
 
+// bestScore：5/6/7 張都取最佳 5 張
+assert(EquityLib.bestScore(cards('Ah Kh Qh Jh Th 2c'))[0] === 8,
+  'bestScore: 6 張取最佳 = 同花順');
+assert(EquityLib.bestScore(cards('Ac Ad 7h 2c 5d'))[0] === 1,
+  'bestScore: 5 張直算 = 一對');
+
+// outsNext：落後方下一張反超的 outs
+var on = EquityLib.outsNext(
+  [cards('2c 2d'), cards('Ac Kc')], cards('As Kd 7h'));
+assert(on && on.trail === 0 && on.outs.length === 2,
+  'outsNext: 22 vs AK 頂兩對，flop 反超 outs = 2 張（剩下兩張 2）');
+on = EquityLib.outsNext(
+  [cards('Ah Kh'), cards('2c 2d')], cards('Qh 7h 3s 8c'));
+assert(on && on.trail === 0 && on.outs.length === 15,
+  'outsNext: 同花聽＋兩張 overcard，turn 反超 outs = 15 張（9 紅心＋3A＋3K）');
+assert(EquityLib.outsNext([cards('Ah Kh'), cards('2c 2d')], cards('Qh 7h')) === null,
+  'outsNext: 非翻牌/轉牌回 null');
+assert(EquityLib.outsNext(
+  [cards('Ah Kh'), cards('2c 2d'), cards('7s 8s')], cards('Qh 7h 3s')) === null,
+  'outsNext: 三人以上回 null');
+
 // ---------- 2b. Multiway equity ----------
 console.log('--- Multiway equity ---');
 
@@ -1897,24 +1918,40 @@ assert(vp.entries.length === 7 && vm.hero0 === 'Ah' && vm.hero1 === 'Ks' &&
   vm.board0 === 'Ts' && vm.board1 === '9h' && vm.board2 === '2c',
   'voice: whisper 實測輸出（頓號＋十→石同音）');
 
-// 每個語系的「語音範例」翻譯本身都要能解析出同樣 7 張牌
-var voiceExampleKey = '語音範例：「我 紅心A 黑桃K，對手 方塊Q 方塊J，公牌 黑桃10 紅心9 梅花2」';
+// 底池/需跟金額：抽出金額並確保數字不會被當牌
+var va = Voice.parseAmounts('我 紅心A 黑桃K，對手 方塊Q 方塊J，底池100 需跟30');
+assert(va.pot === 100 && va.call === 30, 'voice: parseAmounts 底池/需跟');
+vm = vslots(vparse(va.cleaned));
+assert(Object.keys(vm).length === 4 && vm.hero0 === 'Ah' && vm.v0a === 'Qd',
+  'voice: 金額拿掉後不會被當牌');
+va = Voice.parseAmounts('pot 80 call 20 hero ace of hearts');
+assert(va.pot === 80 && va.call === 20, 'voice: parseAmounts 英文 pot/call');
+va = Voice.parseAmounts('底持60 跟注15'); // whisper 同音
+assert(va.pot === 60 && va.call === 15, 'voice: parseAmounts 底持/跟注 同音');
+va = Voice.parseAmounts('我 紅心A 黑桃K');
+assert(va.pot === undefined && va.call === undefined, 'voice: 沒講金額回 undefined');
+
+// 每個語系的「語音範例」翻譯本身都要能解析出同樣 7 張牌＋金額
+var voiceExampleKey = '語音範例：「我 紅心A 黑桃K，對手 方塊Q 方塊J，公牌 黑桃10 紅心9 梅花2，底池100 需跟30」';
 var voiceLangs = ['zh-CN', 'en', 'ja', 'ko', 'es', 'pt-BR', 'fr', 'de', 'ru', 'vi', 'th'];
 var voiceExamplesOk = [voiceExampleKey].concat(voiceLangs.map(function (lang) {
   var tbl = JSON.parse(require('fs').readFileSync(
     __dirname + '/../tools/i18n-src/' + lang + '.json', 'utf8'));
   return tbl[voiceExampleKey];
 })).every(function (ex, idx) {
-  var p = Voice.parse(ex, { villains: 1 });
+  var amt = Voice.parseAmounts(ex);
+  var p = Voice.parse(amt.cleaned, { villains: 1 });
   var m = vslots(p);
   var ok = p.entries.length === 7 && p.errors.length === 0 &&
     m.hero0 === 'Ah' && m.hero1 === 'Ks' && m.v0a === 'Qd' && m.v0b === 'Jd' &&
-    m.board0 === 'Ts' && m.board1 === '9h' && m.board2 === '2c';
+    m.board0 === 'Ts' && m.board1 === '9h' && m.board2 === '2c' &&
+    amt.pot === 100 && amt.call === 30;
   if (!ok) console.log('  範例解析失敗 [' + (idx === 0 ? 'zh-TW' : voiceLangs[idx - 1]) + ']: ' + ex +
-    ' → ' + JSON.stringify(m) + ' errors=' + JSON.stringify(p.errors));
+    ' → ' + JSON.stringify(m) + ' errors=' + JSON.stringify(p.errors) +
+    ' pot=' + amt.pot + ' call=' + amt.call);
   return ok;
 });
-assert(voiceExamplesOk, 'voice: 12 語系的語音範例字串全數可解析成同樣 7 張牌');
+assert(voiceExamplesOk, 'voice: 12 語系的語音範例字串全數可解析成同樣 7 張牌＋底池/需跟');
 
 // ---------- 9. 複盤語音（位置＋逐街） ----------
 console.log('--- VoiceCards streets ---');
