@@ -1256,71 +1256,84 @@
 
   var COLD_4BET_EQ = 0.50;      // 冷 4-bet 的價值門檻（現場幾乎不做 bluff 冷 4-bet）
   var COLD_CALL_PENALTY = 0.03; // 冷跟要比純底池賠率再嚴一點：開牌者還沒表態、後面還可能被再擠
-  /* 每個情境另外有 oopPenalty：翻後位置的代價（equity 點）。
+  /* 每個情境另外有 oopPenalty：位置的代價（equity 點）。
    * 只看底池賠率的話 SB 反而比 BTN 便宜（少投 0.5bb），會得出「SB 跟得比 BTN 寬」這種
    * 明顯錯誤的結論 —— 冷跟最重要的成本是「接下來三條街都要無位置面對兩家」，
-   * 所以位置的代價要明寫成資料，不能只靠賠率。 */
+   * 所以位置的代價要明寫成資料，不能只靠賠率。
+   * CO 雖然翻後對這兩家有位置，但後面還有三家沒行動（冷跟容易再被 squeeze），
+   * 所以給一點懲罰，介於 BTN 與 BB 之間。 */
+  var COLD_OOP_PENALTY = { CO: 0.015, BTN: 0, SB: 0.06, BB: 0.045 };
 
-  var COLD_SPOTS = {
-    btn_cold9: {
-      name: t('BTN：中位開牌 → 後位 3-bet（9-max）'), table: 9,
-      hero: 'BTN', opener: 'MP', tbettor: 'CO',
-      openBb: 2.5, tbBb: 8, heroPost: 0, deadBb: 1.5,
-      villainSpot: 'co_vs_mp9', oopPenalty: 0,
-      note: t('你有位置、也還沒投錢，但對手冷 3-bet 一個中位開牌的範圍很窄。位置救不了被壓制的牌。')
-    },
-    sb_cold9: {
-      name: t('SB：中位開牌 → 後位 3-bet（9-max）'), table: 9,
-      hero: 'SB', opener: 'MP', tbettor: 'CO',
-      openBb: 2.5, tbBb: 8, heroPost: 0.5, deadBb: 1,
-      villainSpot: 'co_vs_mp9', oopPenalty: 0.06,
-      note: t('整局無位置、還有 BB 在後面 —— 這裡是三個位置裡最該直接蓋牌的。')
-    },
-    bb_cold9: {
-      name: t('BB：中位開牌 → 後位 3-bet（9-max）'), table: 9,
-      hero: 'BB', opener: 'MP', tbettor: 'CO',
-      openBb: 2.5, tbBb: 8, heroPost: 1, deadBb: 0.5,
-      villainSpot: 'co_vs_mp9', oopPenalty: 0.045,
-      note: t('已經投了 1bb 所以價格最好，但翻後整局無位置，而且是對上兩個 range。')
-    },
-    bb_vs_sb_squeeze9: {
-      name: t('BB：中位開牌 → SB squeeze（9-max）'), table: 9,
-      hero: 'BB', opener: 'MP', tbettor: 'SB',
-      openBb: 2.5, tbBb: 11, heroPost: 1, deadBb: 0,
-      villainSpot: 'sb_vs_mp9', oopPenalty: 0.045,
-      note: t('SB squeeze 的尺度更大（無位置要收費），但範圍通常也比冷 3-bet 寬一點。')
-    },
-    btn_cold6: {
-      name: t('BTN：前位開牌 → CO 3-bet（6-max）'),
-      hero: 'BTN', opener: 'UTG', tbettor: 'CO',
-      openBb: 2.5, tbBb: 8, heroPost: 0, deadBb: 1.5,
-      villainSpot: 'co_vs_utg', oopPenalty: 0,
-      note: t('6-max 的 3-bet range 比 9-max 寬，所以續玩範圍也明顯寬一些。')
-    },
-    sb_cold6: {
-      name: t('SB：前位開牌 → CO 3-bet（6-max）'),
-      hero: 'SB', opener: 'UTG', tbettor: 'CO',
-      openBb: 2.5, tbBb: 8, heroPost: 0.5, deadBb: 1,
-      villainSpot: 'co_vs_utg', oopPenalty: 0.06,
-      note: t('無位置又夾在中間，續玩要比 BTN 收一大截。')
-    },
-    bb_cold6: {
-      name: t('BB：前位開牌 → CO 3-bet（6-max）'),
-      hero: 'BB', opener: 'UTG', tbettor: 'CO',
-      openBb: 2.5, tbBb: 8, heroPost: 1, deadBb: 0.5,
-      villainSpot: 'co_vs_utg', oopPenalty: 0.045,
-      note: t('價格最好的冷跟位置，但翻後要無位置面對兩家。')
-    },
-    bb_vs_sb_squeeze6: {
-      name: t('BB：前位開牌 → SB squeeze（6-max）'),
-      hero: 'BB', opener: 'UTG', tbettor: 'SB',
-      openBb: 2.5, tbBb: 11, heroPost: 1, deadBb: 0,
-      villainSpot: 'sb_vs_utg', oopPenalty: 0.045,
-      note: t('SB squeeze 尺度大，你要用很強的範圍才跟得起。')
-    }
-  };
-  var COLD_SPOT_KEYS = ['btn_cold9', 'sb_cold9', 'bb_cold9', 'bb_vs_sb_squeeze9',
-                        'btn_cold6', 'sb_cold6', 'bb_cold6', 'bb_vs_sb_squeeze6'];
+  /* 情境是「你 × 你前面每一組（開牌者, 3-bet 者）」的完整矩陣，由位置規則產生 ——
+   * 手打只會漏格（被 3-bet 圖就漏過 UTG）。你的位置從 CO 起算
+   * （2026-08-20 Tony：「冷 4b 做到 CO 就可以了」—— 更前面的位置後面壓著四家以上，
+   * 冷跟幾乎必被擠、冷 4-bet 只剩 QQ+/AK，做成圖沒有資訊量）。
+   * 每格的數字都由位置推出來：
+   *   openBb     一律 2.5（能開牌又後面塞得下 3-bet 者跟你的，只有非盲注位）
+   *   tbBb       3-bet 者是 SB（squeeze，無位置要收費）→ 11bb，其餘 → 8bb
+   *   heroPost   你已投的盲注（SB 0.5 / BB 1）
+   *   deadBb     池裡沒人認領的盲注 = 1.5 − 你的盲注 − 3-bet 者的盲注
+   *   villainSpot 3-bet 者的防守情境（`<3-bet 者>_vs_<開牌者>`），range 與防守圖共用 */
+  var COLD_POS_6 = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
+  var COLD_POS_9 = ['UTG', 'UTG+1', 'MP', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
+  var COLD_FIRST_HERO = 'CO';
+
+  /** 位置名 → 情境 key 的字母（'UTG+1' → 'utg1'） */
+  function coldPosTok(pos) { return pos.toLowerCase().replace('+', ''); }
+
+  /** 這一格的說明：你的位置一句 + 3-bet 者一句 */
+  function coldNote(hero, tbettor, behind) {
+    var posLine = hero === 'SB'
+      ? t('整局無位置、還有 BB 在後面 —— 這裡是三個位置裡最該直接蓋牌的。')
+      : hero === 'BB'
+        ? t('已經投了 1bb 所以價格最好，但翻後整局無位置，而且是對上兩個 range。')
+        : behind >= 3
+          ? t('你翻後有位置，但後面還有三家沒行動 —— 冷跟很容易再被擠，邊緣牌不如直接棄。')
+          : t('位置最好（翻後全程有位置），但兩個盲注還沒行動，冷跟仍有被 squeeze 的風險。');
+    var vilLine = tbettor === 'SB'
+      ? t('SB squeeze 的尺度更大（無位置要收費），但範圍通常也比冷 3-bet 寬一點。')
+      : tbettor === 'BTN'
+        ? t('BTN 的 3-bet 最寬（位置最好、偷得多），你的續玩範圍可以放寬。')
+        : t('這個位置的冷 3-bet 範圍很窄，位置救不了被壓制的牌。');
+    // 中文句號後不加空白，其他語言的句點後要加，否則兩句會黏在一起
+    return posLine + (/[。！？]$/.test(posLine) ? '' : ' ') + vilLine;
+  }
+
+  var COLD_SPOTS = {};
+  var COLD_SPOT_KEYS = [];
+  (function buildColdSpots() {
+    [[COLD_POS_9, 9], [COLD_POS_6, 6]].forEach(function (pair) {
+      var pos = pair[0], table = pair[1], suffix = table === 9 ? '9' : '';
+      for (var h = pos.indexOf(COLD_FIRST_HERO); h < pos.length; h++) {
+        for (var o = 0; o < h - 1; o++) {
+          for (var v = o + 1; v < h; v++) {
+            var hero = pos[h], opener = pos[o], tbettor = pos[v];
+            var villainSpot = coldPosTok(tbettor) + '_vs_' + coldPosTok(opener) + suffix;
+            if (!DEF_SPOTS[villainSpot]) continue;
+            var key = coldPosTok(hero) + '_' + coldPosTok(opener) + '_' +
+                      coldPosTok(tbettor) + suffix;
+            var heroPost = hero === 'SB' ? 0.5 : hero === 'BB' ? 1 : 0;
+            var short = opener + t(' 開牌 → ') + tbettor +
+                        (tbettor === 'SB' ? ' squeeze' : ' 3-bet');
+            COLD_SPOT_KEYS.push(key);
+            COLD_SPOTS[key] = {
+              name: hero + '：' + short + (table === 9 ? '（9-max）' : '（6-max）'),
+              short: short, table: table,
+              hero: hero, opener: opener, tbettor: tbettor,
+              openBb: 2.5, tbBb: tbettor === 'SB' ? 11 : 8,
+              heroPost: heroPost, deadBb: 1.5 - heroPost - (tbettor === 'SB' ? 0.5 : 0),
+              villainSpot: villainSpot,
+              oopPenalty: COLD_OOP_PENALTY[hero] || 0,
+              note: coldNote(hero, tbettor, pos.length - 1 - h)
+            };
+          }
+        }
+      }
+    });
+  })();
+  /* 圖表預設落在最典型的那一格（中位開牌、後位冷 3-bet、你在 BTN），
+   * 而不是矩陣的第一格（CO 面對 UTG 開牌 + UTG+1 3-bet ＝ 幾乎整張圖都是灰的）。 */
+  var COLD_DEFAULT_KEY = 'btn_mp_co9';
 
   /** 該情境裡 3-bet 者的預設 3-bet range（沿用防守表，兩張表共用同一份資料） */
   function coldVillainRange(spotKey) {
@@ -1505,6 +1518,7 @@
     mixAccept: mixAccept, mixTolerates: mixTolerates, isMixed: isMixed,
     rfiFreqMap: rfiFreqMap, defFreqMap: defFreqMap, vs3bFreqMap: vs3bFreqMap,
     COLD_SPOTS: COLD_SPOTS, COLD_SPOT_KEYS: COLD_SPOT_KEYS,
+    COLD_DEFAULT_KEY: COLD_DEFAULT_KEY,
     COLD_4BET_EQ: COLD_4BET_EQ, COLD_CALL_PENALTY: COLD_CALL_PENALTY,
     coldVillainRange: coldVillainRange, coldVillainPct: coldVillainPct,
     coldStackInfo: coldStackInfo, coldDefense: coldDefense, coldFreqMap: coldFreqMap,

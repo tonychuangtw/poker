@@ -1468,12 +1468,46 @@ assert(relapse.length === 1 && relapse[0].box === 1 && relapse[0].due === '2026-
 // ---------- 5d-3. 冷 4-bet / 冷跟（前面開牌 + 有人 3-bet） ----------
 console.log('--- Cold 4-bet / cold call ---');
 
-assert(Ranges.COLD_SPOT_KEYS.length === 8 &&
-  Object.keys(Ranges.COLD_SPOTS).length === 8, '8 cold-4bet spots, keys in sync');
+assert(Ranges.COLD_SPOT_KEYS.length === 94 &&
+  Object.keys(Ranges.COLD_SPOTS).length === 94,
+  '94 cold-4bet spots (6-max 20 + 9-max 74), keys in sync');
 assert(Ranges.COLD_SPOT_KEYS.every(function (k) {
   var s = Ranges.COLD_SPOTS[k];
   return s && Ranges.DEF_SPOTS[s.villainSpot];
 }), 'every cold spot points at a real 3-bettor defence spot');
+/* 完整矩陣：你在 CO 之後的每個位置 × 你前面每一組（開牌者, 3-bet 者）都要有一格。
+ * 2026-08-20 Tony 定的範圍是「冷 4b 做到 CO 就可以了」，所以 CO 之前的位置不做。 */
+[[['utg', 'hj', 'co', 'btn', 'sb', 'bb'], ''],
+ [['utg', 'utg1', 'mp', 'lj', 'hj', 'co', 'btn', 'sb', 'bb'], '9']].forEach(function (tbl) {
+  var seats = tbl[0], suffix = tbl[1], missing = [], extra = [];
+  var first = seats.indexOf('co');
+  seats.forEach(function (hero, h) {
+    seats.forEach(function (opener, o) {
+      seats.forEach(function (tb, v) {
+        var k = hero + '_' + opener + '_' + tb + suffix;
+        var want = h >= first && o < v && v < h;
+        if (want && !Ranges.COLD_SPOTS[k]) missing.push(k);
+        if (!want && Ranges.COLD_SPOTS[k]) extra.push(k);
+      });
+    });
+  });
+  assert(missing.length === 0 && extra.length === 0,
+    (suffix ? '9' : '6') + '-max cold-4bet 矩陣無缺角、無多餘格 (' +
+    (missing.concat(extra).join(',') || 'ok') + ')');
+});
+// 位置規則：3-bet 者是 SB → squeeze 尺度且沒有死錢；你是盲注 → 已投的錢算進底池
+Ranges.COLD_SPOT_KEYS.forEach(function (k) {
+  var s = Ranges.COLD_SPOTS[k];
+  var post = s.hero === 'SB' ? 0.5 : s.hero === 'BB' ? 1 : 0;
+  assert(s.tbBb === (s.tbettor === 'SB' ? 11 : 8) && s.heroPost === post &&
+    Math.abs(s.deadBb - (1.5 - post - (s.tbettor === 'SB' ? 0.5 : 0))) < 1e-9,
+    k + ': sizes and blinds follow from the seats');
+});
+// 位置懲罰的排序：BTN（有位置、只剩兩盲）< CO（有位置但後面三家）< BB < SB
+assert(Ranges.COLD_SPOTS.btn_mp_co9.oopPenalty < Ranges.COLD_SPOTS.co_mp_hj9.oopPenalty &&
+  Ranges.COLD_SPOTS.co_mp_hj9.oopPenalty < Ranges.COLD_SPOTS.bb_mp_co9.oopPenalty &&
+  Ranges.COLD_SPOTS.bb_mp_co9.oopPenalty < Ranges.COLD_SPOTS.sb_mp_co9.oopPenalty,
+  'cold-4bet position penalty ordering BTN < CO < BB < SB');
 
 // 底池賠率算式：補的錢 = 3-bet 額 − 自己已投的盲注；底池含自己的盲注
 Ranges.COLD_SPOT_KEYS.forEach(function (key) {
@@ -1499,7 +1533,7 @@ function coldSets(key, villain, bb) {
 
 // Tony 問的那一手：BTN 拿 AQo，MP 開牌、CO 3-bet
 var AQO = labelIdx('AQo');
-var btnDefault = coldSets('btn_cold9', Ranges.coldVillainRange('btn_cold9'), 100);
+var btnDefault = coldSets('btn_mp_co9', Ranges.coldVillainRange('btn_mp_co9'), 100);
 assert(btnDefault.tb.indexOf(AQO) < 0 && btnDefault.call.indexOf(AQO) < 0,
   'AQo folds to a 3.6% cold 3-bet on the BTN');
 assert(btnDefault.tb.indexOf(labelIdx('AA')) >= 0 && btnDefault.tb.indexOf(labelIdx('QQ')) >= 0,
@@ -1507,38 +1541,38 @@ assert(btnDefault.tb.indexOf(labelIdx('AA')) >= 0 && btnDefault.tb.indexOf(label
 assert(btnDefault.call.indexOf(labelIdx('22')) >= 0,
   'small pairs cold-call at 100bb (set mining)');
 // 對手寬到一定程度 AQo 才續玩 —— 這就是滑桿存在的理由
-var aqoWide = coldSets('btn_cold9', PushFold.topPercentRange(12), 100);
+var aqoWide = coldSets('btn_mp_co9', PushFold.topPercentRange(12), 100);
 assert(aqoWide.tb.indexOf(AQO) >= 0 || aqoWide.call.indexOf(AQO) >= 0,
   'AQo continues once the 3-bettor is wide (12%)');
 
 // 對手越寬 → 續玩越寬（單調）
 var lastTot = -1, monoOk = true;
 [3, 5, 7, 9, 12, 15, 20].forEach(function (w) {
-  var t = coldSets('btn_cold9', PushFold.topPercentRange(w), 100).total;
+  var t = coldSets('btn_mp_co9', PushFold.topPercentRange(w), 100).total;
   if (t < lastTot) monoOk = false;
   lastTot = t;
 });
 assert(monoOk, 'a wider 3-bettor is always continued against wider');
 
 // 籌碼越淺 → 冷跟越窄（小對子的 set mining 價值消失）
-var deep = coldSets('btn_cold9', Ranges.coldVillainRange('btn_cold9'), 100);
-var mid = coldSets('btn_cold9', Ranges.coldVillainRange('btn_cold9'), 40);
+var deep = coldSets('btn_mp_co9', Ranges.coldVillainRange('btn_mp_co9'), 100);
+var mid = coldSets('btn_mp_co9', Ranges.coldVillainRange('btn_mp_co9'), 40);
 assert(PushFold.rangeComboTotal(mid.call) < PushFold.rangeComboTotal(deep.call),
   'shallower stacks cold-call tighter');
-assert(Ranges.coldStackInfo('btn_cold9', 15).mode !== 'normal' &&
-  coldSets('btn_cold9', Ranges.coldVillainRange('btn_cold9'), 15).call.length === 0,
+assert(Ranges.coldStackInfo('btn_mp_co9', 15).mode !== 'normal' &&
+  coldSets('btn_mp_co9', Ranges.coldVillainRange('btn_mp_co9'), 15).call.length === 0,
   'at 15bb there is no cold-call option, only jam or fold');
 
 // 位置：BTN 續玩最寬、SB 最窄（純看底池賠率會得出相反結論，所以 oopPenalty 是必要的）
-var vil9 = Ranges.coldVillainRange('btn_cold9');
-var btnTot = coldSets('btn_cold9', vil9, 100).total;
-var bbTot = coldSets('bb_cold9', vil9, 100).total;
-var sbTot = coldSets('sb_cold9', vil9, 100).total;
+var vil9 = Ranges.coldVillainRange('btn_mp_co9');
+var btnTot = coldSets('btn_mp_co9', vil9, 100).total;
+var bbTot = coldSets('bb_mp_co9', vil9, 100).total;
+var sbTot = coldSets('sb_mp_co9', vil9, 100).total;
 assert(btnTot > bbTot && bbTot >= sbTot,
   'in position continues widest, SB tightest (BTN ' + btnTot + ' > BB ' + bbTot +
   ' >= SB ' + sbTot + ')');
-assert(Ranges.coldStackInfo('sb_cold9', 100).needEq <
-  Ranges.coldStackInfo('btn_cold9', 100).needEq,
+assert(Ranges.coldStackInfo('sb_mp_co9', 100).needEq <
+  Ranges.coldStackInfo('btn_mp_co9', 100).needEq,
   'SB gets a better raw price than BTN — so position cannot come from pot odds alone');
 
 // 對子不可有破洞（家族單調化）
@@ -1556,7 +1590,7 @@ Ranges.COLD_SPOT_KEYS.forEach(function (key) {
 });
 
 // 頻率表
-var coldFreq = Ranges.coldFreqMap('btn_cold9', Ranges.coldVillainRange('btn_cold9'), 100);
+var coldFreq = Ranges.coldFreqMap('btn_mp_co9', Ranges.coldVillainRange('btn_mp_co9'), 100);
 assert(Object.keys(coldFreq).length === 169, 'coldFreqMap covers all 169 hands');
 assert(coldFreq.AA.aggro === 1 && coldFreq['72o'].fold === 1, 'AA cold 4-bets, 72o folds');
 assert(Math.abs(coldFreq.AQo.aggro + coldFreq.AQo.call + coldFreq.AQo.fold - 1) < 1e-9,

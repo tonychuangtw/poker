@@ -2144,20 +2144,25 @@
   /* ---------- 冷 4-bet / 冷跟（前面開牌 + 有人 3-bet） ----------
    * 唯讀圖：沒有手打的建議表可以覆寫，整張圖都是依「對手 3-bet 寬度 + 籌碼深度」算出來的。
    * 滑桿停在該情境的預設寬度時用真正的 3-bet range 記號，拉動後才改用「最強 X%」近似。 */
-  var coldKeyCur = Ranges.COLD_SPOT_KEYS[0], coldFreq = false;
+  var coldKeyCur = Ranges.COLD_DEFAULT_KEY, coldFreq = false;
   var coldPctCur = null, coldSliding = false;
   var coldStackCur = Ranges.VS3B_BASE_BB, coldStackSliding = false;
 
+  /* 94 格的完整矩陣塞進一個 select，只分 6-max / 9-max 會滑到找不到自己那格，
+   * 所以再按「你在哪個位置」分 optgroup，選項只留「開牌者 → 3-bet 者」。 */
   (function buildColdSpotOptions() {
-    var six = '', nine = '';
+    var groups = [], byGroup = {};
     Ranges.COLD_SPOT_KEYS.forEach(function (k) {
       var spot = Ranges.COLD_SPOTS[k];
-      var opt = '<option value="' + k + '">' + spot.name + '</option>';
-      if (spot.table === 9) nine += opt; else six += opt;
+      var label = (spot.table === 9 ? t('9-max Full Ring（現場取向）') : '6-max') +
+                  t('｜你在 ') + spot.hero;
+      if (!byGroup[label]) { byGroup[label] = []; groups.push(label); }
+      byGroup[label].push('<option value="' + k + '">' + (spot.short || spot.name) +
+                          '</option>');
     });
-    $('#coldSpot').innerHTML =
-      t('<optgroup label="9-max Full Ring（現場取向）">') + nine + '</optgroup>' +
-      '<optgroup label="6-max">' + six + '</optgroup>';
+    $('#coldSpot').innerHTML = groups.map(function (label) {
+      return '<optgroup label="' + label + '">' + byGroup[label].join('') + '</optgroup>';
+    }).join('');
   })();
 
   function coldDefaultPct(key) { return Ranges.coldVillainPct(key); }
@@ -2172,7 +2177,7 @@
 
   function renderCold() {
     // 下拉選單值對不上（快取到舊版 HTML 之類）時退回第一個情境，不要整張圖掛掉
-    if (!Ranges.COLD_SPOTS[coldKeyCur]) coldKeyCur = Ranges.COLD_SPOT_KEYS[0];
+    if (!Ranges.COLD_SPOTS[coldKeyCur]) coldKeyCur = Ranges.COLD_DEFAULT_KEY;
     var spot = Ranges.COLD_SPOTS[coldKeyCur];
     if (coldPctCur === null) coldPctCur = coldDefaultPct(coldKeyCur);
     var info = Ranges.coldStackInfo(coldKeyCur, coldStackCur);
