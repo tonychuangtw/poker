@@ -1495,7 +1495,7 @@ assert(Ranges.COLD_SPOT_KEYS.every(function (k) {
     (suffix ? '9' : '6') + '-max cold-4bet 矩陣無缺角、無多餘格 (' +
     (missing.concat(extra).join(',') || 'ok') + ')');
 });
-// 位置規則：3-bet 者是 SB → squeeze 尺度且沒有死錢；你是盲注 → 已投的錢算進底池
+// 位置規則：3-bet 者是 SB → 尺度較大且小盲不算死錢；你是盲注 → 已投的錢算進底池
 Ranges.COLD_SPOT_KEYS.forEach(function (k) {
   var s = Ranges.COLD_SPOTS[k];
   var post = s.hero === 'SB' ? 0.5 : s.hero === 'BB' ? 1 : 0;

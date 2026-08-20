@@ -2,9 +2,7 @@
   " 開牌 → ": " abre → ",
   "9-max Full Ring（現場取向）": "9-max Full Ring (foco em ao vivo)",
   "｜你在 ": " | você em ",
-  "位置最好（翻後全程有位置），但兩個盲注還沒行動，冷跟仍有被 squeeze 的風險。": "A melhor posição (em posição durante todo o pós-flop), mas os dois blinds ainda não agiram — o cold call ainda pode levar squeeze.",
   "你翻後有位置，但後面還有三家沒行動 —— 冷跟很容易再被擠，邊緣牌不如直接棄。": "Você tem posição no pós-flop, mas ainda há três jogadores para agir — cold call leva squeeze com facilidade, então mãos marginais é melhor foldar.",
-  "BTN 的 3-bet 最寬（位置最好、偷得多），你的續玩範圍可以放寬。": "O BTN dá 3-bet mais amplo (melhor posição, rouba muito), então você pode abrir seu range de continuação.",
   "這個位置的冷 3-bet 範圍很窄，位置救不了被壓制的牌。": "O range de cold 3-bet dessa posição é bem estreito; posição não salva mãos dominadas.",
   "情境是完整矩陣：你的位置（CO / BTN / SB / BB）× 你前面每一組「開牌者 → 3-bet 者」， 6-max 20 格 + 9-max 74 格，選單先按你的位置分組。更前面的位置沒做 —— 後面壓著四家以上， 冷跟幾乎必被再擠，冷 4-bet 也只剩 QQ+/AK。": "Os cenários formam uma matriz completa: sua posição (CO / BTN / SB / BB) × cada par «abridor → 3-bettor» à sua frente — 20 casos no 6-max + 74 no 9-max, agrupados no menu pela sua posição. Posições mais adiantadas ficaram de fora: com quatro ou mais jogadores atrás, o cold call quase sempre leva squeeze e o cold 4-bet vira só QQ+/AK.",
   "9-max 現場：BB 在這裡的 3-bet 只有 3.0%，偏價值 —— 被 3-bet 時多半真的被更強的 range 打，續玩要比 6-max 收得多": "9-max ao vivo: o BB dá 3-bet em apenas 3.0% aqui e bem a valor — quando você leva 3-bet realmente está contra um range mais forte, então continue bem mais fechado que no 6-max",
@@ -62,5 +60,8 @@
   "UTG+1 開牌 vs MP 3-bet（9-max）": "UTG+1 abre vs 3-bet do MP (9-max)",
   "UTG+1 開牌 vs SB 3-bet（9-max）": "UTG+1 abre vs 3-bet do SB (9-max)",
   "（6-max）": " (6-max)",
-  "（9-max）": " (9-max)"
+  "（9-max）": " (9-max)",
+  "位置最好（翻後全程有位置），但兩個盲注還沒行動，冷跟後仍可能被他們再加注擠掉。": "A melhor posição (em posição durante todo o pós-flop), mas os dois blinds ainda não agiram — depois do cold call eles ainda podem aumentar e te expulsar.",
+  "SB 無位置，3-bet 尺度開得更大（要把後面的人趕走）；範圍寬窄看這條線的 3-bet range，別預設它一定寬。": "O SB está fora de posição e aumenta o tamanho do 3-bet para expulsar quem falta; o quão amplo é depende do range de 3-bet daquele spot — não presuma que seja largo.",
+  "BTN 有位置又偷得多，這條線的 3-bet 明顯比前位寬，你的續玩範圍可以跟著放寬。": "O BTN tem posição e rouba muito, então o 3-bet dele nessa linha é bem mais amplo que o das posições anteriores — pode abrir seu range de continuação junto."
 }

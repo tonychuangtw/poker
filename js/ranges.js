@@ -1260,7 +1260,7 @@
    * 只看底池賠率的話 SB 反而比 BTN 便宜（少投 0.5bb），會得出「SB 跟得比 BTN 寬」這種
    * 明顯錯誤的結論 —— 冷跟最重要的成本是「接下來三條街都要無位置面對兩家」，
    * 所以位置的代價要明寫成資料，不能只靠賠率。
-   * CO 雖然翻後對這兩家有位置，但後面還有三家沒行動（冷跟容易再被 squeeze），
+   * CO 雖然翻後對這兩家有位置，但後面還有三家沒行動（冷跟後容易被他們再加注擠掉），
    * 所以給一點懲罰，介於 BTN 與 BB 之間。 */
   var COLD_OOP_PENALTY = { CO: 0.015, BTN: 0, SB: 0.06, BB: 0.045 };
 
@@ -1270,7 +1270,8 @@
    * 冷跟幾乎必被擠、冷 4-bet 只剩 QQ+/AK，做成圖沒有資訊量）。
    * 每格的數字都由位置推出來：
    *   openBb     一律 2.5（能開牌又後面塞得下 3-bet 者跟你的，只有非盲注位）
-   *   tbBb       3-bet 者是 SB（squeeze，無位置要收費）→ 11bb，其餘 → 8bb
+   *   tbBb       3-bet 者是 SB（無位置，尺度開大把後面趕走）→ 11bb，其餘 → 8bb
+   *              （注意：這裡開牌者後面沒有跟注者，SB 這一手是 OOP 3-bet，不是 squeeze）
    *   heroPost   你已投的盲注（SB 0.5 / BB 1）
    *   deadBb     池裡沒人認領的盲注 = 1.5 − 你的盲注 − 3-bet 者的盲注
    *   villainSpot 3-bet 者的防守情境（`<3-bet 者>_vs_<開牌者>`），range 與防守圖共用 */
@@ -1289,11 +1290,11 @@
         ? t('已經投了 1bb 所以價格最好，但翻後整局無位置，而且是對上兩個 range。')
         : behind >= 3
           ? t('你翻後有位置，但後面還有三家沒行動 —— 冷跟很容易再被擠，邊緣牌不如直接棄。')
-          : t('位置最好（翻後全程有位置），但兩個盲注還沒行動，冷跟仍有被 squeeze 的風險。');
+          : t('位置最好（翻後全程有位置），但兩個盲注還沒行動，冷跟後仍可能被他們再加注擠掉。');
     var vilLine = tbettor === 'SB'
-      ? t('SB squeeze 的尺度更大（無位置要收費），但範圍通常也比冷 3-bet 寬一點。')
+      ? t('SB 無位置，3-bet 尺度開得更大（要把後面的人趕走）；範圍寬窄看這條線的 3-bet range，別預設它一定寬。')
       : tbettor === 'BTN'
-        ? t('BTN 的 3-bet 最寬（位置最好、偷得多），你的續玩範圍可以放寬。')
+        ? t('BTN 有位置又偷得多，這條線的 3-bet 明顯比前位寬，你的續玩範圍可以跟著放寬。')
         : t('這個位置的冷 3-bet 範圍很窄，位置救不了被壓制的牌。');
     // 中文句號後不加空白，其他語言的句點後要加，否則兩句會黏在一起
     return posLine + (/[。！？]$/.test(posLine) ? '' : ' ') + vilLine;
@@ -1313,8 +1314,7 @@
             var key = coldPosTok(hero) + '_' + coldPosTok(opener) + '_' +
                       coldPosTok(tbettor) + suffix;
             var heroPost = hero === 'SB' ? 0.5 : hero === 'BB' ? 1 : 0;
-            var short = opener + t(' 開牌 → ') + tbettor +
-                        (tbettor === 'SB' ? ' squeeze' : ' 3-bet');
+            var short = opener + t(' 開牌 → ') + tbettor + ' 3-bet';
             COLD_SPOT_KEYS.push(key);
             COLD_SPOTS[key] = {
               name: hero + '：' + short + (table === 9 ? '（9-max）' : '（6-max）'),
