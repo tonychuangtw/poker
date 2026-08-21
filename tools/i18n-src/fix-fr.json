@@ -167,5 +167,7 @@
  "= squeeze、": " = squeeze, ",
  "= 跟 limp（BB＝過牌）還是灰 = 蓋牌。 iso 的本質：用大牌收「打不中就棄」的便宜錢，並把局面收成有位置的單挑。": " = payer le limp (BB = check), gris = fold. L'essence de l'iso : utiliser les grosses cartes pour ramasser l'argent facile des ranges qui foldent quand elles ratent, et transformer le coup en heads-up avec position.",
  "= 跟注、灰 = 蓋牌。 JJ、AQs、AKo 這些牌在這裡最難拿捏，也是一次錯就是整疊的地方。": " = payer, gris = fold. JJ, AQs et AKo sont les mains les plus difficiles ici — une erreur coûte tout le tapis.",
- "= 跟注、灰 = 蓋牌。 跟單挑防守差最多的地方：跟注要更緊（三人底池勝率被分掉）、3-bet 要更大（squeeze，死錢多了一份跟注）。": " = payer, gris = fold. Grandes différences vs défense heads-up : payer plus serré (l'équité se partage à 3) et 3-bet plus gros (c'est un squeeze — un call de dead money en plus)."
+ "= 跟注、灰 = 蓋牌。 跟單挑防守差最多的地方：跟注要更緊（三人底池勝率被分掉）、3-bet 要更大（squeeze，死錢多了一份跟注）。": " = payer, gris = fold. Grandes différences vs défense heads-up : payer plus serré (l'équité se partage à 3) et 3-bet plus gros (c'est un squeeze — un call de dead money en plus).",
+ "</b>：": "</b> : ",
+ "・": ", "
 }
