@@ -3907,6 +3907,11 @@
     })
       .then(function (r) { return r.json(); })
       .then(function (data) {
+        /* 已結束的賽事直接拿掉（2026-08-21 Tony：過期的不要留著）；資料端每日也會修剪，
+         * 這裡再擋一層是為了更新間隔內剛過期的那幾筆 */
+        data.events = (data.events || []).filter(function (ev) {
+          return !ev.end || ev.end >= day;
+        });
         evData = data;
         $('#evUpdated').textContent = t('更新於 ') + (data.updated || '—');
         evFillFilters();
