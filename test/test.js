@@ -1704,6 +1704,80 @@ assert(Math.abs(f4Freq.QQ.aggro + f4Freq.QQ.call + f4Freq.QQ.fold - 1) < 1e-9,
   assert(okPairs, 'vs4b@' + bb + 'bb: continued pairs are a gapless top run');
 });
 
+console.log('--- Squeeze / overcall ---');
+
+// 完整矩陣：跟冷 4-bet 同一套位置組合 → 也是 6-max 20 + 9-max 74 = 94 格
+assert(Ranges.SQZ_SPOT_KEYS.length === 94 &&
+  Object.keys(Ranges.SQZ_SPOTS).length === 94,
+  '94 squeeze spots (6-max 20 + 9-max 74), keys in sync');
+Ranges.SQZ_SPOT_KEYS.forEach(function (k) {
+  var s = Ranges.SQZ_SPOTS[k];
+  assert(!!Ranges.DEF_SPOTS[s.callerSpot], k + ': caller flat range comes from a real defence spot');
+  var info = Ranges.sqStackInfo(k, 100);
+  assert(Math.abs(info.toCall - (s.openBb - s.heroPost)) < 1e-9 &&
+    Math.abs(info.needEq - info.toCall / (info.pot + info.toCall)) < 1e-9,
+    k + ': squeeze pot odds arithmetic');
+});
+// squeeze 尺度：有位置 4x、無位置（盲注）5x 開牌
+assert(Ranges.sqStackInfo('btn_utg_hjsq9', 100).sqBb === 10 &&
+  Ranges.sqStackInfo('bb_co_btnsq9', 100).sqBb === 12.5,
+  'squeeze sizing: 4x IP / 5x OOP');
+
+function sqSets(key, villain, bb) {
+  var map = Ranges.sqDefense(key, villain, bb);
+  var tb = [], call = [];
+  for (var i = 0; i < 169; i++) {
+    var st = map[PushFold.classLabel(i)];
+    if (st === 'tb') tb.push(i);
+    else if (st === 'in') call.push(i);
+  }
+  return { tb: tb, call: call,
+           total: PushFold.rangeComboTotal(tb) + PushFold.rangeComboTotal(call) };
+}
+
+// 100bb 預設：BB 收尾 —— squeeze 有價值段、平跟不是全開（賠率雖便宜但被 cap 住）
+var sqBb = sqSets('bb_co_btnsq9', Ranges.sqVillainRange('bb_co_btnsq9'), 100);
+assert(sqBb.tb.indexOf(labelIdx('AA')) >= 0 && sqBb.tb.indexOf(labelIdx('QQ')) >= 0,
+  'AA/QQ squeeze at the default width');
+assert(sqBb.call.indexOf(labelIdx('72o')) < 0 && sqBb.call.indexOf(labelIdx('J2o')) < 0,
+  'BB does not overcall junk despite the cheap price (cap works)');
+assert(sqBb.call.indexOf(labelIdx('22')) >= 0 && sqBb.call.indexOf(labelIdx('76s')) >= 0,
+  'small pairs / suited connectors overcall multiway (implied odds)');
+// 位置：BB 續玩最寬、SB 最窄
+var vilSq = Ranges.sqVillainRange('bb_co_btnsq9');
+var sqTotBb = sqSets('bb_co_btnsq9', vilSq, 100).total;
+var sqTotSb = sqSets('sb_co_btnsq9', vilSq, 100).total;
+var sqTotBtn = sqSets('btn_utg_hjsq9', Ranges.sqVillainRange('btn_utg_hjsq9'), 100).total;
+assert(sqTotBb > sqTotSb, 'BB (closing, best price) continues wider than the squeezed SB (' +
+  sqTotBb + ' > ' + sqTotSb + ')');
+assert(sqTotBtn < sqTotBb, 'BTN vs a tight UTG open continues tighter than BB vs CO (' +
+  sqTotBtn + ' < ' + sqTotBb + ')');
+// 開牌者越寬 → 續玩越寬（容許 1 個 class 的量化抖動）
+var sqLast = -1, sqMono = true;
+[12, 16, 20, 26, 32, 40, 50].forEach(function (w) {
+  var tot = sqSets('bb_co_btnsq9', PushFold.topPercentRange(w), 100).total;
+  if (tot < sqLast - 12) sqMono = false;
+  sqLast = Math.max(sqLast, tot);
+});
+assert(sqMono, 'a wider opener is continued against wider (within class-granularity jitter)');
+// 頻率表
+var sqFq = Ranges.sqFreqMap('bb_co_btnsq9', Ranges.sqVillainRange('bb_co_btnsq9'), 100);
+assert(Object.keys(sqFq).length === 169, 'sqFreqMap covers all 169 hands');
+assert(sqFq.AA.aggro === 1 && sqFq['72o'].fold === 1, 'AA squeezes, 72o folds');
+assert(Math.abs(sqFq.AQo.aggro + sqFq.AQo.call + sqFq.AQo.fold - 1) < 1e-9,
+  'squeeze frequencies sum to 1');
+// 對子不可有破洞
+[100, 60, 40].forEach(function (bb) {
+  var r = sqSets('bb_co_btnsq9', Ranges.sqVillainRange('bb_co_btnsq9'), bb);
+  var inSet = {};
+  r.tb.concat(r.call).forEach(function (i) { inSet[i] = true; });
+  var pairs = [];
+  for (var p = 0; p < 13; p++) if (inSet[p * 13 + p]) pairs.push(p);
+  var okP = pairs.length === 0 ||
+    (pairs[0] === 0 && pairs[pairs.length - 1] - pairs[0] === pairs.length - 1);
+  assert(okP, 'sq@' + bb + 'bb: continued pairs are a gapless top run');
+});
+
 // 家族單調化不是只用在冷 4-bet：另外三張圖的動態試算也要沒有破洞
 var defHoleCheck = Ranges.defenseAtDepth('bb_vs_btn',
   PushFold.topPercentRange(Ranges.openerOpenPct('bb_vs_btn')),

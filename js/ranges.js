@@ -1571,6 +1571,193 @@
     return map;
   }
 
+  /* ---------- Squeeze / 過牌跟（前面有人開牌、又有人平跟，而你還沒行動） ----------
+   * 現場最常見的多人局面：開牌者 + 至少一個跟注者在你前面，你要 squeeze、跟注還是棄。
+   * 跟單挑防守圖的差別：
+   *   跟注 → 進的是三人底池，勝率被兩個 range 分掉，但賠率好、隱含賠率更大
+   *   3-bet → 變成 squeeze：死錢多（多一份跟注），而且跟注者的 range 封頂
+   *           （拿得出 QQ+/AK 的人多半直接 3-bet，不會平跟），fold equity 比單挑 3-bet 高
+   *
+   * 模型跟冷 4-bet 同一種簡化：只算「對上開牌者」的勝率 ——
+   * 開牌者是兩人裡 range 沒封頂、比較強的那個。跟注者的影響改用兩個參數表述：
+   *   SQZ_CALL_PENALTY  跟注門檻加一層（多人底池的 equity 實現率較低、還可能被後面再擠）
+   *   SQZ_IMPLIED_W     隱含賠率權重調高（多人底池打中 set / 同花的賠付更大）
+   * 所以「跟注」那一側是偏保守的近似、squeeze 那一側偏樂觀（沒算跟注者醒著跟你打）。 */
+
+  var SQZ_EQ = 0.55;             // squeeze 的價值門檻（對開牌者 range 的 raw equity）
+  var SQZ_CALL_PENALTY = 0.05;   // 三人底池的跟注懲罰（equity 點）
+  var SQZ_IMPLIED_W = 0.14;      // 多人底池 → 小對子/同花連張的隱含加成比單挑高
+  var SQZ_OOP_PENALTY = { CO: 0.015, BTN: 0, SB: 0.05, BB: 0.035 };
+  var SQZ_IP_MULT = 4, SQZ_OOP_MULT = 5;   // squeeze 尺度 = 開牌的倍數（多一個跟注者 → 比單挑 3-bet 大一級）
+
+  /** 這一格的說明：你的位置一句 + 跟注者一句 */
+  function sqNote(hero, behind) {
+    var posLine = hero === 'SB'
+      ? t('SB 夾在中間最難打：跟注後整局無位置面對兩家，BB 還可能在你後面再 squeeze —— 平跟要最緊。')
+      : hero === 'BB'
+        ? t('BB 收尾行動、價格最好，平跟可以最寬；但翻後是三人底池的無位置，別把爛牌也湊進來。')
+        : behind >= 3
+          ? t('你翻後有位置，但後面還有三家沒行動，平跟容易再被 squeeze，邊緣牌寧可棄或直接 squeeze。')
+          : t('你位置最好且收掉大部分行動，平跟與 squeeze 都可以偏寬。');
+    var vilLine = t('跟注者的 range 封頂（QQ+/AK 多半會直接 3-bet 不會平跟），所以 squeeze 的 fold equity 比單挑 3-bet 高。');
+    return posLine + (/[。！？]$/.test(posLine) ? '' : ' ') + vilLine;
+  }
+
+  var SQZ_SPOTS = {};
+  var SQZ_SPOT_KEYS = [];
+  (function buildSqzSpots() {
+    [[COLD_POS_9, 9], [COLD_POS_6, 6]].forEach(function (pair) {
+      var pos = pair[0], table = pair[1], suffix = table === 9 ? '9' : '';
+      for (var h = pos.indexOf(COLD_FIRST_HERO); h < pos.length; h++) {
+        for (var o = 0; o < h - 1; o++) {
+          for (var c = o + 1; c < h; c++) {
+            var hero = pos[h], opener = pos[o], caller = pos[c];
+            /* 跟注者的平跟 range 直接取防守圖那格的 call —— 資料共用，不另外編一份 */
+            var callerSpot = coldPosTok(caller) + '_vs_' + coldPosTok(opener) + suffix;
+            if (!DEF_SPOTS[callerSpot]) continue;
+            var key = coldPosTok(hero) + '_' + coldPosTok(opener) + '_' +
+                      coldPosTok(caller) + 'sq' + suffix;
+            var heroPost = hero === 'SB' ? 0.5 : hero === 'BB' ? 1 : 0;
+            var callerPost = caller === 'SB' ? 0.5 : 0;
+            var heroIp = hero !== 'SB' && hero !== 'BB';
+            var short = opener + t(' 開牌 → ') + caller + t(' 跟注');
+            SQZ_SPOT_KEYS.push(key);
+            SQZ_SPOTS[key] = {
+              name: hero + '：' + short + (table === 9 ? '（9-max）' : '（6-max）'),
+              short: short, table: table,
+              hero: hero, opener: opener, caller: caller,
+              openBb: 2.5, heroPost: heroPost,
+              deadBb: 1.5 - heroPost - callerPost,
+              callerSpot: callerSpot,
+              sqMult: heroIp ? SQZ_IP_MULT : SQZ_OOP_MULT,
+              oopPenalty: SQZ_OOP_PENALTY[hero] || 0,
+              note: sqNote(hero, pos.length - 1 - h)
+            };
+          }
+        }
+      }
+    });
+  })();
+  /* 預設落在最典型的現場情境：9-max，CO 開、BTN 跟，你在 BB 收尾 */
+  var SQZ_DEFAULT_KEY = 'bb_co_btnsq9';
+
+  /** 該情境開牌者的預設 RFI range */
+  function sqVillainRange(spotKey) {
+    var s = SQZ_SPOTS[spotKey];
+    if (!s) return null;
+    var table = s.table === 9 ? RFI_RANGES_9 : RFI_RANGES_6;
+    for (var k in table) {
+      if (table.hasOwnProperty(k) && table[k].name === s.opener) {
+        return PF().rangeFromNotation(table[k].notation);
+      }
+    }
+    return null;
+  }
+  /** 該情境開牌者的預設開牌寬度（% of 1326） */
+  function sqVillainPct(spotKey) {
+    var r = sqVillainRange(spotKey);
+    return r ? PF().rangeComboTotal(r) / 1326 * 100 : 0;
+  }
+  /** 該情境跟注者的平跟 range 寬度（%），給說明文字用 */
+  function sqCallerPct(spotKey) {
+    var s = SQZ_SPOTS[spotKey];
+    if (!s || !DEF_SPOTS[s.callerSpot]) return 0;
+    var pf = PF();
+    return pf.rangeComboTotal(pf.rangeFromNotation(DEF_SPOTS[s.callerSpot].call)) / 1326 * 100;
+  }
+
+  /** 某有效籌碼下的局面數字 */
+  function sqStackInfo(spotKey, bb) {
+    var s = SQZ_SPOTS[spotKey];
+    if (!s) return null;
+    var eff = clampBb(bb);
+    var open = Math.min(s.openBb, eff);
+    var toCall = Math.max(0, open - s.heroPost);
+    var pot = open * 2 + s.deadBb + s.heroPost;    // 你行動前的底池（開牌 + 跟注 + 死錢 + 你的盲注）
+    var potAfter = open * 3 + s.deadBb;            // 你跟注後的三人底池
+    var spr = (eff - open) / potAfter;
+    var sqRaw = s.openBb * s.sqMult;
+    var sq = Math.min(sqRaw, eff);
+    return {
+      effBb: eff, openBb: open, toCall: toCall, pot: pot,
+      needEq: toCall > 0 ? toCall / (pot + toCall) : 0,
+      spr: spr,
+      sqBb: sq, sqAllIn: sqRaw >= eff,
+      mode: spr < JAM_SPR ? 'jamOrFold' : 'normal'
+    };
+  }
+
+  /* 平跟寬度不能只看賠率：三人底池的價格很便宜（BB 只要 19% 勝率），
+   * 而對單一 range 的 raw equity 連 72o 都有 30% —— 純賠率門檻會算出「BB 全部跟」。
+   * 真正被分掉的是三人底池的實現率，所以平跟寬度錨定在「跟注者的平跟 range」上：
+   * 他跟得起的寬度就是這種局面的合理量級，你再按位置調整 ——
+   * BB 收尾價格最好跟最寬、BTN 有位置次之、SB 夾中間最窄。
+   * 開牌者變寬（鬆客桌）→ 跟注者和你都會跟著變寬（開根號縮放）。 */
+  var SQZ_CALL_FACTOR = { CO: 1.0, BTN: 1.25, SB: 0.7, BB: 1.6 };
+  function sqContTarget(spotKey, villainClasses) {
+    var pf = PF(), s = SQZ_SPOTS[spotKey];
+    if (!s || !DEF_SPOTS[s.callerSpot]) return 0;
+    var callerCombos = pf.rangeComboTotal(
+      pf.rangeFromNotation(DEF_SPOTS[s.callerSpot].call));
+    var baseline = Math.max(callerCombos, 66);   // 跟注者 range 特別小的格，地板放在 5%
+    var defPct = sqVillainPct(spotKey);
+    var vilPct = pf.rangeComboTotal(villainClasses) / 1326 * 100;
+    var scale = defPct > 0 ? Math.sqrt(vilPct / defPct) : 1;
+    scale = Math.min(2, Math.max(0.6, scale));
+    return Math.round(baseline * (SQZ_CALL_FACTOR[s.hero] || 1) * scale);
+  }
+
+  /** 某深度 + 某開牌者寬度下的 map：{ 手牌: 'tb'（squeeze）| 'in'（跟注） } */
+  function sqDefense(spotKey, villainClasses, bb) {
+    var pf = PF(), info = sqStackInfo(spotKey, bb);
+    if (!info) return {};
+    var eq = selectionEq(villainClasses);
+    var map = {}, i;
+    if (info.mode !== 'normal') {
+      // 淺到平跟後打不了翻後 → 只剩 squeeze 全下 / 棄
+      for (i = 0; i < 169; i++) {
+        if (eq[i] >= SQZ_EQ - JAM_CREDIT) map[pf.classLabel(i)] = 'tb';
+      }
+      return map;
+    }
+    var base = sqStackInfo(spotKey, VS3B_BASE_BB);
+    var f = impliedFactor(info.spr, base ? base.spr : 0);
+    var score = selectionScore(eq, SQZ_IMPLIED_W, f);
+    var contThr = Math.max(thresholdAt(score, sqContTarget(spotKey, villainClasses)),
+      info.needEq + SQZ_CALL_PENALTY + (SQZ_SPOTS[spotKey].oopPenalty || 0));
+    for (i = 0; i < 169; i++) {
+      if (eq[i] >= SQZ_EQ) map[pf.classLabel(i)] = 'tb';
+      else if (score[i] >= contThr) map[pf.classLabel(i)] = 'in';
+    }
+    return map;
+  }
+
+  /** squeeze 的頻率表：{ 手牌: {aggro（squeeze）, call, fold} }，門檻與 sqDefense 同步 */
+  function sqFreqMap(spotKey, villainClasses, bb) {
+    var pf = PF(), info = sqStackInfo(spotKey, bb);
+    if (!info) return {};
+    var eq = selectionEq(villainClasses);
+    var map = {}, i, a, cont;
+    if (info.mode !== 'normal') {
+      for (i = 0; i < 169; i++) {
+        a = mixRamp(eq[i], SQZ_EQ - JAM_CREDIT);
+        map[pf.classLabel(i)] = freqSplit(a, a);
+      }
+      return map;
+    }
+    var base = sqStackInfo(spotKey, VS3B_BASE_BB);
+    var f = impliedFactor(info.spr, base ? base.spr : 0);
+    var score = selectionScore(eq, SQZ_IMPLIED_W, f);
+    var contThr = Math.max(thresholdAt(score, sqContTarget(spotKey, villainClasses)),
+      info.needEq + SQZ_CALL_PENALTY + (SQZ_SPOTS[spotKey].oopPenalty || 0));
+    for (i = 0; i < 169; i++) {
+      a = mixRamp(eq[i], SQZ_EQ);
+      cont = mixRamp(score[i], contThr);
+      map[pf.classLabel(i)] = freqSplit(a, cont);
+    }
+    return map;
+  }
+
   /* ---------- 混合頻率（純函式） ----------
    * 上面幾張圖都是「排序分數 ≥ 門檻就做這個動作」的硬切，實際 GTO 解在門檻附近是混合的。
    * 這裡把硬切換成一段線性斜坡：分數剛好等於門檻 = 50%，往上 MIX_BAND 到 100%、往下到 0%。
@@ -1702,6 +1889,10 @@
     COLD_4BET_EQ: COLD_4BET_EQ, COLD_CALL_PENALTY: COLD_CALL_PENALTY,
     coldVillainRange: coldVillainRange, coldVillainPct: coldVillainPct,
     coldStackInfo: coldStackInfo, coldDefense: coldDefense, coldFreqMap: coldFreqMap,
+    SQZ_SPOTS: SQZ_SPOTS, SQZ_SPOT_KEYS: SQZ_SPOT_KEYS,
+    SQZ_DEFAULT_KEY: SQZ_DEFAULT_KEY, SQZ_EQ: SQZ_EQ,
+    sqVillainRange: sqVillainRange, sqVillainPct: sqVillainPct, sqCallerPct: sqCallerPct,
+    sqStackInfo: sqStackInfo, sqDefense: sqDefense, sqFreqMap: sqFreqMap,
     VS4B_SPOTS: VS4B_SPOTS, VS4B_SPOT_KEYS: VS4B_SPOT_KEYS,
     VS4B_DEFAULT_KEY: VS4B_DEFAULT_KEY, VS4B_5BET_EQ: VS4B_5BET_EQ,
     vs4bVillainRange: vs4bVillainRange, vs4bVillainPct: vs4bVillainPct,
