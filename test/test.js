@@ -1617,6 +1617,93 @@ assert(coldFreq.AA.aggro === 1 && coldFreq['72o'].fold === 1, 'AA cold 4-bets, 7
 assert(Math.abs(coldFreq.AQo.aggro + coldFreq.AQo.call + coldFreq.AQo.fold - 1) < 1e-9,
   'cold frequencies sum to 1');
 
+console.log('--- Facing a 4-bet (vs4b) ---');
+
+// 與被 3-bet 圖同一份 key 鏡射：每個 vs3b 情境都有對應的面對 4-bet 情境
+assert(Ranges.VS4B_SPOT_KEYS.length === Ranges.VS3B_SPOT_KEYS.length &&
+  Ranges.VS4B_SPOT_KEYS.every(function (k) { return !!Ranges.VS3B_SPOTS[k]; }),
+  'vs4b spots mirror vs3b spots 1:1 (' + Ranges.VS4B_SPOT_KEYS.length + ')');
+Ranges.VS4B_SPOT_KEYS.forEach(function (k) {
+  var s = Ranges.VS4B_SPOTS[k], v = Ranges.VS3B_SPOTS[k];
+  assert(s.hero === v.villain && s.opener === v.hero &&
+    s.fourBet === v.fourBet && s.tbBb === v.tbBb && s.deadBb === v.deadBb,
+    k + ': vs4b spot derives hero/opener/ranges from the vs3b spot');
+});
+// 位置判斷：非盲注 3-bet 都有位置；SB 3-bet 無位置；BB 3-bet 只對 SB 開牌有位置
+assert(Ranges.VS4B_SPOTS.co_vs_btn3b.heroIp === true &&
+  Ranges.VS4B_SPOTS.btn_vs_sb3b.heroIp === false &&
+  Ranges.VS4B_SPOTS.sb_vs_bb3b.heroIp === true &&
+  Ranges.VS4B_SPOTS.utg_vs_bb3b.heroIp === false,
+  'vs4b hero position flags (BB is IP only vs a SB open)');
+
+function vs4bSets(key, villain, bb) {
+  var map = Ranges.vs4bDefense(key, villain, bb);
+  var tb = [], call = [];
+  for (var i = 0; i < 169; i++) {
+    var st = map[PushFold.classLabel(i)];
+    if (st === 'tb') tb.push(i);
+    else if (st === 'in') call.push(i);
+  }
+  return { tb: tb, call: call,
+           total: PushFold.rangeComboTotal(tb) + PushFold.rangeComboTotal(call) };
+}
+
+// 100bb、預設（緊）4-bet range：5-bet 只有 AA/KK，QQ/JJ/TT/AKs 是跟注，AQo 蓋牌
+var f0 = vs4bSets('co_vs_btn3b', Ranges.vs4bVillainRange('co_vs_btn3b'), 100);
+assert(f0.tb.indexOf(labelIdx('AA')) >= 0 && f0.tb.indexOf(labelIdx('KK')) >= 0,
+  'AA/KK five-bet vs the default 4-bet range');
+assert(f0.call.indexOf(labelIdx('QQ')) >= 0 && f0.call.indexOf(labelIdx('AKs')) >= 0,
+  'QQ/AKs call vs the default 4-bet range');
+assert(f0.tb.indexOf(labelIdx('AQo')) < 0 && f0.call.indexOf(labelIdx('AQo')) < 0,
+  'AQo folds to a tight 4-bet');
+assert(f0.call.indexOf(labelIdx('32s')) < 0 && f0.call.indexOf(labelIdx('22')) < 0,
+  'junk/tiny pairs never call a 4-bet at 100bb (MDF cap works)');
+// 對超緊（KK+ AKs）的 4-bet：連 QQ 都不 5-bet
+var fNit = vs4bSets('utg_vs_bb3b', Ranges.vs4bVillainRange('utg_vs_bb3b'), 100);
+assert(fNit.tb.indexOf(labelIdx('QQ')) < 0,
+  'QQ does not five-bet into a KK+/AKs-only 4-bettor');
+// 對手變寬 → 續玩變寬。門檻以整個 class 為粒度切，容許 ≤1 個 offsuit class（12 combo）的量化抖動
+var fLast = -1, fMono = true;
+[2, 3, 4, 6, 8, 10, 12].forEach(function (w) {
+  var tot = vs4bSets('co_vs_btn3b', PushFold.topPercentRange(w), 100).total;
+  if (tot < fLast - 12) fMono = false;
+  fLast = Math.max(fLast, tot);
+});
+assert(fMono, 'a wider 4-bettor is continued against wider (within class-granularity jitter)');
+var fWide = vs4bSets('co_vs_btn3b', PushFold.topPercentRange(8), 100);
+assert(fWide.tb.indexOf(labelIdx('QQ')) >= 0 &&
+  (fWide.tb.indexOf(labelIdx('AKo')) >= 0 || fWide.call.indexOf(labelIdx('AKo')) >= 0),
+  'vs an 8% 4-bettor QQ five-bets and AKo continues');
+// 淺籌碼：沒有平跟，只剩全下 / 棄，range 收斂到 QQ+/AK 附近
+var fShallow = vs4bSets('co_vs_btn3b', Ranges.vs4bVillainRange('co_vs_btn3b'), 25);
+assert(Ranges.vs4bStackInfo('co_vs_btn3b', 25).mode !== 'normal' &&
+  fShallow.call.length === 0 && fShallow.tb.length > 0 && fShallow.tb.length <= 12,
+  'at 25bb facing a 4-bet: jam-or-fold with a tight jam range (' + fShallow.tb.length + ' classes)');
+// 賠率算式
+Ranges.VS4B_SPOT_KEYS.forEach(function (key) {
+  var info = Ranges.vs4bStackInfo(key, 100);
+  assert(Math.abs(info.toCall - (info.fbBb - info.tbBb)) < 1e-9 &&
+    Math.abs(info.needEq - info.toCall / (info.pot + info.toCall)) < 1e-9,
+    key + ': vs4b pot odds arithmetic');
+});
+// 頻率表
+var f4Freq = Ranges.vs4bFreqMap('co_vs_btn3b', Ranges.vs4bVillainRange('co_vs_btn3b'), 100);
+assert(Object.keys(f4Freq).length === 169, 'vs4bFreqMap covers all 169 hands');
+assert(f4Freq.AA.aggro === 1 && f4Freq['72o'].fold === 1, 'AA five-bets, 72o folds');
+assert(Math.abs(f4Freq.QQ.aggro + f4Freq.QQ.call + f4Freq.QQ.fold - 1) < 1e-9,
+  'vs4b frequencies sum to 1');
+// 對子不可有破洞（家族單調化）
+[100, 60, 40].forEach(function (bb) {
+  var r = vs4bSets('co_vs_btn3b', Ranges.vs4bVillainRange('co_vs_btn3b'), bb);
+  var inSet = {};
+  r.tb.concat(r.call).forEach(function (i) { inSet[i] = true; });
+  var pairs = [];
+  for (var p = 0; p < 13; p++) if (inSet[p * 13 + p]) pairs.push(p);
+  var okPairs = pairs.length === 0 ||
+    (pairs[0] === 0 && pairs[pairs.length - 1] - pairs[0] === pairs.length - 1);
+  assert(okPairs, 'vs4b@' + bb + 'bb: continued pairs are a gapless top run');
+});
+
 // 家族單調化不是只用在冷 4-bet：另外三張圖的動態試算也要沒有破洞
 var defHoleCheck = Ranges.defenseAtDepth('bb_vs_btn',
   PushFold.topPercentRange(Ranges.openerOpenPct('bb_vs_btn')),

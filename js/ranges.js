@@ -1391,6 +1391,186 @@
     return map;
   }
 
+  /* ---------- 面對 4-bet（你 3-bet 後，開牌者 4-bet 回來） ----------
+   * 翻前樹的最後一個節點：RFI → 面對開牌 → 被 3-bet → 冷 4-bet → 這裡。
+   * 你在防守圖裡 3-bet 了，開牌者照被 3-bet 圖 4-bet 回來，你要 5-bet / 跟注 / 蓋牌。
+   *
+   * 情境與被 3-bet 圖同一份 key 鏡射：VS3B_SPOTS 的每一格「y 開牌被 x 3-bet」，
+   * 換到 x 的視角就是「我 3-bet 後被 y 4-bet」——對手的 4-bet range 直接取那格的 fourBet，
+   * 三張圖（防守 / 被 3-bet / 面對 4-bet）共用同一份 range 資料，不會兩邊講不同話。
+   *
+   * 這個決定跟冷 4-bet 一樣對「對手 4-bet 多寬」極度敏感（所以一樣給滑桿）：
+   * 對只會拿 QQ+ 4-bet 的對手，連 KK 都只需要跟注；對 4-bet 到 6–8%（含 A5s 這類
+   * bluff）的對手，KK+ 要 5-bet、AQs/JJ 變成明確的跟注。
+   * 模型限制與其他圖相同：equity 排序近似，靠阻斷牌的 5-bet bluff（A5s）不在模型內，
+   * 現場打法本來就偏純價值 5-bet，剛好一致。 */
+
+  var VS4B_5BET_EQ = 0.54;      // 5-bet 的價值門檻（raw equity，對上對手 4-bet range）
+  var VS4B_CALL_PENALTY = 0.04; // 跟注比純賠率再嚴：對手 range 不封頂、翻後 SPR 低又難反超
+  var VS4B_OOP_PENALTY = 0.03;  // 你是盲注 3-bet（翻後無位置）時跟注再加的代價
+  /* 4-bet 尺度 = 3-bet 的倍數：開牌者翻後無位置（對手在你後面）→ 開大一點 */
+  var VS4B_IP_MULT = 2.2, VS4B_OOP_MULT = 2.4;
+
+  var VS4B_SPOTS = {};
+  var VS4B_SPOT_KEYS = [];
+  (function buildVs4bSpots() {
+    VS3B_SPOT_KEYS.forEach(function (k) {
+      var v = VS3B_SPOTS[k];
+      var hero = v.villain, opener = v.hero;
+      /* 你（3-bet 者）翻後有位置嗎？非盲注 3-bet 都是在開牌者後面 → 有位置；
+       * 盲注 3-bet 無位置，唯一例外是 BB 對 SB 開牌（BB 反而有位置） */
+      var heroIp = hero !== 'SB' && (hero !== 'BB' || opener === 'SB');
+      var short = opener + t(' 開牌 → 你 3-bet → 他 4-bet');
+      VS4B_SPOT_KEYS.push(k);
+      VS4B_SPOTS[k] = {
+        name: hero + '：' + short + (v.table === 9 ? '（9-max）' : '（6-max）'),
+        short: short, table: v.table,
+        hero: hero, opener: opener, heroIp: heroIp,
+        openBb: v.openBb, tbBb: v.tbBb, deadBb: v.deadBb,
+        /* 開牌者無位置（= 你有位置）時 4-bet 開大一點 */
+        fbMult: heroIp ? VS4B_OOP_MULT : VS4B_IP_MULT,
+        fourBet: v.fourBet,                       // 對手的預設 4-bet range（共用 vs3b 資料）
+        heroThreeBet: DEF_SPOTS[v.villainSpot] ? DEF_SPOTS[v.villainSpot].threeBet : '',
+        oopPenalty: heroIp ? 0 : VS4B_OOP_PENALTY,
+        note: heroIp
+          ? t('你翻後有位置 → 邊緣牌可以用跟注續玩；對手的 4-bet range 預設很窄，他若是會拿 A5s/AKo 亂 4-bet 的人，把寬度滑桿拉上去再看。')
+          : t('你是無位置 3-bet 被 4-bet 回來 —— 跟注要整局無位置面對不封頂的 range，門檻再加一層；打不舒服的牌寧可 5-bet 或直接棄。')
+      };
+    });
+  })();
+  var VS4B_DEFAULT_KEY = 'co_vs_btn3b';   // 最典型：BTN 3-bet CO 開牌，CO 4-bet 回來
+
+  /** 該情境開牌者的預設 4-bet range（直接取 vs3b 那格的 fourBet） */
+  function vs4bVillainRange(spotKey) {
+    var s = VS4B_SPOTS[spotKey];
+    return s ? PF().rangeFromNotation(s.fourBet) : null;
+  }
+  /** 該情境開牌者的預設 4-bet 寬度（% of 1326） */
+  function vs4bVillainPct(spotKey) {
+    var r = vs4bVillainRange(spotKey);
+    return r ? PF().rangeComboTotal(r) / 1326 * 100 : 0;
+  }
+
+  /** 某有效籌碼下的局面數字：4-bet 大小、要補多少、賠率、SPR、模式 */
+  function vs4bStackInfo(spotKey, bb) {
+    var s = VS4B_SPOTS[spotKey];
+    if (!s) return null;
+    var eff = clampBb(bb);
+    var open = Math.min(s.openBb, eff);
+    var tb = Math.min(s.tbBb, eff);
+    var fbRaw = Math.round(s.tbBb * s.fbMult * 10) / 10;
+    var fb = Math.min(fbRaw, eff);
+    var toCall = Math.max(0, fb - tb);
+    var pot = fb + tb + s.deadBb;               // 你行動前的底池（你的 3-bet 還躺在裡面）
+    var potAfter = fb * 2 + s.deadBb;           // 跟注後的底池
+    var spr = (eff - fb) / potAfter;
+    return {
+      effBb: eff, openBb: open, tbBb: tb, fbBb: fb, toCall: toCall, pot: pot,
+      needEq: toCall > 0 ? toCall / (pot + toCall) : 0,
+      spr: spr,
+      fbAllIn: fbRaw >= eff,
+      fiveBetBb: Math.min(fb * 2.2, eff),
+      fiveBetAllIn: fb * 2.2 >= eff,
+      mode: eff <= fb ? 'callAllin' : spr < JAM_SPR ? 'jamOrFold' : 'normal'
+    };
+  }
+
+  /* 續玩寬度不能只看賠率：4-bet 底池的跟注價格很便宜（needEq 只有 26–28%），
+   * 而對手 range 又常常一半是 AK —— 純賠率門檻會算出「32s 也跟得起」這種鬼圖，
+   * 因為 raw equity 沒扣掉「SPR 2 對上不封頂 range 的實現率」。
+   * 所以這張圖的續玩用兩層夾住：
+   *   上限（MDF 端）：續玩 combo 數 = 你的 3-bet range 寬度 × MDF × √(對手寬度 ÷ 預設寬度)
+   *     —— 對手 4-bet 的 bluff 要無利可圖，你只需防守 3-bet range 的 MDF 那一塊；
+   *        對手變寬（鬆客）→ 續玩跟著放寬（開根號：別線性爆掉），變窄 → 收緊
+   *   下限（賠率端）：不夠底池賠率＋懲罰的手牌永遠不續玩
+   * 你 3-bet range 以外的手牌照理不會走到這個節點，圖上的值只是參考。 */
+  function vs4bContTarget(spotKey, villainClasses) {
+    var pf = PF(), s = VS4B_SPOTS[spotKey];
+    var base = vs4bStackInfo(spotKey, VS3B_BASE_BB);
+    if (!s || !base) return 0;
+    var risk = base.fbBb - s.openBb;                    // 對手 4-bet 多投的錢
+    var potBefore = s.tbBb + s.openBb + s.deadBb;       // 他 4-bet 前的底池
+    var defend = 1 - risk / (risk + potBefore);         // = 1 − 他 bluff 的損益兩平頻率
+    var heroTb = s.heroThreeBet
+      ? pf.rangeComboTotal(pf.rangeFromNotation(s.heroThreeBet)) : 0;
+    if (!heroTb) heroTb = Math.round(1326 * 0.05);
+    var defPct = vs4bVillainPct(spotKey);
+    var vilPct = pf.rangeComboTotal(villainClasses) / 1326 * 100;
+    var scale = defPct > 0 ? Math.sqrt(vilPct / defPct) : 1;
+    scale = Math.min(2.5, Math.max(0.6, scale));
+    return Math.max(6, Math.round(heroTb * defend * scale));   // 至少留 AA
+  }
+
+  /** 某深度 + 某對手 4-bet 寬度下的 map：{ 手牌: 'tb'（5-bet / 全下）| 'in'（跟注） } */
+  function vs4bDefense(spotKey, villainClasses, bb) {
+    var pf = PF(), info = vs4bStackInfo(spotKey, bb);
+    if (!info) return {};
+    var eq = selectionEq(villainClasses);
+    var target = vs4bContTarget(spotKey, villainClasses);
+    var map = {}, i, thr;
+    if (info.mode === 'callAllin') {
+      // 對手的 4-bet 已經把你蓋住 → 只剩跟全下 / 棄
+      thr = Math.max(thresholdAt(eq, target), info.needEq);
+      for (i = 0; i < 169; i++) {
+        if (eq[i] >= thr) map[pf.classLabel(i)] = 'tb';
+      }
+      return map;
+    }
+    if (info.mode === 'jamOrFold') {
+      // 跟注後 SPR < 0.5 → 沒有平跟，只剩 5-bet 全下 / 棄。
+      // 全下的賠率端：再投 (eff − 3-bet) 搶 (雙方全下 + 死錢)，減棄牌權益折抵
+      var jamNeed = (info.effBb - info.tbBb) / (info.effBb * 2 + VS4B_SPOTS[spotKey].deadBb);
+      thr = Math.max(thresholdAt(eq, target), jamNeed - JAM_CREDIT);
+      for (i = 0; i < 169; i++) {
+        if (eq[i] >= thr) map[pf.classLabel(i)] = 'tb';
+      }
+      return map;
+    }
+    var thr5 = aggroThreshold(VS4B_5BET_EQ, info.spr, info.needEq, info.effBb);
+    var base = vs4bStackInfo(spotKey, VS3B_BASE_BB);
+    var f = impliedFactor(info.spr, base ? base.spr : 0);
+    var score = selectionScore(eq, IMPLIED_W, f);
+    var contThr = Math.max(thresholdAt(score, target),
+      info.needEq + VS4B_CALL_PENALTY + (VS4B_SPOTS[spotKey].oopPenalty || 0));
+    for (i = 0; i < 169; i++) {
+      if (score[i] < contThr) continue;
+      map[pf.classLabel(i)] = eq[i] >= thr5 ? 'tb' : 'in';
+    }
+    return map;
+  }
+
+  /** 面對 4-bet 的頻率表：{ 手牌: {aggro（5-bet）, call, fold} }，門檻與 vs4bDefense 同步 */
+  function vs4bFreqMap(spotKey, villainClasses, bb) {
+    var pf = PF(), info = vs4bStackInfo(spotKey, bb);
+    if (!info) return {};
+    var eq = selectionEq(villainClasses);
+    var target = vs4bContTarget(spotKey, villainClasses);
+    var map = {}, i, a, cont, thr;
+    if (info.mode !== 'normal') {
+      var jamNeed = info.mode === 'callAllin'
+        ? info.needEq
+        : (info.effBb - info.tbBb) / (info.effBb * 2 + VS4B_SPOTS[spotKey].deadBb) - JAM_CREDIT;
+      thr = Math.max(thresholdAt(eq, target), jamNeed);
+      for (i = 0; i < 169; i++) {
+        a = mixRamp(eq[i], thr);
+        map[pf.classLabel(i)] = freqSplit(a, a);
+      }
+      return map;
+    }
+    var thr5 = aggroThreshold(VS4B_5BET_EQ, info.spr, info.needEq, info.effBb);
+    var base = vs4bStackInfo(spotKey, VS3B_BASE_BB);
+    var f = impliedFactor(info.spr, base ? base.spr : 0);
+    var score = selectionScore(eq, IMPLIED_W, f);
+    var contThr = Math.max(thresholdAt(score, target),
+      info.needEq + VS4B_CALL_PENALTY + (VS4B_SPOTS[spotKey].oopPenalty || 0));
+    for (i = 0; i < 169; i++) {
+      a = mixRamp(eq[i], thr5);
+      cont = mixRamp(score[i], contThr);
+      map[pf.classLabel(i)] = freqSplit(a, cont);
+    }
+    return map;
+  }
+
   /* ---------- 混合頻率（純函式） ----------
    * 上面幾張圖都是「排序分數 ≥ 門檻就做這個動作」的硬切，實際 GTO 解在門檻附近是混合的。
    * 這裡把硬切換成一段線性斜坡：分數剛好等於門檻 = 50%，往上 MIX_BAND 到 100%、往下到 0%。
@@ -1522,6 +1702,10 @@
     COLD_4BET_EQ: COLD_4BET_EQ, COLD_CALL_PENALTY: COLD_CALL_PENALTY,
     coldVillainRange: coldVillainRange, coldVillainPct: coldVillainPct,
     coldStackInfo: coldStackInfo, coldDefense: coldDefense, coldFreqMap: coldFreqMap,
+    VS4B_SPOTS: VS4B_SPOTS, VS4B_SPOT_KEYS: VS4B_SPOT_KEYS,
+    VS4B_DEFAULT_KEY: VS4B_DEFAULT_KEY, VS4B_5BET_EQ: VS4B_5BET_EQ,
+    vs4bVillainRange: vs4bVillainRange, vs4bVillainPct: vs4bVillainPct,
+    vs4bStackInfo: vs4bStackInfo, vs4bDefense: vs4bDefense, vs4bFreqMap: vs4bFreqMap,
     DEF_SPOTS: DEF_SPOTS, DEF_SPOT_KEYS: DEF_SPOT_KEYS,
     VS3B_BASE_BB: VS3B_BASE_BB, VS3B_MIN_BB: VS3B_MIN_BB, VS3B_MAX_BB: VS3B_MAX_BB,
     RFI_JAM_BB: RFI_JAM_BB, rfiStackInfo: rfiStackInfo, rfiAtDepth: rfiAtDepth,

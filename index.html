@@ -569,6 +569,38 @@ try {
     <div class="nash-grid-wrap"><div id="v3bGrid" class="nash-grid"></div></div>
   </div>
 
+  <div class="card" data-pro="vs4b">
+    <h2>面對 4-bet（你 3-bet 後被 4-bet 回來）</h2>
+    <p class="hint">翻前樹的最後一個節點：你照防守圖 3-bet，開牌者 4-bet 回來 ——
+      <span class="legend-tb">紅</span> = 5-bet（淺籌碼＝全下）、<span class="legend-call">綠</span> = 跟注、灰 = 蓋牌。
+      JJ、AQs、AKo 這些牌在這裡最難拿捏，也是一次錯就是整疊的地方。</p>
+    <p class="hint">⚠️ 跟冷 4-bet 一樣，這個決定對「對手 4-bet 多寬」極度敏感：
+      對只拿 QQ+ 4-bet 的對手，連 KK 都只需要跟注；對會拿 A5s、AKo 亂 4-bet 的對手，
+      QQ/JJ/AK 全部變成明確續玩。先判斷對手是哪種人，再看圖。</p>
+    <p class="hint">續玩寬度由兩層夾住：上限是 MDF × 你的 3-bet range（讓對手的 4-bet bluff 無利可圖），
+      下限是底池賠率。你 3-bet range 以外的手牌照理不會走到這個節點，那些格子僅供參考。
+      唯讀（沒有手打的建議表可編輯）。</p>
+    <label>情境
+      <select id="vs4bSpot"></select>
+    </label>
+    <div class="btn-row">
+      <button class="btn" id="btnVs4bFreq">🎚 混合頻率</button>
+    </div>
+    <label>對手 4-bet 寬度 %（預設 = 該情境的建議 4-bet range）</label>
+    <div class="slider-row">
+      <input type="range" id="vs4bPct" min="1" max="20" step="0.5" value="3">
+      <span class="pct-val" id="vs4bPctVal">3%</span>
+    </div>
+    <label>有效籌碼（10–300bb，預設 100bb）</label>
+    <div class="slider-row">
+      <input type="range" id="vs4bStack" min="10" max="300" step="5" value="100">
+      <span class="pct-val" id="vs4bStackVal">100bb</span>
+    </div>
+    <p class="hint" id="vs4bTxt"></p>
+    <p class="hint" id="vs4bNote"></p>
+    <div class="nash-grid-wrap"><div id="vs4bGrid" class="nash-grid"></div></div>
+  </div>
+
   <div class="card" data-pro="cold">
     <h2>冷 4-bet / 冷跟（前面開牌 + 有人 3-bet）</h2>
     <p class="hint">第四種翻前局面：<b>別人開牌、第三家 3-bet，而你還沒行動</b>。
@@ -678,6 +710,7 @@ try {
       淺籌碼時 4-bet 等於全下，該題就沒有跟注選項。
       冷 4-bet：前面有人開牌又有人 3-bet，隨機情境、對手 3-bet 寬度與籌碼深度，
       判斷冷 4-bet、冷跟還是蓋牌 —— 題目會直接告訴你對手 3-bet 多寬，因為那是決定性的資訊。
+      面對 4-bet：你 3-bet 後被 4-bet 回來，判斷 5-bet、跟注還是蓋牌（一樣會告訴你對手 4-bet 多寬）。
       翻後 c-bet：隨機翻牌、手牌、位置與底池類型，判斷下注 75%、下注 33% 還是過牌。
       河牌接 bluff：對手在河牌下注，依他 range 裡的 bluff 比例與你的底池賠率決定跟或棄。</p>
     <p class="hint">📌 測驗以建議 range 為準，圖表的自訂編輯不影響評分。
@@ -688,6 +721,7 @@ try {
       <button class="btn" id="btnQuizModeDef">面對開牌</button>
       <button class="btn" id="btnQuizModeV3b">被 3-bet</button>
       <button class="btn" id="btnQuizModeCold">冷 4-bet</button>
+      <button class="btn" id="btnQuizModeVs4b">面對 4-bet</button>
       <button class="btn" id="btnQuizModeCb">翻後 c-bet</button>
       <button class="btn" id="btnQuizModeBc">河牌接 bluff</button>
     </div>
