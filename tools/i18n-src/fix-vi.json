@@ -169,5 +169,7 @@
  "= 跟注、灰 = 蓋牌。 JJ、AQs、AKo 這些牌在這裡最難拿捏，也是一次錯就是整疊的地方。": " = call, xám = bỏ. JJ, AQs, AKo là những bài khó nhất ở đây — sai một lần là mất cả stack.",
  "= 跟注、灰 = 蓋牌。 跟單挑防守差最多的地方：跟注要更緊（三人底池勝率被分掉）、3-bet 要更大（squeeze，死錢多了一份跟注）。": " = call, xám = bỏ. Khác biệt lớn nhất so với phòng thủ heads-up: call chặt hơn (equity bị chia 3) và 3-bet to hơn (squeeze — pot có thêm một phần tiền chết).",
  "</b>：": "</b>: ",
- "・": ", "
+ "・": ", ",
+ "儲存": "Lưu",
+ "編輯紀錄": "Sửa bản ghi"
 }

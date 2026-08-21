@@ -166,8 +166,8 @@
   $$('.sheet-backdrop').forEach(function (bk) {
     bk.addEventListener('click', function (e) { if (e.target === bk) closeSheet(bk.id); });
   });
-  $('#fabAddSession').addEventListener('click', function () { openSheet('addSheet'); });
-  $('#btnAddSessionDesk').addEventListener('click', function () { openSheet('addSheet'); });
+  $('#fabAddSession').addEventListener('click', function () { openAddSession(); });
+  $('#btnAddSessionDesk').addEventListener('click', function () { openAddSession(); });
   $('#btnCloseAddSheet').addEventListener('click', function () { closeSheet('addSheet'); });
 
   // 新增
@@ -214,7 +214,7 @@
   /* 中途事件（補碼/暫停…，2026-08-11 參考 ivey 的 session 時間軸）
      金額為該筆紀錄的幣別；補碼金額只作紀錄，總買入仍以「買入」欄為準（欄名已註明含 rebuy） */
   var EVT_KINDS = ['補碼', '加碼', '暫停', '繼續'];
-  $('#btnAddEvt').addEventListener('click', function () {
+  function addEvtRow(ev) {
     var row = document.createElement('div');
     row.className = 'evt-row';
     var sel = document.createElement('select');
@@ -235,8 +235,15 @@
     del.type = 'button'; del.className = 'del-btn'; del.textContent = '✕';
     del.addEventListener('click', function () { row.remove(); });
     row.appendChild(sel); row.appendChild(tm); row.appendChild(amt); row.appendChild(del);
+    if (ev) {
+      if (EVT_KINDS.indexOf(ev.k) >= 0) sel.value = ev.k;
+      tm.value = ev.t || '';
+      if (ev.amt) amt.value = ev.amt;
+      amt.style.visibility = (sel.value === '暫停' || sel.value === '繼續') ? 'hidden' : 'visible';
+    }
     $('#evtEditor').appendChild(row);
-  });
+  }
+  $('#btnAddEvt').addEventListener('click', function () { addEvtRow(); });
   function pickedEvents() {
     var out = [];
     $('#evtEditor').querySelectorAll('.evt-row').forEach(function (row) {
@@ -249,14 +256,61 @@
   }
 
   $('#fDate').value = new Date().toISOString().slice(0, 10);
+
+  /* 編輯既有紀錄（2026-08-21 Tony：之前的記錄要能再點進去編輯）
+     共用同一張新增表單：editingId 有值 = 編輯模式，送出改成覆寫該筆 */
+  var editingId = null;
+  function clearSessionForm() {
+    $('#fVenue').value = ''; $('#fTag').value = '';
+    $('#fBuyin').value = ''; $('#fCashout').value = '';
+    $('#fHours').value = ''; $('#fBB').value = ''; $('#fNote').value = '';
+    $('#fMood').querySelectorAll('.mood-chip.active').forEach(function (b) { b.classList.remove('active'); });
+    $('#evtEditor').innerHTML = '';
+  }
+  function setSheetMode(editing) {
+    $('#addSheetTitle').textContent = editing ? t('編輯紀錄') : t('新增紀錄');
+    $('#sessionSubmitBtn').textContent = editing ? t('儲存') : t('新增');
+  }
+  function openAddSession() {
+    if (editingId !== null) { editingId = null; clearSessionForm(); }
+    setSheetMode(false);
+    openSheet('addSheet');
+  }
+  function openEditSession(id) {
+    var r = null;
+    for (var i = 0; i < sessions.length; i++) if (sessions[i].id === id) { r = sessions[i]; break; }
+    if (!r) return;
+    editingId = id;
+    clearSessionForm();
+    $('#fDate').value = r.date || '';
+    $('#fType').value = r.type || 'cash';
+    $('#fArena').value = r.arena || 'live';
+    $('#fVenue').value = r.venue || '';
+    $('#fTag').value = r.tag || '';
+    $('#fBuyin').value = r.buyin;
+    $('#fCashout').value = r.cashout;
+    if (r.hours) $('#fHours').value = r.hours;
+    if (r.bb) $('#fBB').value = r.bb;
+    $('#fCur').value = r.cur || 'TWD';
+    $('#fNote').value = r.note || '';
+    (r.mood || []).forEach(function (m) {
+      var chip = $('#fMood').querySelector('.mood-chip[data-mood="' + m + '"]');
+      if (chip) chip.classList.add('active');
+    });
+    (r.events || []).forEach(function (ev) { addEvtRow(ev); });
+    setSheetMode(true);
+    openSheet('addSheet');
+  }
+
   $('#sessionForm').addEventListener('submit', function (e) {
     e.preventDefault();
-    if (sessions.length >= Pro.limit('records')) {
+    if (editingId === null && sessions.length >= Pro.limit('records')) {
       Pro.hitLimit(t('免費版最多記 10 筆，升級 Pro 可無限記錄。'));
       return;
     }
     var rec = {
-      id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+      id: editingId !== null ? editingId
+        : Date.now() + '-' + Math.random().toString(36).slice(2, 7),
       date: $('#fDate').value,
       type: $('#fType').value,
       venue: $('#fVenue').value.trim(),
@@ -277,13 +331,17 @@
       localStorage.setItem('poker.lastCur', rec.cur);
       localStorage.setItem('poker.lastArena', rec.arena);
     } catch (e) {}
-    sessions.push(rec);
+    if (editingId !== null) {
+      for (var i = 0; i < sessions.length; i++) {
+        if (sessions[i].id === editingId) { sessions[i] = rec; break; }
+      }
+      editingId = null;
+    } else {
+      sessions.push(rec);
+    }
     saveSessions(sessions);
-    $('#fVenue').value = ''; $('#fTag').value = '';
-    $('#fBuyin').value = ''; $('#fCashout').value = '';
-    $('#fHours').value = ''; $('#fBB').value = ''; $('#fNote').value = '';
-    $('#fMood').querySelectorAll('.mood-chip.active').forEach(function (b) { b.classList.remove('active'); });
-    $('#evtEditor').innerHTML = '';
+    clearSessionForm();
+    setSheetMode(false);
     closeSheet('addSheet');
     renderTracker();
   });
@@ -358,22 +416,10 @@
         (r.note ? t(' ｜ ') + r.note : '');
       main.appendChild(title);
       main.appendChild(sub);
-      if (r.events && r.events.length) {
-        var tl = document.createElement('div');
-        tl.className = 'session-timeline';
-        tl.hidden = true;
-        var sym = CUR_SYM[r.cur || 'TWD'] || '';
-        r.events.forEach(function (ev2) {
-          var line = document.createElement('div');
-          line.className = 'timeline-line';
-          line.textContent = (ev2.t ? ev2.t + '　' : '') + t(ev2.k) +
-            (ev2.amt ? '　+' + sym + fmtMoney(ev2.amt) : '');
-          tl.appendChild(line);
-        });
-        main.appendChild(tl);
-        main.style.cursor = 'pointer';
-        main.addEventListener('click', function () { tl.hidden = !tl.hidden; });
-      }
+      /* 點紀錄本體 → 開編輯（2026-08-21 Tony）。
+         原本點擊是展開事件時間軸，現在事件直接在編輯表單裡看得到也可改 */
+      main.style.cursor = 'pointer';
+      main.addEventListener('click', function () { openEditSession(r.id); });
       var plEl = document.createElement('span');
       plEl.className = 'session-pl ' + (pl > 0 ? 'pos' : pl < 0 ? 'neg' : 'muted');
       plEl.textContent = fmtPL(pl);

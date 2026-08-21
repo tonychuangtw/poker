@@ -169,5 +169,7 @@
  "= 跟注、灰 = 蓋牌。 JJ、AQs、AKo 這些牌在這裡最難拿捏，也是一次錯就是整疊的地方。": " = payer, gris = fold. JJ, AQs et AKo sont les mains les plus difficiles ici — une erreur coûte tout le tapis.",
  "= 跟注、灰 = 蓋牌。 跟單挑防守差最多的地方：跟注要更緊（三人底池勝率被分掉）、3-bet 要更大（squeeze，死錢多了一份跟注）。": " = payer, gris = fold. Grandes différences vs défense heads-up : payer plus serré (l'équité se partage à 3) et 3-bet plus gros (c'est un squeeze — un call de dead money en plus).",
  "</b>：": "</b> : ",
- "・": ", "
+ "・": ", ",
+ "儲存": "Enregistrer",
+ "編輯紀錄": "Modifier l’entrée"
 }
