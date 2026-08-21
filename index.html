@@ -666,6 +666,38 @@ try {
     <p class="hint" id="sqNote"></p>
     <div class="nash-grid-wrap"><div id="sqGrid" class="nash-grid"></div></div>
   </div>
+
+  <div class="card" data-pro="iso">
+    <h2>面對 limp（iso-raise / 跟 limp）</h2>
+    <p class="hint">現場滿桌 limper，但市面上幾乎沒有這種圖。前面 1–2 家 limp，你要
+      <span class="legend-tb">紅</span> = iso-raise、<span class="legend-call">綠</span> = 跟 limp（BB＝過牌）還是灰 = 蓋牌。
+      iso 的本質：用大牌收「打不中就棄」的便宜錢，並把局面收成有位置的單挑。</p>
+    <p class="hint">limper 的 range 是「封頂的中段」：超強牌（約前 4%）多半直接加注，
+      所以模型的 limper range = 最強 X% 去掉最上面 4% —— 面對沒有大對子的 range，
+      ATo 都有近 60% 勝率，這就是 iso 圖比一般開牌圖更寬的原因。
+      拿 AA limp 設陷阱的人存在，那是 exploit 面，不進模型。唯讀（沒有手打的建議表可編輯）。</p>
+    <p class="hint">BB 特殊：沒人加注時過牌免費，不存在棄牌 —— 紅色以外全是過牌。
+      15bb 以淺 iso 建議直接全下。尺度：有位置 4bb / 無位置 5bb，每多一個 limper +1bb。</p>
+    <label>情境
+      <select id="isoSpot"></select>
+    </label>
+    <div class="btn-row">
+      <button class="btn" id="btnIsoFreq">🎚 混合頻率</button>
+    </div>
+    <label>limper 鬆緊 %（他大概拿多寬的牌 limp 進來）</label>
+    <div class="slider-row">
+      <input type="range" id="isoPct" min="10" max="45" step="1" value="24">
+      <span class="pct-val" id="isoPctVal">24%</span>
+    </div>
+    <label>有效籌碼（10–300bb，預設 100bb）</label>
+    <div class="slider-row">
+      <input type="range" id="isoStack" min="10" max="300" step="5" value="100">
+      <span class="pct-val" id="isoStackVal">100bb</span>
+    </div>
+    <p class="hint" id="isoTxt"></p>
+    <p class="hint" id="isoNote"></p>
+    <div class="nash-grid-wrap"><div id="isoGrid" class="nash-grid"></div></div>
+  </div>
   </div>
 
   <div id="chartGroupPost" hidden>
@@ -744,6 +776,7 @@ try {
       判斷冷 4-bet、冷跟還是蓋牌 —— 題目會直接告訴你對手 3-bet 多寬，因為那是決定性的資訊。
       面對 4-bet：你 3-bet 後被 4-bet 回來，判斷 5-bet、跟注還是蓋牌（一樣會告訴你對手 4-bet 多寬）。
       Squeeze：前面開牌加平跟，判斷 squeeze、跟注還是蓋牌。
+      面對 limp：前面 1–2 家 limp，判斷 iso-raise、跟 limp 還是蓋牌（BB 是過牌）。
       翻後 c-bet：隨機翻牌、手牌、位置與底池類型，判斷下注 75%、下注 33% 還是過牌。
       河牌接 bluff：對手在河牌下注，依他 range 裡的 bluff 比例與你的底池賠率決定跟或棄。</p>
     <p class="hint">📌 測驗以建議 range 為準，圖表的自訂編輯不影響評分。
@@ -756,6 +789,7 @@ try {
       <button class="btn" id="btnQuizModeCold">冷 4-bet</button>
       <button class="btn" id="btnQuizModeVs4b">面對 4-bet</button>
       <button class="btn" id="btnQuizModeSq">Squeeze</button>
+      <button class="btn" id="btnQuizModeIso">面對 limp</button>
       <button class="btn" id="btnQuizModeCb">翻後 c-bet</button>
       <button class="btn" id="btnQuizModeBc">河牌接 bluff</button>
     </div>

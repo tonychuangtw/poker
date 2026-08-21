@@ -1758,6 +1758,161 @@
     return map;
   }
 
+  /* ---------- 面對 limp（iso-raise / 跟 limp） ----------
+   * 現場滿桌 limper，但市面上幾乎沒有這種圖。情境：前面 1–2 家 limp，你要
+   * iso-raise（把局面收成單挑、拿位置與主導權）、跟 limp（便宜看翻牌）還是棄牌。
+   * BB 特殊：沒人加注時過牌是免費的 —— 不存在「棄牌」，圖上灰色以外全是過牌。
+   *
+   * limper 的 range 是「封頂的中段」：拿到超強牌（約前 4%）的人多半直接開牌加注，
+   * 所以預設 range = 最強 24% 去掉最上面 4%（可用滑桿調 limper 的鬆緊；
+   * 會用 AA limp 進來設陷阱的人存在，但那是 exploit 面，不進模型）。
+   * 面對這種沒有大對子的 range，高張大牌的價值被放大 —— ATo 對它有近 60% 勝率，
+   * 這就是 iso 的本質：用大牌收「打不中就棄」的便宜錢。
+   *
+   * 跟 limp 那一側跟 squeeze 圖同一個坑：1bb 的價格便宜到純賠率會全跟，
+   * 所以寬度用 cap 錨定（各位置的合理跟 limp 量級），分數排序決定內容。 */
+
+  var ISO_EQ_IP = 0.55, ISO_EQ_OOP = 0.58;   // iso 的 equity 門檻（對 limper range）
+  var ISO_EXTRA_LIMPER = 0.025;              // 每多一個 limper，iso 門檻再加（多人底池）
+  var ISO_LIMP_CAP_PCT = 4;                  // limper 不會拿最強 4% 平跟（那些會直接加注）
+  var ISO_LIMP_DEFAULT_PCT = 24;             // 預設 limper 鬆緊（覆蓋率，不含被切掉的頂端）
+  var ISO_JAM_BB = 15;                       // 淺於此 → iso 直接全下
+  var ISO_IMPLIED_W = 0.14;                  // limp 底池常常多人 → 隱含加成同 squeeze
+  var ISO_CALL_PENALTY = 0.08;               // 跟 limp 的實現懲罰（常變多人、位置未定）
+  /* 跟 limp 的寬度上限（combo）：有位置寬、SB 夾中間窄；BB 免費過牌不用 cap */
+  var ISO_CALL_CAP = { HJ: 90, LJ: 90, MP: 90, 'UTG+1': 80, CO: 120, BTN: 170, SB: 100 };
+
+  function isoNote(hero, n) {
+    var posLine = hero === 'BB'
+      ? t('BB 可以免費過牌 —— 加注要嘛是價值 iso，要嘛乾脆看免費翻牌，沒有棄牌這回事。')
+      : hero === 'SB'
+        ? t('SB 跟 limp 後整局無位置、BB 還可能在後面加注，補半個盲注也要挑牌。')
+        : t('你對 limper 有位置；iso 的本質是用大牌收「打不中就棄」的便宜錢，加大尺度讓他們付錯價格。');
+    var vilLine = n >= 2
+      ? t('兩家 limp → 底池更甜但更容易變多人：iso 要再收緊一點、尺度再加一個 bb。')
+      : t('limper 的 range 封頂（超強牌多半會直接加注），你的高張大牌對它是壓制。');
+    return posLine + ' ' + vilLine;
+  }
+
+  var ISO_SPOTS = {};
+  var ISO_SPOT_KEYS = [];
+  (function buildIsoSpots() {
+    [[COLD_POS_9, 9], [COLD_POS_6, 6]].forEach(function (pair) {
+      var pos = pair[0], table = pair[1], suffix = table === 9 ? '9' : '';
+      var nonBlind = pos.length - 2;              // limper 只算非盲注位（SB 補跟不在模型內）
+      for (var h = 1; h < pos.length; h++) {
+        for (var n = 1; n <= 2; n++) {
+          if (Math.min(h, nonBlind) < n) continue; // 你前面要有 n 個非盲注位才湊得出 n 個 limper
+          var hero = pos[h];
+          var heroIp = hero !== 'SB' && hero !== 'BB';
+          var heroPost = hero === 'SB' ? 0.5 : hero === 'BB' ? 1 : 0;
+          var key = coldPosTok(hero) + '_iso' + n + suffix;
+          var short = t('前面 ') + n + t(' 家 limp');
+          ISO_SPOT_KEYS.push(key);
+          ISO_SPOTS[key] = {
+            name: hero + '：' + short + (table === 9 ? '（9-max）' : '（6-max）'),
+            short: short, table: table,
+            hero: hero, limpers: n, heroIp: heroIp, heroPost: heroPost,
+            deadBb: 1.5 - heroPost,
+            checkFree: hero === 'BB',
+            isoBb: (heroIp ? 4 : 5) + (n - 1),
+            isoEq: (heroIp ? ISO_EQ_IP : ISO_EQ_OOP) + ISO_EXTRA_LIMPER * (n - 1),
+            callCap: hero === 'BB' ? Infinity : (ISO_CALL_CAP[hero] || 90) - 15 * (n - 1),
+            note: isoNote(hero, n)
+          };
+        }
+      }
+    });
+  })();
+  var ISO_DEFAULT_KEY = 'btn_iso19';   // 最典型：9-max 現場，BTN 面對一家 limp
+
+  /** limper 的假設 range：最強 (pct + cap)% 去掉最上面 cap%（封頂的中段） */
+  function isoLimperRange(pct) {
+    var pf = PF();
+    var top = {}, i;
+    var capped = pf.topPercentRange(ISO_LIMP_CAP_PCT);
+    for (i = 0; i < capped.length; i++) top[capped[i]] = true;
+    return pf.topPercentRange(pct + ISO_LIMP_CAP_PCT).filter(function (c) { return !top[c]; });
+  }
+
+  /** 某有效籌碼下的局面數字 */
+  function isoStackInfo(spotKey, bb) {
+    var s = ISO_SPOTS[spotKey];
+    if (!s) return null;
+    var eff = clampBb(bb);
+    var toCall = Math.max(0, 1 - s.heroPost);
+    var pot = s.limpers + s.deadBb + s.heroPost;   // 你行動前的底池
+    var potAfter = s.limpers + s.deadBb + Math.max(1, s.heroPost);
+    var spr = (eff - 1) / potAfter;
+    var isoAllIn = eff <= ISO_JAM_BB;
+    return {
+      effBb: eff, toCall: toCall, pot: pot,
+      needEq: toCall > 0 ? toCall / (pot + toCall) : 0,
+      spr: spr,
+      isoBb: isoAllIn ? eff : Math.min(s.isoBb, eff),
+      isoAllIn: isoAllIn,
+      mode: 'normal'
+    };
+  }
+
+  /** 某深度 + 某 limper 鬆緊下的 map：{ 手牌: 'tb'（iso）| 'in'（跟 limp / BB 過牌） } */
+  function isoDefense(spotKey, villainClasses, bb) {
+    var pf = PF(), s = ISO_SPOTS[spotKey];
+    var info = isoStackInfo(spotKey, bb);
+    if (!s || !info) return {};
+    var eq = selectionEq(villainClasses);
+    var map = {}, i;
+    var base = isoStackInfo(spotKey, VS3B_BASE_BB);
+    var f = impliedFactor(info.spr, base ? base.spr : 0);
+    var score = selectionScore(eq, ISO_IMPLIED_W, f);
+    if (s.checkFree) {
+      // BB：加注或免費過牌，沒有棄牌
+      for (i = 0; i < 169; i++) {
+        map[pf.classLabel(i)] = eq[i] >= s.isoEq ? 'tb' : 'in';
+      }
+      return map;
+    }
+    // cap 是「跟 limp 專用」的額度：門檻要從 iso 手牌之後起算，否則會被 iso 吃掉
+    var isoCombos = 0;
+    for (i = 0; i < 169; i++) if (eq[i] >= s.isoEq) isoCombos += pf.comboCount(i);
+    var contThr = Math.max(thresholdAt(score, isoCombos + s.callCap),
+      info.needEq + ISO_CALL_PENALTY + ISO_CALL_PENALTY / 4 * (s.limpers - 1));
+    for (i = 0; i < 169; i++) {
+      if (eq[i] >= s.isoEq) map[pf.classLabel(i)] = 'tb';
+      else if (score[i] >= contThr) map[pf.classLabel(i)] = 'in';
+    }
+    return map;
+  }
+
+  /** 面對 limp 的頻率表：{ 手牌: {aggro（iso）, call, fold} }，門檻與 isoDefense 同步 */
+  function isoFreqMap(spotKey, villainClasses, bb) {
+    var pf = PF(), s = ISO_SPOTS[spotKey];
+    var info = isoStackInfo(spotKey, bb);
+    if (!s || !info) return {};
+    var eq = selectionEq(villainClasses);
+    var map = {}, i, a, cont;
+    var base = isoStackInfo(spotKey, VS3B_BASE_BB);
+    var f = impliedFactor(info.spr, base ? base.spr : 0);
+    var score = selectionScore(eq, ISO_IMPLIED_W, f);
+    if (s.checkFree) {
+      for (i = 0; i < 169; i++) {
+        a = mixRamp(eq[i], s.isoEq);
+        map[pf.classLabel(i)] = freqSplit(a, 1);   // 續玩恆為 1：不是加注就是免費過牌
+      }
+      return map;
+    }
+    var isoCombos = 0;
+    for (i = 0; i < 169; i++) if (eq[i] >= s.isoEq) isoCombos += pf.comboCount(i);
+    var contThr = Math.max(thresholdAt(score, isoCombos + s.callCap),
+      info.needEq + ISO_CALL_PENALTY + ISO_CALL_PENALTY / 4 * (s.limpers - 1));
+    for (i = 0; i < 169; i++) {
+      a = mixRamp(eq[i], s.isoEq);
+      cont = mixRamp(score[i], contThr);
+      map[pf.classLabel(i)] = freqSplit(a, cont);
+    }
+    return map;
+  }
+
   /* ---------- 混合頻率（純函式） ----------
    * 上面幾張圖都是「排序分數 ≥ 門檻就做這個動作」的硬切，實際 GTO 解在門檻附近是混合的。
    * 這裡把硬切換成一段線性斜坡：分數剛好等於門檻 = 50%，往上 MIX_BAND 到 100%、往下到 0%。
@@ -1889,6 +2044,11 @@
     COLD_4BET_EQ: COLD_4BET_EQ, COLD_CALL_PENALTY: COLD_CALL_PENALTY,
     coldVillainRange: coldVillainRange, coldVillainPct: coldVillainPct,
     coldStackInfo: coldStackInfo, coldDefense: coldDefense, coldFreqMap: coldFreqMap,
+    ISO_SPOTS: ISO_SPOTS, ISO_SPOT_KEYS: ISO_SPOT_KEYS,
+    ISO_DEFAULT_KEY: ISO_DEFAULT_KEY, ISO_LIMP_DEFAULT_PCT: ISO_LIMP_DEFAULT_PCT,
+    ISO_LIMP_CAP_PCT: ISO_LIMP_CAP_PCT,
+    isoLimperRange: isoLimperRange, isoStackInfo: isoStackInfo,
+    isoDefense: isoDefense, isoFreqMap: isoFreqMap,
     SQZ_SPOTS: SQZ_SPOTS, SQZ_SPOT_KEYS: SQZ_SPOT_KEYS,
     SQZ_DEFAULT_KEY: SQZ_DEFAULT_KEY, SQZ_EQ: SQZ_EQ,
     sqVillainRange: sqVillainRange, sqVillainPct: sqVillainPct, sqCallerPct: sqCallerPct,

@@ -1778,6 +1778,79 @@ assert(Math.abs(sqFq.AQo.aggro + sqFq.AQo.call + sqFq.AQo.fold - 1) < 1e-9,
   assert(okP, 'sq@' + bb + 'bb: continued pairs are a gapless top run');
 });
 
+console.log('--- Facing limpers (iso) ---');
+
+assert(Ranges.ISO_SPOT_KEYS.length === 24 &&
+  Object.keys(Ranges.ISO_SPOTS).length === 24,
+  '24 iso spots (6-max 9 + 9-max 15), keys in sync');
+// limper range 封頂：最強 4% 不在裡面
+var limp24 = Ranges.isoLimperRange(24);
+var top4 = {};
+PushFold.topPercentRange(Ranges.ISO_LIMP_CAP_PCT).forEach(function (i) { top4[i] = true; });
+assert(limp24.every(function (i) { return !top4[i]; }) &&
+  Math.abs(PushFold.rangeComboTotal(limp24) / 1326 * 100 - 24) < 2,
+  'limper range is capped (no top 4%) and about 24% wide');
+
+function isoSets(key, pct, bb) {
+  var map = Ranges.isoDefense(key, Ranges.isoLimperRange(pct), bb);
+  var tb = [], call = [];
+  for (var i = 0; i < 169; i++) {
+    var st = map[PushFold.classLabel(i)];
+    if (st === 'tb') tb.push(i);
+    else if (st === 'in') call.push(i);
+  }
+  return { tb: tb, call: call,
+           total: PushFold.rangeComboTotal(tb) + PushFold.rangeComboTotal(call) };
+}
+
+// BTN 面對 1 家 limp：iso 是「比開牌圖寬的大牌」——ATo 進 iso、小對子與同花連張跟 limp
+var isoBtn = isoSets('btn_iso19', 24, 100);
+assert(isoBtn.tb.indexOf(labelIdx('ATo')) >= 0 && isoBtn.tb.indexOf(labelIdx('AA')) >= 0,
+  'ATo/AA iso-raise vs a capped limper range');
+assert(isoBtn.call.indexOf(labelIdx('22')) >= 0 && isoBtn.call.indexOf(labelIdx('76s')) >= 0,
+  'small pairs / suited connectors limp behind on the BTN');
+assert(isoBtn.tb.indexOf(labelIdx('72o')) < 0 && isoBtn.call.indexOf(labelIdx('72o')) < 0,
+  '72o folds');
+// 2 家 limp → iso 更緊；SB 比 BTN 緊
+assert(isoSets('btn_iso29', 24, 100).tb.length < isoBtn.tb.length,
+  'two limpers → tighter iso');
+assert(isoSets('sb_iso19', 24, 100).total < isoBtn.total,
+  'SB continues tighter than BTN vs a limper');
+// BB：免費過牌 → 沒有蓋牌，iso 以外全是過牌
+var isoBb = isoSets('bb_iso19', 24, 100);
+assert(isoBb.tb.length + isoBb.call.length === 169,
+  'BB facing limpers never folds (free check)');
+// limper 越鬆 → iso 越寬
+assert(isoSets('btn_iso19', 40, 100).tb.length > isoBtn.tb.length,
+  'looser limpers get iso-raised wider');
+// 淺籌碼：iso = 全下
+assert(Ranges.isoStackInfo('btn_iso19', 12).isoAllIn === true &&
+  Ranges.isoStackInfo('btn_iso19', 100).isoAllIn === false,
+  'iso becomes a jam at 15bb and below');
+// 尺度：IP 4bb / OOP 5bb，每多一個 limper +1
+assert(Ranges.isoStackInfo('btn_iso19', 100).isoBb === 4 &&
+  Ranges.isoStackInfo('btn_iso29', 100).isoBb === 5 &&
+  Ranges.isoStackInfo('sb_iso19', 100).isoBb === 5,
+  'iso sizing 4bb IP / 5bb OOP, +1 per extra limper');
+// 頻率表：BB 續玩恆為 1（不是加注就是免費過牌）
+var isoFq = Ranges.isoFreqMap('bb_iso19', Ranges.isoLimperRange(24), 100);
+assert(Object.keys(isoFq).length === 169 && isoFq['72o'].fold === 0 && isoFq['72o'].call === 1,
+  'BB iso freq map: junk checks for free, never folds');
+var isoFqBtn = Ranges.isoFreqMap('btn_iso19', Ranges.isoLimperRange(24), 100);
+assert(isoFqBtn.AA.aggro === 1 && isoFqBtn['72o'].fold === 1,
+  'BTN iso freq map: AA raises, 72o folds');
+// 對子不可有破洞
+[100, 60, 40].forEach(function (bb) {
+  var r = isoSets('btn_iso19', 24, bb);
+  var inSet = {};
+  r.tb.concat(r.call).forEach(function (i) { inSet[i] = true; });
+  var pairs = [];
+  for (var p = 0; p < 13; p++) if (inSet[p * 13 + p]) pairs.push(p);
+  var okI = pairs.length === 0 ||
+    (pairs[0] === 0 && pairs[pairs.length - 1] - pairs[0] === pairs.length - 1);
+  assert(okI, 'iso@' + bb + 'bb: continued pairs are a gapless top run');
+});
+
 // 家族單調化不是只用在冷 4-bet：另外三張圖的動態試算也要沒有破洞
 var defHoleCheck = Ranges.defenseAtDepth('bb_vs_btn',
   PushFold.topPercentRange(Ranges.openerOpenPct('bb_vs_btn')),

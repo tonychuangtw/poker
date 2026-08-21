@@ -2625,6 +2625,102 @@
     function (v) { sqFreq = v; }, renderSq);
   renderSq();
 
+  /* ---------- 面對 limp（iso-raise / 跟 limp） ----------
+   * 唯讀；滑桿是「limper 鬆緊」（模型會自動切掉最強 4%，那些手牌會直接加注）。 */
+  var isoKeyCur = Ranges.ISO_DEFAULT_KEY, isoFreq = false;
+  var isoPctCur = Ranges.ISO_LIMP_DEFAULT_PCT, isoSliding = false;
+  var isoStackCur = Ranges.VS3B_BASE_BB, isoStackSliding = false;
+
+  (function buildIsoSpotOptions() {
+    var groups = [], byGroup = {};
+    Ranges.ISO_SPOT_KEYS.forEach(function (k) {
+      var spot = Ranges.ISO_SPOTS[k];
+      var label = spot.table === 9 ? t('9-max Full Ring（現場取向）') : '6-max';
+      if (!byGroup[label]) { byGroup[label] = []; groups.push(label); }
+      byGroup[label].push('<option value="' + k + '">' + t('你在 ') + spot.hero + t('，') +
+                          spot.short + '</option>');
+    });
+    $('#isoSpot').innerHTML = groups.map(function (label) {
+      return '<optgroup label="' + label + '">' + byGroup[label].join('') + '</optgroup>';
+    }).join('');
+  })();
+
+  function isoVillainCur() { return Ranges.isoLimperRange(isoPctCur); }
+
+  function renderIso() {
+    if (!Ranges.ISO_SPOTS[isoKeyCur]) isoKeyCur = Ranges.ISO_DEFAULT_KEY;
+    var spot = Ranges.ISO_SPOTS[isoKeyCur];
+    var info = Ranges.isoStackInfo(isoKeyCur, isoStackCur);
+    var villain = isoVillainCur();
+    var html = '', tbCombos = 0, callCombos = 0, i, lbl;
+    var callWord = spot.checkFree ? t('過牌') : t('跟 limp');
+
+    if (isoFreq) {
+      var fmap = Ranges.isoFreqMap(isoKeyCur, villain, isoStackCur);
+      for (i = 0; i < 169; i++) html += freqCellHtml(i, fmap[PushFold.classLabel(i)], true);
+      $('#isoGrid').innerHTML = html;
+      $('#isoTxt').textContent = spot.name + t('（limper 鬆緊 ') + isoPctCur.toFixed(0) + t('%，') +
+        info.effBb + t('bb）｜') + freqSummary(fmap, true);
+      $('#isoNote').textContent = spot.note;
+      $('#isoSpot').value = isoKeyCur;
+      if (!isoSliding) $('#isoPct').value = isoPctCur;
+      $('#isoPctVal').textContent = isoPctCur.toFixed(0) + '%';
+      if (!isoStackSliding) $('#isoStack').value = isoStackCur;
+      $('#isoStackVal').textContent = isoStackCur + 'bb';
+      return;
+    }
+
+    var map = Ranges.isoDefense(isoKeyCur, villain, isoStackCur);
+    for (i = 0; i < 169; i++) {
+      lbl = PushFold.classLabel(i);
+      var st = map[lbl] || 'out';
+      if (st === 'tb') tbCombos += PushFold.comboCount(i);
+      else if (st === 'in') callCombos += PushFold.comboCount(i);
+      html += '<div class="nash-cell ' + (st === 'in' || st === 'tb' ? st : 'out') +
+        '" data-i="' + i + '">' + lbl + '</div>';
+    }
+    $('#isoGrid').innerHTML = html;
+
+    $('#isoTxt').textContent = t('前面 ') + spot.limpers + t(' 家 limp，你在 ') + spot.hero +
+      t('，limper 鬆緊 ') + isoPctCur.toFixed(0) + t('%（模型已切掉最強 ') +
+      Ranges.ISO_LIMP_CAP_PCT + t('%），有效籌碼 ') + info.effBb + t('bb｜iso ') +
+      (info.isoAllIn ? t('全下') : t('加到 ') + info.isoBb + 'bb') + ' ' +
+      (tbCombos / 1326 * 100).toFixed(1) + t('%（') + tbCombos + t(' combo）＋') + callWord + ' ' +
+      (callCombos / 1326 * 100).toFixed(1) + t('%（') + callCombos + t(' combo）');
+    $('#isoNote').textContent = (spot.checkFree
+      ? t('BB 過牌免費，所以圖上沒有蓋牌。')
+      : t('你要補 ') + info.toCall + t('bb 進 ') + info.pot + t('bb 底池 → 需要 ') +
+        (info.needEq * 100).toFixed(1) + t('% 勝率，另加多人底池的實現懲罰；跟 limp 的寬度另有位置上限。')) +
+      spot.note;
+    $('#isoSpot').value = isoKeyCur;
+    if (!isoSliding) $('#isoPct').value = isoPctCur;
+    $('#isoPctVal').textContent = isoPctCur.toFixed(0) + '%' +
+      (Math.abs(isoPctCur - Ranges.ISO_LIMP_DEFAULT_PCT) < 0.5 ? t('（一般 limper）') : '');
+    if (!isoStackSliding) $('#isoStack').value = isoStackCur;
+    $('#isoStackVal').textContent = isoStackCur + 'bb';
+  }
+  $('#isoSpot').addEventListener('change', function () {
+    if (!Ranges.ISO_SPOTS[this.value]) return;
+    isoKeyCur = this.value;
+    renderIso();
+  });
+  $('#isoPct').addEventListener('input', function () {
+    isoSliding = true;
+    isoPctCur = +this.value;
+    renderIso();
+  });
+  $('#isoPct').addEventListener('change', function () { isoSliding = false; renderIso(); });
+  $('#isoStack').addEventListener('input', function () {
+    isoStackSliding = true;
+    isoStackCur = +this.value;
+    renderIso();
+  });
+  $('#isoStack').addEventListener('change', function () { isoStackSliding = false; renderIso(); });
+  bindFreqToggle('#btnIsoFreq',
+    function () { return isoFreq; },
+    function (v) { isoFreq = v; }, renderIso);
+  renderIso();
+
   /* ---------- 翻後 c-bet 速查 ---------- */
   function cardsHtml(cards) {
     return cards.map(cardLabel).join(' ');
@@ -2709,7 +2805,7 @@
   /* ---------- 訓練測驗（Push/Fold + 開牌 RFI + 面對開牌 + 被 3-bet） ---------- */
   var QUIZ_KEYS = { pf: 'poker.nash_quiz', rfi: 'poker.rfi_quiz', def: 'poker.def_quiz',
                     v3b: 'poker.v3b_quiz', cold: 'poker.cold_quiz',
-                    vs4b: 'poker.vs4b_quiz', sq: 'poker.sq_quiz',
+                    vs4b: 'poker.vs4b_quiz', sq: 'poker.sq_quiz', iso: 'poker.iso_quiz',
                     cb: 'poker.cb_quiz', bc: 'poker.bc_quiz' };
   var quizMode = 'pf'; // 'pf' | 'rfi' | 'def' | 'v3b' | 'cb' | 'bc'
 
@@ -2732,6 +2828,7 @@
        scoreLine(t('冷 4-bet'), quizScore('cold')),
        scoreLine(t('面對 4-bet'), quizScore('vs4b')),
        scoreLine('Squeeze', quizScore('sq')),
+       scoreLine(t('面對 limp'), quizScore('iso')),
        scoreLine(t('翻後 c-bet'), quizScore('cb')), scoreLine(t('河牌接 bluff'), quizScore('bc'))]
         .filter(Boolean).join(t(' ｜ '));
   }
@@ -2828,13 +2925,13 @@
   var QUIZ_MODE_BTN = { pf: '#btnQuizModePf', rfi: '#btnQuizModeRfi',
                         def: '#btnQuizModeDef', v3b: '#btnQuizModeV3b',
                         cold: '#btnQuizModeCold', vs4b: '#btnQuizModeVs4b',
-                        sq: '#btnQuizModeSq',
+                        sq: '#btnQuizModeSq', iso: '#btnQuizModeIso',
                         cb: '#btnQuizModeCb', bc: '#btnQuizModeBc' };
   var QUIZ_AGGRO_TXT = { pf: t('全下'), rfi: t('加注'), def: '3-bet', v3b: '4-bet',
-                         cold: t('冷 4-bet'), vs4b: '5-bet', sq: 'squeeze',
+                         cold: t('冷 4-bet'), vs4b: '5-bet', sq: 'squeeze', iso: 'iso',
                          cb: t('下注 75%'), bc: '' };
   var QUIZ_CALL_TXT = { def: t('跟注'), v3b: t('跟注'), cold: t('冷跟'), vs4b: t('跟注'),
-                        sq: t('跟注'), cb: t('下注 33%'), bc: t('跟注') };
+                        sq: t('跟注'), iso: t('跟 limp'), cb: t('下注 33%'), bc: t('跟注') };
   var QUIZ_FOLD_TXT = { cb: t('過牌') };
   // 有「中間選項」的題型（三選一）；bc 的中間選項就是跟注（沒有加注）
   function quizHasCall(mode) { return !!QUIZ_CALL_TXT[mode]; }
@@ -2885,6 +2982,9 @@
     }
     if (cur.mode === 'sq') {
       return Ranges.sqFreqMap(cur.spot, cur.villain, cur.bb)[lbl];
+    }
+    if (cur.mode === 'iso') {
+      return Ranges.isoFreqMap(cur.spot, cur.villain, cur.bb)[lbl];
     }
     return null;
   }
@@ -2991,6 +3091,25 @@
         (sInfo.mode === 'normal' ? t('squeeze、跟注還是蓋牌？') : t('squeeze 全下還是蓋牌？'));
       $('#btnQuizCall').hidden = sInfo.mode !== 'normal';
       $('#btnQuizPush').textContent = sInfo.mode === 'normal' ? 'squeeze' : t('squeeze 全下');
+    } else if (quizMode === 'iso') {
+      var iKey = pickSpot(Ranges.ISO_SPOT_KEYS, Ranges.ISO_SPOTS);
+      var iSpot = Ranges.ISO_SPOTS[iKey];
+      var ibb = pick(QUIZ_DEPTHS);
+      var iPct = pick([15, 20, 24, 24, 30, 38, 45]);   // limper 鬆緊，24% 是「一般 limper」
+      var iVillain = Ranges.isoLimperRange(iPct);
+      var iInfo = Ranges.isoStackInfo(iKey, ibb);
+      quizCur = { mode: 'iso', spot: iKey, villain: iVillain, pct: iPct,
+                  bb: ibb, idx: randHandIdx() };
+      var iCallWord = iSpot.checkFree ? t('過牌') : t('跟 limp');
+      $('#quizInfo').textContent = (iSpot.table === 9 ? '9-max' : '6-max') +
+        t('，有效籌碼 ') + iInfo.effBb + t('bb。前面 ') + iSpot.limpers +
+        t(' 家 limp（limper 大約拿最強 ') + iPct + t('% 去掉頂端的牌），你在 ') + iSpot.hero +
+        t('。') + (iInfo.isoAllIn ? t('iso＝全下') : t('iso 加到 ') + iInfo.isoBb + 'bb') +
+        t('、') + iCallWord + t('還是蓋牌？') +
+        (iSpot.checkFree ? t('（BB 過牌免費，蓋牌永遠不對）') : '');
+      $('#btnQuizCall').hidden = false;
+      $('#btnQuizCall').textContent = iCallWord;
+      $('#btnQuizPush').textContent = iInfo.isoAllIn ? t('iso 全下') : 'iso';
     } else if (quizMode === 'cb') {
       var cs = Postflop.buildCbetSpot({});
       quizCur = { mode: 'cb', spot: cs };
@@ -3131,6 +3250,21 @@
         t('跟注要補 ') + sInfo2.toCall + t('bb 進 ') + sInfo2.pot + t('bb 底池 → 應該<b>') +
         (sBest === 'aggro' ? (sInfo2.mode === 'normal' ? 'squeeze' : t('squeeze 全下'))
           : sBest === 'call' ? t('跟注') : t('蓋牌')) + t('</b>。');
+    } else if (quizCur.mode === 'iso') {
+      var iInfo2 = Ranges.isoStackInfo(quizCur.spot, quizCur.bb);
+      var iSpot2 = Ranges.ISO_SPOTS[quizCur.spot];
+      var ist = Ranges.isoDefense(quizCur.spot, quizCur.villain,
+        quizCur.bb)[PushFold.classLabel(quizCur.idx)] || 'out';
+      var iBest = ist === 'tb' ? 'aggro' : ist === 'in' ? 'call' : 'fold';
+      ok = action === iBest;
+      bestAct = iBest;
+      qKey = 'iso:' + quizCur.spot + ':' + quizCur.pct + ':' + quizCur.bb + ':' + quizCur.idx;
+      var iEq = PushFold.equityVsRange(quizCur.idx, [], quizCur.villain).equity;
+      detail = ' ' + PushFold.classLabel(quizCur.idx) + t(' 對 limper 的封頂 range 有 <b>') +
+        (iEq * 100).toFixed(1) + t('%</b> 勝率（他沒有超強牌，高張大牌被放大）→ 應該<b>') +
+        (iBest === 'aggro' ? (iInfo2.isoAllIn ? t('iso 全下') : 'iso')
+          : iBest === 'call' ? (iSpot2.checkFree ? t('過牌') : t('跟 limp')) : t('蓋牌')) +
+        t('</b>。');
     } else if (quizCur.mode === 'cb') {
       var cs2 = quizCur.spot, cp = cs2.policy;
       var cBest = cp.action === 'big' ? 'aggro' : cp.action === 'small' ? 'call' : 'fold';
@@ -3207,6 +3341,10 @@
         var psInfo = Ranges.sqStackInfo(quizCur.spot, quizCur.bb);
         payload.aggro = psInfo.mode === 'normal' ? 'squeeze' : t('squeeze 全下');
         payload.noCall = psInfo.mode !== 'normal';
+      } else if (quizCur.mode === 'iso') {
+        var piInfo = Ranges.isoStackInfo(quizCur.spot, quizCur.bb);
+        payload.aggro = piInfo.isoAllIn ? t('iso 全下') : 'iso';
+        payload.call = Ranges.ISO_SPOTS[quizCur.spot].checkFree ? t('過牌') : t('跟 limp');
       } else if (quizCur.mode === 'v3b') {
         var pInfo = Ranges.vs3bStackInfo(quizCur.spot, quizCur.bb);
         payload.aggro = v3bAggroLabel(pInfo);
