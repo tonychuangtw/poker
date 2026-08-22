@@ -48,13 +48,18 @@
   function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function write(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
-  /* 雲端同步（js/sync.js）的 Google 登入 email —— token 在 sessionStorage 的 JWT */
+  /* 雲端同步（js/sync.js）的登入 email —— 優先讀 localStorage 的 30 天長效 token
+     （sess.<payload>.<sig>，payload 有 e/x），沒有才退回 sessionStorage 的 Google JWT */
   function syncEmail() {
     try {
-      var tk = sessionStorage.getItem('sync.token');
+      var tk = localStorage.getItem('sync.sess') || sessionStorage.getItem('sync.token');
       if (!tk) return '';
       var p = JSON.parse(atob(tk.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-      if (!p || !(p.exp * 1000 > Date.now())) return '';
+      if (!p) return '';
+      if (tk.indexOf('sess.') === 0) {
+        return p.x > Date.now() ? String(p.e || '').trim().toLowerCase() : '';
+      }
+      if (!(p.exp * 1000 > Date.now())) return '';
       return String(p.email || '').trim().toLowerCase();
     } catch (e) { return ''; }
   }

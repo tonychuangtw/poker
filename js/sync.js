@@ -6,21 +6,54 @@
 
   if (!CLIENT_ID || !API_BASE || typeof window === "undefined") return;
 
-  var TOKEN_KEY = "sync.token";
+  var TOKEN_KEY = "sync.token";  // Google ID token（1 小時過期，只當換票的鑰匙）
+  /* 長效 session（2026-08-22 Tony：「不要一直要求登入」）：Google 登入後拿 ID token
+     跟後端換一顆 30 天 HMAC token 存 localStorage，之後每次開頁滾動續期，不用重登。
+     鍵名刻意不用 poker. 前綴 —— gatherKeys 會把 poker.* 全部上傳雲端，token 不能跟著同步 */
+  var SESS_KEY = "sync.sess";
   var PUSH_INTERVAL_MS = 60000;
   var lastPushedHash = null;
 
-  function token() { try { return sessionStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; } }
+  function token() {
+    try { return localStorage.getItem(SESS_KEY) || sessionStorage.getItem(TOKEN_KEY) || ""; }
+    catch (e) { return ""; }
+  }
   function setToken(t) { try { sessionStorage.setItem(TOKEN_KEY, t); } catch (e) {} }
-  function clearToken() { try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) {} }
+  function clearToken() {
+    try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) {}
+    try { localStorage.removeItem(SESS_KEY); } catch (e) {}
+  }
 
   function jwtPayload(t) {
     try { return JSON.parse(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))); }
     catch (e) { return null; }
   }
   function signedIn() {
-    var p = jwtPayload(token());
-    return p && p.exp * 1000 > Date.now() ? p : null;
+    var tk = token();
+    if (!tk) return null;
+    var p = jwtPayload(tk);
+    if (!p) return null;
+    if (tk.indexOf("sess.") === 0) {
+      return p.x > Date.now() ? { email: p.e || "" } : null;
+    }
+    return p.exp * 1000 > Date.now() ? p : null;
+  }
+
+  function refreshSession() {
+    if (!token()) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", API_BASE + "/api/session");
+    xhr.setRequestHeader("Authorization", "Bearer " + token());
+    xhr.onload = function () {
+      if (xhr.status < 200 || xhr.status >= 300) return;
+      var d = null;
+      try { d = JSON.parse(xhr.responseText); } catch (e) {}
+      if (d && d.token) {
+        try { localStorage.setItem(SESS_KEY, d.token); } catch (e) {}
+        try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) {}
+      }
+    };
+    xhr.send();
   }
 
   function currentLevel() { return "main"; }
@@ -115,7 +148,7 @@
       var chip = document.createElement("button");
       chip.className = "icon-btn sync-chip";
       chip.title = (p.email || "") + t(" — 點擊登出");
-      chip.textContent = (p.given_name || p.name || "?").charAt(0).toUpperCase();
+      chip.textContent = (p.given_name || p.name || p.email || "?").charAt(0).toUpperCase();
       chip.addEventListener("click", function () {
         UI.confirm(t("登出雲端同步？（本機資料會保留在此裝置）")).then(function (ok) {
           if (ok) { clearToken(); lastPushedHash = null; renderUi(); }
@@ -159,6 +192,7 @@
   function onCredential(resp) {
     if (!resp || !resp.credential) return;
     setToken(resp.credential);
+    refreshSession();  // Google ID token 只有 1 小時，馬上換 30 天長效 token
     if (window.Pro && Pro.recheck) Pro.recheck();  // 白名單 email 登入 → 立即全解鎖
     renderUi();
     var level = currentLevel();
@@ -193,6 +227,14 @@
     /* 有些 webview 不觸發 onerror、就是載不完：逾時當作失敗 */
     setTimeout(function () { if (!gisLoaded) gisFailed = true; }, 6000);
     document.head.appendChild(s);
+
+    /* 已有長效 token（重開頁）：滾動續期 + 先拉一次雲端進度 */
+    if (signedIn()) {
+      refreshSession();
+      pull(currentLevel(), function (err, applied) {
+        if (applied) location.reload();
+      });
+    }
 
     setInterval(function () { if (signedIn()) push(currentLevel()); }, PUSH_INTERVAL_MS);
     document.addEventListener("visibilitychange", function () {
