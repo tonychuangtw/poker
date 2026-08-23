@@ -169,11 +169,22 @@
       pill.textContent = t("登入");
       pill.title = t("Google 登入，跨裝置同步");
       /* GIS 載入成功時透明官方鈕會蓋住 pill 接走點擊，這裡只有 GIS 缺席才會進來
-         （LINE/Telegram 內建瀏覽器常擋 accounts.google.com，2026-08-15 全線檢修） */
+         （LINE/Telegram 內建瀏覽器常擋 accounts.google.com，2026-08-15 全線檢修；
+         2026-08-23 Tony 在真 Safari/Chrome 也看到「內建瀏覽器」誤判 —— 訊息分兩種、可重試） */
       pill.addEventListener("click", function () {
         if (gisLoaded) return;
         if (gisFailed) {
-          UI.info(t("這個 App 內建瀏覽器擋住 Google 登入，請改用 Safari / Chrome 等外部瀏覽器開啟本站再登入。"));
+          if (inWebview()) {
+            UI.info(t("這個 App 內建瀏覽器擋住 Google 登入，請改用 Safari / Chrome 等外部瀏覽器開啟本站再登入。"));
+          } else {
+            UI.confirm(t("連不上 Google 登入元件（accounts.google.com 沒有回應），可能是網路不穩或被內容過濾／廣告攔截擋住。要再試一次嗎？")).then(function (ok) {
+              if (!ok) return;
+              gisFailed = false;
+              gisAttempts = 0;
+              loadGis();
+              UI.toast(t("重試中，請稍候再點登入。"));
+            });
+          }
         } else {
           UI.toast(t("登入元件載入中，請稍候再點。"));
         }
@@ -203,7 +214,49 @@
     });
   }
 
-  var gisLoaded = false, gisFailed = false;
+  var gisLoaded = false, gisFailed = false, gisAttempts = 0;
+
+  /* 真 webview（LINE/FB/IG/Telegram 內建瀏覽器、原生殼）才顯示「換外部瀏覽器」指引；
+     一般瀏覽器載不到 gsi 多半是網路/過濾器問題，給重試而不是叫人換瀏覽器 */
+  function inWebview() {
+    var ua = navigator.userAgent || "";
+    if (/\bLine\/|FBAV|FBAN|Instagram|MicroMessenger|TelegramWeb|; wv\)/i.test(ua)) return true;
+    if (window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) return true;
+    return false;
+  }
+
+  /* gsi/client 載入：偶發逾時不能一次定生死（2026-08-23 教訓：舊版 6 秒沒載完就永久
+     顯示「被擋住」且不再重試，Safari/Chrome 網路慢一拍就整站不能登入）。改成最多 3 次，
+     每次 8 秒；逾時後真的載進來也照常啟用（onload 不受逾時旗標影響） */
+  function loadGis() {
+    gisAttempts++;
+    var settled = false;
+    var s = document.createElement("script");
+    s.src = "https://accounts.google.com/gsi/client";
+    s.async = true;
+    s.onload = function () {
+      settled = true;
+      gisLoaded = true;
+      gisFailed = false;
+      initGis();
+    };
+    s.onerror = function () {
+      if (settled) return;
+      settled = true;
+      gisRetryOrFail();
+    };
+    setTimeout(function () {
+      if (settled || gisLoaded) return;
+      settled = true;
+      gisRetryOrFail();
+    }, 8000);
+    document.head.appendChild(s);
+  }
+
+  function gisRetryOrFail() {
+    if (gisAttempts < 3) { loadGis(); return; }
+    gisFailed = true;
+  }
 
   function initGis() {
     google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onCredential, auto_select: true });
@@ -219,14 +272,7 @@
     /* 先畫登入鈕，不等 GIS：webview 擋 accounts.google.com 時入口不能消失 */
     renderUi();
 
-    var s = document.createElement("script");
-    s.src = "https://accounts.google.com/gsi/client";
-    s.async = true;
-    s.onload = function () { gisLoaded = true; initGis(); };
-    s.onerror = function () { gisFailed = true; };
-    /* 有些 webview 不觸發 onerror、就是載不完：逾時當作失敗 */
-    setTimeout(function () { if (!gisLoaded) gisFailed = true; }, 6000);
-    document.head.appendChild(s);
+    loadGis();
 
     /* 已有長效 token（重開頁）：滾動續期 + 先拉一次雲端進度 */
     if (signedIn()) {

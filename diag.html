@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>撲克工具箱 — 登入診斷</title>
+<style>
+  body { font: 17px/1.6 -apple-system, "PingFang TC", sans-serif; margin: 0; padding: 16px;
+         background: #14100a; color: #eee; }
+  h1 { font-size: 20px; color: #e8c36a; }
+  .item { padding: 10px 12px; margin: 8px 0; border-radius: 10px; background: #221b10;
+          word-break: break-all; }
+  .ok { border-left: 4px solid #4caf50; }
+  .bad { border-left: 4px solid #f44336; }
+  .wait { border-left: 4px solid #999; }
+  button { font-size: 16px; padding: 10px 16px; border: 0; border-radius: 10px;
+           background: #e8c36a; color: #221b10; margin-top: 12px; }
+  small { color: #aaa; }
+</style>
+</head>
+<body>
+<h1>登入診斷</h1>
+<p><small>這頁會自動測試手機到 Google 登入服務、到同步後端的連線。全部跑完把整頁截圖傳回即可。</small></p>
+<div id="out"></div>
+<button onclick="location.reload()">重新測試</button>
+<script>
+(function () {
+  var out = document.getElementById('out');
+  function row(id, label) {
+    var d = document.createElement('div');
+    d.className = 'item wait';
+    d.id = id;
+    d.textContent = '⏳ ' + label;
+    out.appendChild(d);
+    return d;
+  }
+  function done(d, ok, msg) {
+    d.className = 'item ' + (ok ? 'ok' : 'bad');
+    d.textContent = (ok ? '✅ ' : '❌ ') + msg;
+  }
+
+  /* 0. 環境 */
+  var env = row('env', '環境資訊');
+  var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  var swCtrl = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
+  done(env, true, '環境：' + (standalone ? '主畫面 PWA' : '瀏覽器分頁') +
+    '｜SW 接管：' + (swCtrl ? '是' : '否') +
+    '｜online：' + navigator.onLine + '\nUA：' + navigator.userAgent);
+
+  /* 1. GIS script 載入（跟登入用同一支） */
+  var g = row('gis', '載入 Google 登入元件 accounts.google.com/gsi/client …');
+  var t0 = Date.now(), settled = false;
+  var s = document.createElement('script');
+  s.src = 'https://accounts.google.com/gsi/client';
+  s.async = true;
+  s.onload = function () {
+    if (settled) return; settled = true;
+    var hasApi = !!(window.google && google.accounts && google.accounts.id);
+    done(g, hasApi, 'GIS 元件載入 ' + (Date.now() - t0) + 'ms，API ' + (hasApi ? '正常' : '載入了但 API 不在（被改寫？）'));
+  };
+  s.onerror = function () {
+    if (settled) return; settled = true;
+    done(g, false, 'GIS 元件載入失敗（onerror，' + (Date.now() - t0) + 'ms）— 連線被擋或 DNS 失敗');
+  };
+  setTimeout(function () {
+    if (settled) return; settled = true;
+    done(g, false, 'GIS 元件載入逾時（>12 秒）— 連線極慢或被悄悄擋下');
+  }, 12000);
+  document.head.appendChild(s);
+
+  /* 2. 直接 fetch Google（no-cors，只看連不連得到） */
+  var f = row('gfetch', '直連 accounts.google.com …');
+  var t1 = Date.now();
+  fetch('https://accounts.google.com/gsi/client', { mode: 'no-cors', cache: 'no-store' })
+    .then(function () { done(f, true, '直連 accounts.google.com 成功（' + (Date.now() - t1) + 'ms）'); })
+    .catch(function (e) { done(f, false, '直連 accounts.google.com 失敗：' + e.message); });
+
+  /* 3. 同步後端 */
+  var b = row('api', '連同步後端 claudebot500.tailfcf67f.ts.net …');
+  var t2 = Date.now();
+  fetch('https://claudebot500.tailfcf67f.ts.net/api/session', { method: 'POST' })
+    .then(function (r) {
+      done(b, r.status === 401 || r.ok, '後端回應 HTTP ' + r.status + '（' + (Date.now() - t2) + 'ms）' +
+        (r.status === 401 ? ' — 正常（未帶登入票）' : ''));
+    })
+    .catch(function (e) { done(b, false, '後端連不上：' + e.message); });
+})();
+</script>
+</body>
+</html>
