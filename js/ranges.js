@@ -1758,6 +1758,188 @@
     return map;
   }
 
+  /* ---------- 面對 squeeze（你開牌、有人平跟、第三家 squeeze 回來） ----------
+   * Squeeze 圖的鏡射：SQZ_SPOTS 的每一格「x 面對 y 開牌＋z 平跟」，換到 y 的視角
+   * 就是「我開牌、z 平跟之後，被 x squeeze」——你要 4-bet / 跟注 / 蓋牌。
+   * 對手（squeeze 者）的預設 range 直接取 Squeeze 圖那格算出來的 squeeze 段，
+   * 兩張圖共用同一份資料，不會兩邊講不同話。
+   *
+   * 跟面對 4-bet 圖的差別：
+   *   底池裡多一份死錢（跟注者的 2.5bb，他面對 squeeze 大多會棄）→ 跟注價格較好
+   *   但跟注者還沒表態 —— 他偶爾會跟進變三人底池、甚至反擠，所以跟注門檻加一層
+   *   位置：squeeze 常來自盲注（你有位置）；來自你後面的位置時你整局無位置，門檻再加
+   * 模型只算對 squeeze 者的勝率（他是最強的那個 range），跟注者的影響用參數表述。 */
+
+  var VSQ_4BET_EQ = 0.54;      // 4-bet 的價值門檻（raw equity，對上 squeeze range）
+  var VSQ_CALL_PENALTY = 0.05; // 跟注懲罰：跟注者還沒表態＋squeeze range 不封頂＋低 SPR 難反超
+  var VSQ_OOP_PENALTY = 0.03;  // squeeze 來自你後面的位置（你翻後無位置）時再加的代價
+  /* 你只需要扛 MDF 的一部分：squeeze 者的 bluff 要同時逼掉你和跟注者才全收，
+   * 跟注者也會防守一部分，所以你的防守份額打個折 */
+  var VSQ_SHARE = 0.75;
+  /* 4-bet 尺度 = squeeze 的倍數：你無位置時開大一點 */
+  var VSQ_FB_IP = 2.2, VSQ_FB_OOP = 2.4;
+
+  var VSQ_SPOTS = {};
+  var VSQ_SPOT_KEYS = [];
+  (function buildVsqSpots() {
+    SQZ_SPOT_KEYS.forEach(function (k) {
+      var s = SQZ_SPOTS[k];
+      var hero = s.opener, sqzer = s.hero, caller = s.caller;
+      /* squeeze 者是盲注 → 翻後你（非盲注開牌者）有位置；來自你後面的位置 → 你無位置 */
+      var heroIp = sqzer === 'SB' || sqzer === 'BB';
+      var short = t('你開牌 → ') + caller + t(' 跟注 → ') + sqzer + ' squeeze';
+      VSQ_SPOT_KEYS.push(k);
+      VSQ_SPOTS[k] = {
+        name: hero + '：' + short + (s.table === 9 ? '（9-max）' : '（6-max）'),
+        short: short, table: s.table,
+        hero: hero, sqzer: sqzer, caller: caller, heroIp: heroIp,
+        openBb: s.openBb, deadBb: s.deadBb, sqzerPost: s.heroPost,
+        fbMult: heroIp ? VSQ_FB_IP : VSQ_FB_OOP,
+        oopPenalty: heroIp ? 0 : VSQ_OOP_PENALTY,
+        note: heroIp
+          ? t('squeeze 來自盲注 → 你翻後有位置，邊緣牌可以用跟注續玩；他若是只拿 QQ+/AK squeeze 的緊手，把寬度滑桿拉低再看。')
+          : t('squeeze 來自你後面的位置 → 跟注要整局無位置面對不封頂的 range，門檻再加一層；打不舒服的牌寧可 4-bet 或直接棄。')
+      };
+    });
+  })();
+  /* 預設同 Squeeze 圖：9-max，你在 CO 開、BTN 跟，BB squeeze —— 現場最常見的一格 */
+  var VSQ_DEFAULT_KEY = SQZ_DEFAULT_KEY;
+
+  /** 該情境 squeeze 者的預設 range：取 Squeeze 圖那格算出來的 squeeze 段（資料共用） */
+  var vsqVillainCache = {};
+  function vsqVillainRange(spotKey) {
+    if (vsqVillainCache[spotKey]) return vsqVillainCache[spotKey];
+    var pf = PF(), out = [];
+    var map = sqDefense(spotKey, sqVillainRange(spotKey), VS3B_BASE_BB);
+    for (var i = 0; i < 169; i++) {
+      if (map[pf.classLabel(i)] === 'tb') out.push(i);
+    }
+    vsqVillainCache[spotKey] = out;
+    return out;
+  }
+  /** 該情境 squeeze 者的預設寬度（% of 1326） */
+  function vsqVillainPct(spotKey) {
+    var r = vsqVillainRange(spotKey);
+    return r ? PF().rangeComboTotal(r) / 1326 * 100 : 0;
+  }
+
+  /** 某有效籌碼下的局面數字：squeeze 大小、要補多少、賠率、SPR、模式 */
+  function vsqStackInfo(spotKey, bb) {
+    var s = VSQ_SPOTS[spotKey], sq = SQZ_SPOTS[spotKey];
+    if (!s || !sq) return null;
+    var eff = clampBb(bb);
+    var open = Math.min(s.openBb, eff);
+    var sqzRaw = s.openBb * sq.sqMult;
+    var sqz = Math.min(sqzRaw, eff);
+    var toCall = Math.max(0, sqz - open);
+    var pot = open * 2 + sqz + s.deadBb;        // 你的開牌 + 跟注者 + squeeze + 死錢
+    var potAfter = sqz * 2 + open + s.deadBb;   // 你跟注後的底池（跟注者的 2.5bb 還躺著）
+    var spr = (eff - sqz) / potAfter;
+    return {
+      effBb: eff, openBb: open, sqzBb: sqz, toCall: toCall, pot: pot,
+      needEq: toCall > 0 ? toCall / (pot + toCall) : 0,
+      spr: spr,
+      sqzAllIn: sqzRaw >= eff,
+      fbBb: Math.min(sqz * s.fbMult, eff),
+      fbAllIn: sqz * s.fbMult >= eff,
+      mode: eff <= sqz ? 'callAllin' : spr < JAM_SPR ? 'jamOrFold' : 'normal'
+    };
+  }
+
+  /* 續玩寬度與面對 4-bet 圖同一套兩層夾法：
+   *   上限（MDF 端）：你的開牌 range × 防守頻率 × 份額 × √(對手寬度 ÷ 預設寬度)
+   *     —— 防守頻率按 squeeze 者的風險/報酬算，跟注者的死錢讓他 bluff 更有利可圖，
+   *        但那份防守責任由你和跟注者分攤（VSQ_SHARE）
+   *   下限（賠率端）：不夠底池賠率＋懲罰的手牌永遠不續玩
+   * 你開牌 range 以外的手牌照理不會走到這個節點，圖上的值只是參考。 */
+  function vsqContTarget(spotKey, villainClasses) {
+    var pf = PF(), s = VSQ_SPOTS[spotKey];
+    var base = vsqStackInfo(spotKey, VS3B_BASE_BB);
+    if (!s || !base) return 0;
+    var risk = base.sqzBb - s.sqzerPost;             // squeeze 者多投的錢
+    var potBefore = s.openBb * 2 + 1.5;              // 他 squeeze 前的底池（開牌+跟注+盲注）
+    var defend = 1 - risk / (risk + potBefore);      // = 1 − 他 bluff 的損益兩平頻率
+    var heroOpen = pf.rangeComboTotal(sqVillainRange(spotKey) || []);
+    if (!heroOpen) heroOpen = Math.round(1326 * 0.2);
+    var defPct = vsqVillainPct(spotKey);
+    var vilPct = pf.rangeComboTotal(villainClasses) / 1326 * 100;
+    var scale = defPct > 0 ? Math.sqrt(vilPct / defPct) : 1;
+    scale = Math.min(2.5, Math.max(0.6, scale));
+    return Math.max(6, Math.round(heroOpen * defend * VSQ_SHARE * scale));   // 至少留 AA
+  }
+
+  /** 某深度 + 某 squeeze 寬度下的 map：{ 手牌: 'tb'（4-bet / 全下）| 'in'（跟注） } */
+  function vsqDefense(spotKey, villainClasses, bb) {
+    var pf = PF(), info = vsqStackInfo(spotKey, bb);
+    if (!info) return {};
+    var eq = selectionEq(villainClasses);
+    var target = vsqContTarget(spotKey, villainClasses);
+    var map = {}, i, thr;
+    if (info.mode === 'callAllin') {
+      // 對手的 squeeze 已經把你蓋住 → 只剩跟全下 / 棄
+      thr = Math.max(thresholdAt(eq, target), info.needEq);
+      for (i = 0; i < 169; i++) {
+        if (eq[i] >= thr) map[pf.classLabel(i)] = 'tb';
+      }
+      return map;
+    }
+    if (info.mode === 'jamOrFold') {
+      // 跟注後 SPR < 0.5 → 沒有平跟，只剩 4-bet 全下 / 棄。
+      // 全下的賠率端：再投 (eff − 開牌) 搶 (雙方全下 + 跟注者死錢 + 盲注)
+      var jamNeed = (info.effBb - info.openBb) /
+        (info.effBb * 2 + VSQ_SPOTS[spotKey].openBb + VSQ_SPOTS[spotKey].deadBb);
+      thr = Math.max(thresholdAt(eq, target), jamNeed - JAM_CREDIT);
+      for (i = 0; i < 169; i++) {
+        if (eq[i] >= thr) map[pf.classLabel(i)] = 'tb';
+      }
+      return map;
+    }
+    var thr4 = aggroThreshold(VSQ_4BET_EQ, info.spr, info.needEq, info.effBb);
+    var base = vsqStackInfo(spotKey, VS3B_BASE_BB);
+    var f = impliedFactor(info.spr, base ? base.spr : 0);
+    var score = selectionScore(eq, IMPLIED_W, f);
+    var contThr = Math.max(thresholdAt(score, target),
+      info.needEq + VSQ_CALL_PENALTY + (VSQ_SPOTS[spotKey].oopPenalty || 0));
+    for (i = 0; i < 169; i++) {
+      if (score[i] < contThr) continue;
+      map[pf.classLabel(i)] = eq[i] >= thr4 ? 'tb' : 'in';
+    }
+    return map;
+  }
+
+  /** 面對 squeeze 的頻率表：{ 手牌: {aggro（4-bet）, call, fold} }，門檻與 vsqDefense 同步 */
+  function vsqFreqMap(spotKey, villainClasses, bb) {
+    var pf = PF(), info = vsqStackInfo(spotKey, bb);
+    if (!info) return {};
+    var eq = selectionEq(villainClasses);
+    var target = vsqContTarget(spotKey, villainClasses);
+    var map = {}, i, a, cont, thr;
+    if (info.mode !== 'normal') {
+      var jamNeed = info.mode === 'callAllin'
+        ? info.needEq
+        : (info.effBb - info.openBb) /
+          (info.effBb * 2 + VSQ_SPOTS[spotKey].openBb + VSQ_SPOTS[spotKey].deadBb) - JAM_CREDIT;
+      thr = Math.max(thresholdAt(eq, target), jamNeed);
+      for (i = 0; i < 169; i++) {
+        a = mixRamp(eq[i], thr);
+        map[pf.classLabel(i)] = freqSplit(a, a);
+      }
+      return map;
+    }
+    var thr4 = aggroThreshold(VSQ_4BET_EQ, info.spr, info.needEq, info.effBb);
+    var base = vsqStackInfo(spotKey, VS3B_BASE_BB);
+    var f = impliedFactor(info.spr, base ? base.spr : 0);
+    var score = selectionScore(eq, IMPLIED_W, f);
+    var contThr = Math.max(thresholdAt(score, target),
+      info.needEq + VSQ_CALL_PENALTY + (VSQ_SPOTS[spotKey].oopPenalty || 0));
+    for (i = 0; i < 169; i++) {
+      a = mixRamp(eq[i], thr4);
+      cont = mixRamp(score[i], contThr);
+      map[pf.classLabel(i)] = freqSplit(a, cont);
+    }
+    return map;
+  }
+
   /* ---------- 面對 limp（iso-raise / 跟 limp） ----------
    * 現場滿桌 limper，但市面上幾乎沒有這種圖。情境：前面 1–2 家 limp，你要
    * iso-raise（把局面收成單挑、拿位置與主導權）、跟 limp（便宜看翻牌）還是棄牌。
@@ -2053,6 +2235,10 @@
     SQZ_DEFAULT_KEY: SQZ_DEFAULT_KEY, SQZ_EQ: SQZ_EQ,
     sqVillainRange: sqVillainRange, sqVillainPct: sqVillainPct, sqCallerPct: sqCallerPct,
     sqStackInfo: sqStackInfo, sqDefense: sqDefense, sqFreqMap: sqFreqMap,
+    VSQ_SPOTS: VSQ_SPOTS, VSQ_SPOT_KEYS: VSQ_SPOT_KEYS,
+    VSQ_DEFAULT_KEY: VSQ_DEFAULT_KEY, VSQ_4BET_EQ: VSQ_4BET_EQ,
+    vsqVillainRange: vsqVillainRange, vsqVillainPct: vsqVillainPct,
+    vsqStackInfo: vsqStackInfo, vsqDefense: vsqDefense, vsqFreqMap: vsqFreqMap,
     VS4B_SPOTS: VS4B_SPOTS, VS4B_SPOT_KEYS: VS4B_SPOT_KEYS,
     VS4B_DEFAULT_KEY: VS4B_DEFAULT_KEY, VS4B_5BET_EQ: VS4B_5BET_EQ,
     vs4bVillainRange: vs4bVillainRange, vs4bVillainPct: vs4bVillainPct,

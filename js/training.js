@@ -179,9 +179,9 @@
   };
   var KIND_NAMES = { pf: 'Push/Fold', rfi: t('開牌 RFI'), def: t('面對開牌'), v3b: t('被 3-bet'),
                      cold: t('冷 4-bet'), vs4b: t('面對 4-bet'), sq: 'Squeeze',
-                     iso: t('面對 limp'),
+                     vsq: t('面對 squeeze'), iso: t('面對 limp'),
                      cb: t('翻後 c-bet'), bc: t('河牌接 bluff') };
-  var KINDS = ['pf', 'rfi', 'def', 'v3b', 'cold', 'vs4b', 'sq', 'iso', 'cb', 'bc'];
+  var KINDS = ['pf', 'rfi', 'def', 'v3b', 'cold', 'vs4b', 'sq', 'vsq', 'iso', 'cb', 'bc'];
   // 每日任務只看這三種基本測驗（其餘為進階題，不加重每天的量）
   var DAILY_KINDS = ['pf', 'rfi', 'def'];
   var DAILY_TARGET = 10;
@@ -364,13 +364,14 @@
   function aggroLabel(kind) {
     return kind === 'pf' ? t('全下') : kind === 'rfi' ? t('加注')
       : kind === 'v3b' ? '4-bet' : kind === 'cold' ? t('冷 4-bet')
-      : kind === 'vs4b' ? '5-bet' : kind === 'sq' ? 'squeeze' : kind === 'iso' ? 'iso'
+      : kind === 'vs4b' ? '5-bet' : kind === 'sq' ? 'squeeze'
+      : kind === 'vsq' ? '4-bet' : kind === 'iso' ? 'iso'
       : kind === 'cb' ? t('下注 75%') : '3-bet';
   }
   /** 有「中間選項」的測驗種類（三選一），其餘為二選一 */
   function hasCallOption(kind) {
     return kind === 'def' || kind === 'v3b' || kind === 'cold' ||
-      kind === 'vs4b' || kind === 'sq' || kind === 'iso' ||
+      kind === 'vs4b' || kind === 'sq' || kind === 'vsq' || kind === 'iso' ||
       kind === 'cb' || kind === 'bc';
   }
   function actionTxt(m, act) {

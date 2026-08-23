@@ -2671,6 +2671,124 @@
     function (v) { sqFreq = v; }, renderSq);
   renderSq();
 
+  /* ---------- 面對 squeeze（你開牌、有人平跟、被第三家 squeeze） ----------
+   * 同面對 4-bet 版式：唯讀、squeeze 寬度滑桿 + 籌碼滑桿。
+   * 滑桿停在預設寬度時用 Squeeze 圖那格算出來的 squeeze range，拉動後改用「最強 X%」近似。 */
+  var vsqKeyCur = Ranges.VSQ_DEFAULT_KEY, vsqFreq = false;
+  var vsqPctCur = null, vsqSliding = false;
+  var vsqStackCur = Ranges.VS3B_BASE_BB, vsqStackSliding = false;
+
+  (function buildVsqSpotOptions() {
+    var groups = [], byGroup = {};
+    Ranges.VSQ_SPOT_KEYS.forEach(function (k) {
+      var spot = Ranges.VSQ_SPOTS[k];
+      var label = (spot.table === 9 ? t('9-max Full Ring（現場取向）') : '6-max') +
+                  t('｜你在 ') + spot.hero;
+      if (!byGroup[label]) { byGroup[label] = []; groups.push(label); }
+      byGroup[label].push('<option value="' + k + '">' + (spot.short || spot.name) +
+                          '</option>');
+    });
+    $('#vsqSpot').innerHTML = groups.map(function (label) {
+      return '<optgroup label="' + label + '">' + byGroup[label].join('') + '</optgroup>';
+    }).join('');
+  })();
+
+  function vsqDefaultPct(key) { return Ranges.vsqVillainPct(key); }
+  function vsqPctChanged() {
+    return vsqPctCur !== null && Math.abs(vsqPctCur - vsqDefaultPct(vsqKeyCur)) > 0.25;
+  }
+  function vsqVillainCur() {
+    return vsqPctChanged() ? PushFold.topPercentRange(vsqPctCur)
+      : Ranges.vsqVillainRange(vsqKeyCur);
+  }
+  function vsqAggroLabel(info) {
+    return info.mode === 'callAllin' ? t('跟全下')
+      : info.mode === 'jamOrFold' ? t('4-bet 全下')
+      : info.fbAllIn ? t('4-bet（＝全下）') : '4-bet';
+  }
+
+  function renderVsq() {
+    if (!Ranges.VSQ_SPOTS[vsqKeyCur]) vsqKeyCur = Ranges.VSQ_DEFAULT_KEY;
+    var spot = Ranges.VSQ_SPOTS[vsqKeyCur];
+    if (vsqPctCur === null) vsqPctCur = vsqDefaultPct(vsqKeyCur);
+    var info = Ranges.vsqStackInfo(vsqKeyCur, vsqStackCur);
+    var villain = vsqVillainCur();
+    var html = '', tbCombos = 0, callCombos = 0, i, lbl;
+
+    if (vsqFreq) {
+      var fmap = Ranges.vsqFreqMap(vsqKeyCur, villain, vsqStackCur);
+      for (i = 0; i < 169; i++) html += freqCellHtml(i, fmap[PushFold.classLabel(i)], true);
+      $('#vsqGrid').innerHTML = html;
+      $('#vsqTxt').textContent = spot.name + t('（對手 squeeze ') + vsqPctCur.toFixed(1) + t('%，') +
+        info.effBb + t('bb）｜') + freqSummary(fmap, info.mode === 'normal');
+      $('#vsqNote').textContent = spot.note;
+      $('#vsqSpot').value = vsqKeyCur;
+      if (!vsqSliding) $('#vsqPct').value = vsqPctCur;
+      $('#vsqPctVal').textContent = vsqPctCur.toFixed(1) + '%';
+      if (!vsqStackSliding) $('#vsqStack').value = vsqStackCur;
+      $('#vsqStackVal').textContent = vsqStackCur + 'bb';
+      return;
+    }
+
+    var map = Ranges.vsqDefense(vsqKeyCur, villain, vsqStackCur);
+    for (i = 0; i < 169; i++) {
+      lbl = PushFold.classLabel(i);
+      var st = map[lbl] || 'out';
+      if (st === 'tb') tbCombos += PushFold.comboCount(i);
+      else if (st === 'in') callCombos += PushFold.comboCount(i);
+      html += '<div class="nash-cell ' + (st === 'in' || st === 'tb' ? st : 'out') +
+        '" data-i="' + i + '">' + lbl + '</div>';
+    }
+    $('#vsqGrid').innerHTML = html;
+
+    var aggroTxt = info.mode === 'normal'
+      ? '4-bet' + t(' 到 ') + info.fbBb.toFixed(1) + 'bb' + (info.fbAllIn ? t('＝全下') : '')
+      : vsqAggroLabel(info);
+    $('#vsqTxt').textContent = t('你在 ') + spot.hero + t(' 開 ') + info.openBb + t('bb → ') +
+      spot.caller + t(' 跟注 → ') + spot.sqzer + t(' squeeze 到 ') + info.sqzBb.toFixed(1) +
+      t('bb（') + vsqPctCur.toFixed(1) + t('% 的手牌），有效籌碼 ') + info.effBb + t('bb｜') +
+      aggroTxt + ' ' + (tbCombos / 1326 * 100).toFixed(1) + t('%（') + tbCombos + t(' combo）') +
+      (info.mode === 'normal'
+        ? t('＋跟注 ') + (callCombos / 1326 * 100).toFixed(1) + t('%（') + callCombos + t(' combo）')
+        : t('，其餘蓋牌'));
+    $('#vsqNote').textContent = t('你要補 ') + info.toCall.toFixed(1) + t('bb 進 ') +
+      info.pot.toFixed(1) + t('bb 底池（含跟注者的死錢）→ 需要 ') +
+      (info.needEq * 100).toFixed(1) + t('% 勝率。') +
+      (info.mode === 'normal'
+        ? t('跟注後 SPR ') + info.spr.toFixed(1) + t('。')
+        : info.mode === 'jamOrFold'
+          ? t('跟注後 SPR 太低 → 沒有平跟這個選項，只剩 4-bet 全下或棄牌。')
+          : t('他的 squeeze 已把你蓋住 → 只剩跟全下或棄牌。')) + spot.note;
+    $('#vsqSpot').value = vsqKeyCur;
+    if (!vsqSliding) $('#vsqPct').value = vsqPctCur;
+    $('#vsqPctVal').textContent = vsqPctCur.toFixed(1) + '%' +
+      (vsqPctChanged() ? '' : t('（該情境建議值）'));
+    if (!vsqStackSliding) $('#vsqStack').value = vsqStackCur;
+    $('#vsqStackVal').textContent = vsqStackCur + 'bb';
+  }
+  $('#vsqSpot').addEventListener('change', function () {
+    if (!Ranges.VSQ_SPOTS[this.value]) return;
+    vsqKeyCur = this.value;
+    vsqPctCur = vsqDefaultPct(vsqKeyCur);
+    renderVsq();
+  });
+  $('#vsqPct').addEventListener('input', function () {
+    vsqSliding = true;
+    vsqPctCur = +this.value;
+    renderVsq();
+  });
+  $('#vsqPct').addEventListener('change', function () { vsqSliding = false; renderVsq(); });
+  $('#vsqStack').addEventListener('input', function () {
+    vsqStackSliding = true;
+    vsqStackCur = +this.value;
+    renderVsq();
+  });
+  $('#vsqStack').addEventListener('change', function () { vsqStackSliding = false; renderVsq(); });
+  bindFreqToggle('#btnVsqFreq',
+    function () { return vsqFreq; },
+    function (v) { vsqFreq = v; }, renderVsq);
+  renderVsq();
+
   /* ---------- 面對 limp（iso-raise / 跟 limp） ----------
    * 唯讀；滑桿是「limper 鬆緊」（模型會自動切掉最強 4%，那些手牌會直接加注）。 */
   var isoKeyCur = Ranges.ISO_DEFAULT_KEY, isoFreq = false;
@@ -2851,7 +2969,8 @@
   /* ---------- 訓練測驗（Push/Fold + 開牌 RFI + 面對開牌 + 被 3-bet） ---------- */
   var QUIZ_KEYS = { pf: 'poker.nash_quiz', rfi: 'poker.rfi_quiz', def: 'poker.def_quiz',
                     v3b: 'poker.v3b_quiz', cold: 'poker.cold_quiz',
-                    vs4b: 'poker.vs4b_quiz', sq: 'poker.sq_quiz', iso: 'poker.iso_quiz',
+                    vs4b: 'poker.vs4b_quiz', sq: 'poker.sq_quiz', vsq: 'poker.vsq_quiz',
+                    iso: 'poker.iso_quiz',
                     cb: 'poker.cb_quiz', bc: 'poker.bc_quiz' };
   var quizMode = 'pf'; // 'pf' | 'rfi' | 'def' | 'v3b' | 'cb' | 'bc'
 
@@ -2874,6 +2993,7 @@
        scoreLine(t('冷 4-bet'), quizScore('cold')),
        scoreLine(t('面對 4-bet'), quizScore('vs4b')),
        scoreLine('Squeeze', quizScore('sq')),
+       scoreLine(t('面對 squeeze'), quizScore('vsq')),
        scoreLine(t('面對 limp'), quizScore('iso')),
        scoreLine(t('翻後 c-bet'), quizScore('cb')), scoreLine(t('河牌接 bluff'), quizScore('bc'))]
         .filter(Boolean).join(t(' ｜ '));
@@ -2971,7 +3091,8 @@
   var QUIZ_MODE_BTN = { pf: '#btnQuizModePf', rfi: '#btnQuizModeRfi',
                         def: '#btnQuizModeDef', v3b: '#btnQuizModeV3b',
                         cold: '#btnQuizModeCold', vs4b: '#btnQuizModeVs4b',
-                        sq: '#btnQuizModeSq', iso: '#btnQuizModeIso',
+                        sq: '#btnQuizModeSq', vsq: '#btnQuizModeVsq',
+                        iso: '#btnQuizModeIso',
                         cb: '#btnQuizModeCb', bc: '#btnQuizModeBc' };
   var QUIZ_AGGRO_TXT = { pf: t('全下'), rfi: t('加注'), def: '3-bet', v3b: '4-bet',
                          cold: t('冷 4-bet'), vs4b: '5-bet', sq: 'squeeze', iso: 'iso',
@@ -3028,6 +3149,9 @@
     }
     if (cur.mode === 'sq') {
       return Ranges.sqFreqMap(cur.spot, cur.villain, cur.bb)[lbl];
+    }
+    if (cur.mode === 'vsq') {
+      return Ranges.vsqFreqMap(cur.spot, cur.villain, cur.bb)[lbl];
     }
     if (cur.mode === 'iso') {
       return Ranges.isoFreqMap(cur.spot, cur.villain, cur.bb)[lbl];
@@ -3137,6 +3261,27 @@
         (sInfo.mode === 'normal' ? t('squeeze、跟注還是蓋牌？') : t('squeeze 全下還是蓋牌？'));
       $('#btnQuizCall').hidden = sInfo.mode !== 'normal';
       $('#btnQuizPush').textContent = sInfo.mode === 'normal' ? 'squeeze' : t('squeeze 全下');
+    } else if (quizMode === 'vsq') {
+      var qKey2 = pickSpot(Ranges.VSQ_SPOT_KEYS, Ranges.VSQ_SPOTS);
+      var qSpot = Ranges.VSQ_SPOTS[qKey2];
+      var qbb = pick(QUIZ_DEPTHS);
+      // 一半用該情境建議的 squeeze range，一半隨機抽寬度 —— 練「先判斷對手多寬」
+      var qDefPct = Ranges.vsqVillainPct(qKey2);
+      var qWide = Math.random() < 0.5;
+      var qPct = qWide ? pick([2, 3, 4, 5, 6, 8, 10, 12]) : qDefPct;
+      var qVillain = qWide ? PushFold.topPercentRange(qPct) : Ranges.vsqVillainRange(qKey2);
+      var qInfo = Ranges.vsqStackInfo(qKey2, qbb);
+      quizCur = { mode: 'vsq', spot: qKey2, villain: qVillain, pct: qPct,
+                  bb: qbb, idx: randHandIdx() };
+      $('#quizInfo').textContent = (qSpot.table === 9 ? '9-max' : '6-max') +
+        t('，有效籌碼 ') + qInfo.effBb + t('bb。你在 ') + qSpot.hero + t(' 開 ') + qInfo.openBb +
+        t('bb，') + qSpot.caller + t(' 跟注，') + qSpot.sqzer + t(' squeeze 到 ') +
+        qInfo.sqzBb.toFixed(1) + t('bb（他這條線 squeeze 約 ') + qPct.toFixed(1) +
+        t('% 的手牌）。') +
+        (qInfo.mode === 'normal' ? t('4-bet、跟注還是蓋牌？')
+          : qInfo.mode === 'jamOrFold' ? t('4-bet 全下還是蓋牌？') : t('跟全下還是蓋牌？'));
+      $('#btnQuizCall').hidden = qInfo.mode !== 'normal';
+      $('#btnQuizPush').textContent = vsqAggroLabel(qInfo);
     } else if (quizMode === 'iso') {
       var iKey = pickSpot(Ranges.ISO_SPOT_KEYS, Ranges.ISO_SPOTS);
       var iSpot = Ranges.ISO_SPOTS[iKey];
@@ -3296,6 +3441,24 @@
         t('跟注要補 ') + sInfo2.toCall + t('bb 進 ') + sInfo2.pot + t('bb 底池 → 應該<b>') +
         (sBest === 'aggro' ? (sInfo2.mode === 'normal' ? 'squeeze' : t('squeeze 全下'))
           : sBest === 'call' ? t('跟注') : t('蓋牌')) + t('</b>。');
+    } else if (quizCur.mode === 'vsq') {
+      var qInfo2 = Ranges.vsqStackInfo(quizCur.spot, quizCur.bb);
+      var qSpot2 = Ranges.VSQ_SPOTS[quizCur.spot];
+      var qst = Ranges.vsqDefense(quizCur.spot, quizCur.villain,
+        quizCur.bb)[PushFold.classLabel(quizCur.idx)] || 'out';
+      var qBest = qst === 'tb' ? 'aggro' : qst === 'in' ? 'call' : 'fold';
+      ok = action === qBest;
+      bestAct = qBest;
+      qKey = 'vsq:' + quizCur.spot + ':' + quizCur.pct.toFixed(1) + ':' +
+        quizCur.bb + ':' + quizCur.idx;
+      var qEq = PushFold.equityVsRange(quizCur.idx, [], quizCur.villain).equity;
+      detail = ' ' + PushFold.classLabel(quizCur.idx) + t(' 對上 ') + qSpot2.sqzer +
+        t(' 的 squeeze range（') + quizCur.pct.toFixed(1) + t('%）有 <b>') +
+        (qEq * 100).toFixed(1) + t('%</b> 勝率，跟注要補 ') + qInfo2.toCall.toFixed(1) +
+        t('bb 進 ') + qInfo2.pot.toFixed(1) + t('bb 底池（含跟注者的死錢）→ 需要 ') +
+        (qInfo2.needEq * 100).toFixed(1) + t('%，另外續玩上限是 MDF × 你的開牌 range → 應該<b>') +
+        (qBest === 'aggro' ? vsqAggroLabel(qInfo2)
+          : qBest === 'call' ? t('跟注') : t('蓋牌')) + t('</b>。');
     } else if (quizCur.mode === 'iso') {
       var iInfo2 = Ranges.isoStackInfo(quizCur.spot, quizCur.bb);
       var iSpot2 = Ranges.ISO_SPOTS[quizCur.spot];
@@ -3387,6 +3550,10 @@
         var psInfo = Ranges.sqStackInfo(quizCur.spot, quizCur.bb);
         payload.aggro = psInfo.mode === 'normal' ? 'squeeze' : t('squeeze 全下');
         payload.noCall = psInfo.mode !== 'normal';
+      } else if (quizCur.mode === 'vsq') {
+        var pqInfo = Ranges.vsqStackInfo(quizCur.spot, quizCur.bb);
+        payload.aggro = vsqAggroLabel(pqInfo);
+        payload.noCall = pqInfo.mode !== 'normal';
       } else if (quizCur.mode === 'iso') {
         var piInfo = Ranges.isoStackInfo(quizCur.spot, quizCur.bb);
         payload.aggro = piInfo.isoAllIn ? t('iso 全下') : 'iso';

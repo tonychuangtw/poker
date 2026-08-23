@@ -1778,6 +1778,103 @@ assert(Math.abs(sqFq.AQo.aggro + sqFq.AQo.call + sqFq.AQo.fold - 1) < 1e-9,
   assert(okP, 'sq@' + bb + 'bb: continued pairs are a gapless top run');
 });
 
+console.log('--- Facing a squeeze ---');
+
+// Squeeze 圖的鏡射：key 一對一
+assert(Ranges.VSQ_SPOT_KEYS.length === Ranges.SQZ_SPOT_KEYS.length &&
+  Ranges.VSQ_SPOT_KEYS.every(function (k) { return !!Ranges.SQZ_SPOTS[k]; }),
+  'facing-squeeze spots mirror the squeeze spots one-to-one');
+
+// 對手的預設 range = Squeeze 圖那格的 squeeze 段（資料共用）
+var vsqVil = Ranges.vsqVillainRange('bb_co_btnsq9');
+var sqTb = Ranges.sqDefense('bb_co_btnsq9',
+  Ranges.sqVillainRange('bb_co_btnsq9'), Ranges.VS3B_BASE_BB);
+var sqTbCount = 0;
+for (var vl in sqTb) if (sqTb[vl] === 'tb') sqTbCount++;
+assert(vsqVil.length === sqTbCount && vsqVil.indexOf(labelIdx('AA')) >= 0,
+  'default villain range = the squeeze side of the squeeze chart');
+
+// 底池算術：pot = 開牌×2 + squeeze + 死錢；needEq = toCall/(pot+toCall)
+Ranges.VSQ_SPOT_KEYS.forEach(function (k) {
+  var info = Ranges.vsqStackInfo(k, 100);
+  var s = Ranges.VSQ_SPOTS[k];
+  var expPot = info.openBb * 2 + info.sqzBb + s.deadBb;
+  assert(Math.abs(info.pot - expPot) < 1e-9 &&
+    Math.abs(info.needEq - info.toCall / (info.pot + info.toCall)) < 1e-9,
+    k + ': facing-squeeze pot odds arithmetic');
+});
+
+// squeeze 尺度沿用 Squeeze 圖：盲注 squeeze 5x（12.5bb）、有位置 squeeze 4x（10bb）
+assert(Ranges.vsqStackInfo('bb_co_btnsq9', 100).sqzBb === 12.5 &&
+  Ranges.vsqStackInfo('btn_utg_hjsq9', 100).sqzBb === 10,
+  'squeeze sizing mirrors the squeeze chart (5x OOP / 4x IP)');
+
+function vsqSets(key, villain, bb) {
+  var map = Ranges.vsqDefense(key, villain, bb);
+  var tb = [], call = [];
+  for (var i = 0; i < 169; i++) {
+    var st = map[PushFold.classLabel(i)];
+    if (st === 'tb') tb.push(i);
+    else if (st === 'in') call.push(i);
+  }
+  return { tb: tb, call: call, total: tb.length + call.length };
+}
+
+// 100bb 預設：CO 開被 BB squeeze —— 頂端 4-bet、中段跟注、爛牌蓋
+var vsqDef = vsqSets('bb_co_btnsq9', Ranges.vsqVillainRange('bb_co_btnsq9'), 100);
+assert(vsqDef.tb.indexOf(labelIdx('AA')) >= 0 && vsqDef.tb.indexOf(labelIdx('KK')) >= 0,
+  'AA/KK 4-bet at the default squeeze width');
+assert(vsqDef.call.indexOf(labelIdx('72o')) < 0 && vsqDef.call.indexOf(labelIdx('J2o')) < 0,
+  'trash never continues vs a squeeze');
+assert(vsqDef.tb.length + vsqDef.call.length < 40,
+  'vs a value-heavy squeeze you continue with a minority of your range');
+
+// 對手變寬 → 續玩變寬（單調，允許類別粒度的抖動）
+var vsqLast = -1, vsqMono = true;
+[3, 5, 8, 12].forEach(function (w) {
+  var tot = vsqSets('bb_co_btnsq9', PushFold.topPercentRange(w), 100).total;
+  if (tot < vsqLast - 12) vsqMono = false;
+  vsqLast = Math.max(vsqLast, tot);
+});
+assert(vsqMono, 'a wider squeezer is continued against wider');
+
+// 位置：同一個 squeeze 者寬度，有位置（squeeze 來自盲注）續玩比無位置寬
+var vsqIp = vsqSets('bb_co_btnsq9', PushFold.topPercentRange(6), 100).total;
+var vsqOop = vsqSets('btn_utg_hjsq9', PushFold.topPercentRange(6), 100).total;
+assert(vsqIp > vsqOop, 'IP vs a blind squeeze continues wider than OOP vs a BTN squeeze (' +
+  vsqIp + ' > ' + vsqOop + ')');
+
+// 淺碼退化：20bb 只剩全下/棄（sqzBb 12.5 → SPR < 0.5）
+var vsq20 = Ranges.vsqStackInfo('bb_co_btnsq9', 20);
+assert(vsq20.mode === 'jamOrFold', '20bb facing a 12.5bb squeeze is jam-or-fold');
+var vsq20map = Ranges.vsqDefense('bb_co_btnsq9', Ranges.vsqVillainRange('bb_co_btnsq9'), 20);
+var vsq20states = Object.keys(vsq20map).map(function (kk) { return vsq20map[kk]; });
+assert(vsq20states.length > 0 &&
+  vsq20states.every(function (st) { return st === 'tb'; }),
+  'jam-or-fold map has no flat calls');
+// 10bb：squeeze 蓋住你 → 跟全下/棄
+assert(Ranges.vsqStackInfo('bb_co_btnsq9', 10).mode === 'callAllin',
+  '10bb: the squeeze covers you, call-allin mode');
+
+// 頻率表
+var vsqFq = Ranges.vsqFreqMap('bb_co_btnsq9', Ranges.vsqVillainRange('bb_co_btnsq9'), 100);
+assert(Object.keys(vsqFq).length === 169, 'vsqFreqMap covers all 169 hands');
+assert(vsqFq.AA.aggro === 1 && vsqFq['72o'].fold === 1, 'AA 4-bets, 72o folds');
+assert(Math.abs(vsqFq.AQs.aggro + vsqFq.AQs.call + vsqFq.AQs.fold - 1) < 1e-9,
+  'facing-squeeze frequencies sum to 1');
+
+// 對子不可有破洞
+[100, 60, 40].forEach(function (bb) {
+  var r = vsqSets('bb_co_btnsq9', Ranges.vsqVillainRange('bb_co_btnsq9'), bb);
+  var inSet = {};
+  r.tb.concat(r.call).forEach(function (i) { inSet[i] = true; });
+  var pairs = [];
+  for (var p = 0; p < 13; p++) if (inSet[p * 13 + p]) pairs.push(p);
+  var okP = pairs.length === 0 ||
+    (pairs[0] === 0 && pairs[pairs.length - 1] - pairs[0] === pairs.length - 1);
+  assert(okP, 'vsq@' + bb + 'bb: continued pairs are a gapless top run');
+});
+
 console.log('--- Facing limpers (iso) ---');
 
 assert(Ranges.ISO_SPOT_KEYS.length === 24 &&
