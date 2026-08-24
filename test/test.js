@@ -2381,6 +2381,75 @@ var streetExOk = Object.keys(langTables).every(function (lang) {
 });
 assert(streetExOk, 'voice: 12 語系「逐街」範例全數可解析');
 
+// ---------- 10. 一句話錄整手（桌況／結果／對手／攤牌） ----------
+console.log('--- VoiceCards hand-record ---');
+
+var vt = Voice.parseTable('盲注5/10 前注1 有效籌碼100 8人 錦標賽');
+assert(vt.blinds === '5/10' && vt.ante === 1 && vt.stack === 100 && vt.players === 8 && vt.gtype === 'mtt',
+  'voice: parseTable zh 全欄位');
+vt = Voice.parseTable('blinds 50 100 cash 6 players stack 80');
+assert(vt.blinds === '50/100' && vt.gtype === 'cash' && vt.players === 6 && vt.stack === 80,
+  'voice: parseTable en＋空白分隔盲注');
+vt = Voice.parseTable('盲注510');
+assert(vt.blinds === undefined, 'voice: 盲注沒分隔不亂猜');
+vt = Voice.parseTable('有效籌碼100 對手BTN 籌碼80');
+assert(vt.stack === 100, 'voice: stack 取第一個（桌況在前）');
+
+assert(Voice.parseResult('結果輸35') === -35 && Voice.parseResult('贏75') === 75 &&
+  Voice.parseResult('lost 12.5') === -12.5 && Voice.parseResult('結果 -20') === -20 &&
+  Voice.parseResult('底池45 我加注') === null, 'voice: parseResult 贏/輸/lost/結果');
+
+assert(Voice.parsePosition('對手BTN 80') === null, 'voice: 對手BTN 不是我的位置');
+assert(Voice.parsePosition('我在CO，對手BTN 80') === 'CO', 'voice: 有對手詞時仍取到我的 CO');
+
+var vo = Voice.parseOppStacks('BTN 80，SB 45');
+assert(vo.length === 2 && vo[0].pos === 'BTN' && vo[0].stack === 80 && vo[1].pos === 'SB' && vo[1].stack === 45,
+  'voice: parseOppStacks 兩列');
+vo = Voice.parseOppStacks('對手BTN 80');
+assert(vo.length === 1 && vo[0].pos === 'BTN' && vo[0].stack === 80, 'voice: 對手BTN 80');
+assert(Voice.parseOppStacks('as de corazones').length === 0, 'voice: corazones 不產生對手列');
+
+var vsd = Voice.parseShowdown('BTN 方塊9 方塊8，SB 紅心A 紅心K');
+assert(vsd.length === 2 && vsd[0].pos === 'BTN' &&
+  Evaluator.cardToString(vsd[0].cards[0]) === '9d' && Evaluator.cardToString(vsd[0].cards[1]) === '8d' &&
+  vsd[1].pos === 'SB' && Evaluator.cardToString(vsd[1].cards[0]) === 'Ah',
+  'voice: parseShowdown 兩家');
+assert(Voice.parseShowdown('BTN 方塊9').length === 0, 'voice: 攤牌不足兩張略過');
+
+// 一句話整手：12 語系範例鎖（桌況+位置+手牌+逐街+結果）
+var allExKey = '語音範例：「盲注5/10 有效籌碼100 8人 錦標賽，我在CO 紅心A 黑桃K，翻牌 黑桃10 紅心9 梅花2 底池45 需跟30 我加注 對手 口袋七以上 AK，結果輸35」';
+var allExOk = Object.keys(langTables).every(function (lang) {
+  var ex = langTables[lang] ? langTables[lang][allExKey] : allExKey;
+  var tb = Voice.parseTable(ex);
+  var st = Voice.parseStreets(ex);
+  var p = Voice.parse(st.cleaned, { villains: 1 });
+  var m = vslots(p);
+  var ok = tb.blinds === '5/10' && tb.stack === 100 && tb.players === 8 && tb.gtype === 'mtt' &&
+    Voice.parsePosition(ex) === 'CO' &&
+    m.hero0 === 'Ah' && m.hero1 === 'Ks' &&
+    m.board0 === 'Ts' && m.board1 === '9h' && m.board2 === '2c' &&
+    st.segs.flop && st.segs.flop.pot === 45 && st.segs.flop.call === 30 &&
+    st.segs.flop.action === 'raise' && st.segs.flop.range === '77+ AKs AKo' &&
+    Voice.parseResult(ex) === -35;
+  if (!ok) console.log('  整手範例失敗 [' + lang + ']: ' + ex + ' → table=' + JSON.stringify(tb) +
+    ' slots=' + JSON.stringify(m) + ' segs=' + JSON.stringify(st.segs) +
+    ' pos=' + Voice.parsePosition(ex) + ' result=' + Voice.parseResult(ex));
+  return ok;
+});
+assert(allExOk, 'voice: 12 語系「一句話錄整手」範例全數可解析');
+
+// 攤牌範例：12 語系鎖
+var showExKey = '語音範例：「BTN 方塊9 方塊8」';
+var showExOk = Object.keys(langTables).every(function (lang) {
+  var ex = langTables[lang] ? langTables[lang][showExKey] : showExKey;
+  var sd = Voice.parseShowdown(ex);
+  var ok = sd.length === 1 && sd[0].pos === 'BTN' &&
+    Evaluator.cardToString(sd[0].cards[0]) === '9d' && Evaluator.cardToString(sd[0].cards[1]) === '8d';
+  if (!ok) console.log('  攤牌範例失敗 [' + lang + ']: ' + ex + ' → ' + JSON.stringify(sd));
+  return ok;
+});
+assert(showExOk, 'voice: 12 語系「攤牌」範例全數可解析');
+
 // ---------- summary ----------
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 if (failed > 0) process.exit(1);

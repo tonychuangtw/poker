@@ -1217,5 +1217,13 @@
  "Outs / 賠率": "Outs / odds",
  "聽牌 outs 對應成牌機率的精確對照表": "Exact table mapping draw outs to hitting odds",
  "‹ 返回目錄": "‹ Back to list",
- "翻前 range 圖與翻後速查表都在這：先從目錄選你遇到的情境，再看該情境的建議打法。": "All preflop range charts and postflop quick references live here: pick your situation from the list, then see the recommended play."
+ "翻前 range 圖與翻後速查表都在這：先從目錄選你遇到的情境，再看該情境的建議打法。": "All preflop range charts and postflop quick references live here: pick your situation from the list, then see the recommended play.",
+ "位置與手牌": "Position & hand",
+ "桌況": "Table",
+ "沒聽到可以填的內容，再試一次": "Nothing usable heard — try again",
+ "結果": "Result",
+ "語音範例：「BTN 80，SB 45」": "Voice example: \"BTN 80, SB 45\"",
+ "語音範例：「BTN 方塊9 方塊8」": "Voice example: \"BTN nine of diamonds eight of diamonds\"",
+ "語音範例：「盲注5/10 有效籌碼100 8人 錦標賽，我在CO 紅心A 黑桃K，翻牌 黑桃10 紅心9 梅花2 底池45 需跟30 我加注 對手 口袋七以上 AK，結果輸35」": "Voice example: \"blinds 5/10 stack 100 8 players tournament, CO ace of hearts king of spades, flop ten of spades nine of hearts two of clubs pot 45 call 30 raise pocket sevens plus AK, lost 35\"",
+ "🎤 一句話錄整手": "🎤 Dictate whole hand"
 }
