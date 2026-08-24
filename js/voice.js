@@ -269,7 +269,10 @@
     s = s.replace(/[！-～]/g, function (ch) {
       return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0);
     });
+    // 小數點先保護（「lost 12.5」的 . 不是標點），其他標點轉空白
+    s = s.replace(/(\d)\.(\d)/g, '$1\u0001$2');
     s = s.replace(/[、，。．；：！？…·,.;:!?'"“”„«»‹›「」『』()（）[\]—–~]/g, ' ');
+    s = s.replace(/\u0001/g, '.');
     return s.replace(/\s{2,}/g, ' ').replace(/^\s+|\s+$/g, '');
   }
 
@@ -285,15 +288,100 @@
     ['BIG BLIND', 'BB'], ['大盲', 'BB'], ['BB', 'BB']
   ].sort(byLenDesc);
 
-  // 「我在CO」「button」→ hPos 的選項值；沒講就回 null
+  // 「我在CO」「button」→ hPos 的選項值；沒講就回 null。
+  // 「對手BTN」這種前面帶對手詞的，是對手的位置不是我的 → 跳過。
+  var VILLAIN_NEAR = /(?:對手|对手|對家|对家|VILLAIN|OPPONENT)\s*$/;
   function parsePosition(text) {
     var raw = liteNormalize(text);
     var U = upperAligned(raw);
     for (var i = 0; i < U.length; i++) {
       var hit = matchIn(POSITION_WORDS, U, i);
-      if (hit) return hit.val;
+      if (!hit) continue;
+      if (VILLAIN_NEAR.test(U.slice(Math.max(0, i - 12), i))) { i += hit.len - 1; continue; }
+      return hit.val;
     }
     return null;
+  }
+
+  /* ================= 一句話錄整手：桌況／結果／對手列 ================= */
+
+  var TABLE_BLINDS = /(?:盲注|大小盲|BLINDS?)\s*(\d+(?:\.\d+)?)[/的比對对\s\-]+(\d+(?:\.\d+)?)/i;
+  var TABLE_ANTE = /(?:前注|ANTE)\s*(\d+(?:\.\d+)?)/i;
+  var TABLE_STACK = /(?:有效籌碼|有效筹码|籌碼|筹码|STACKS?|EFFECTIVE)\s*(\d+(?:\.\d+)?)/i;
+  var TABLE_PLAYERS = /(\d+)\s*(?:人|명|PLAYERS?|HANDED)/i;
+  var TABLE_MTT = /錦標賽|锦标赛|比賽|比赛|MTT|TOURNAMENT/i;
+  var TABLE_CASH = /現金|现金|CASH/i;
+
+  // 桌況：「盲注5/10 前注1 有效籌碼100 8人 錦標賽」→ {blinds, ante, stack, players, gtype}
+  // 各欄位取第一個出現的（桌況通常講在最前面，後面的數字是別的東西）
+  function parseTable(text) {
+    var s = liteNormalize(text);
+    var out = {}, m;
+    m = TABLE_BLINDS.exec(s);
+    if (m) out.blinds = m[1] + '/' + m[2];
+    m = TABLE_ANTE.exec(s);
+    if (m) out.ante = parseFloat(m[1]);
+    m = TABLE_STACK.exec(s);
+    if (m) out.stack = parseFloat(m[1]);
+    m = TABLE_PLAYERS.exec(s);
+    if (m && +m[1] >= 2 && +m[1] <= 10) out.players = +m[1];
+    if (TABLE_MTT.test(s)) out.gtype = 'mtt';
+    else if (TABLE_CASH.test(s)) out.gtype = 'cash';
+    return out;
+  }
+
+  var RESULT_WIN = /(?:贏|赢|WON|WIN)\s*(\d+(?:\.\d+)?)/i;
+  var RESULT_LOSE = /(?:輸|输|LOST|LOSE)\s*(\d+(?:\.\d+)?)/i;
+  var RESULT_NUM = /(?:結果|结果|RESULT)\s*([+-]?\d+(?:\.\d+)?)/i;
+
+  // 「贏75」→ +75、「輸35」→ -35、「結果 -35」→ -35；沒講回 null
+  function parseResult(text) {
+    var s = liteNormalize(text), m;
+    m = RESULT_WIN.exec(s);
+    if (m) return parseFloat(m[1]);
+    m = RESULT_LOSE.exec(s);
+    if (m) return -parseFloat(m[1]);
+    m = RESULT_NUM.exec(s);
+    if (m) return parseFloat(m[1]);
+    return null;
+  }
+
+  // 「BTN 80，SB 45」（也吃「對手BTN 80」）→ [{pos, stack}]
+  function parseOppStacks(text) {
+    var raw = liteNormalize(text);
+    var U = upperAligned(raw);
+    var out = [];
+    for (var i = 0; i < U.length; i++) {
+      var hit = matchIn(POSITION_WORDS, U, i);
+      if (!hit) { continue; }
+      var j = skipSpaces(U, i + hit.len);
+      var m = /^(\d+(?:\.\d+)?)/.exec(U.slice(j, j + 12));
+      if (m) { out.push({ pos: hit.val, stack: parseFloat(m[1]) }); i = j + m[1].length - 1; }
+      else i += hit.len - 1;
+    }
+    return out;
+  }
+
+  // 攤牌：「BTN 方塊9 方塊8，SB 紅心A 紅心K」→ [{pos, cards: [int,int]}]
+  // 以位置詞切段，每段抓前兩張牌；不足兩張的段落略過
+  function parseShowdown(text) {
+    var raw = liteNormalize(text);
+    var U = upperAligned(raw);
+    var marks = [], i, hit;
+    for (i = 0; i < U.length; i++) {
+      hit = matchIn(POSITION_WORDS, U, i);
+      if (hit) { marks.push({ at: i, len: hit.len, pos: hit.val }); i += hit.len - 1; }
+    }
+    var out = [];
+    for (i = 0; i < marks.length; i++) {
+      var from = marks[i].at + marks[i].len;
+      var to = i + 1 < marks.length ? marks[i + 1].at : raw.length;
+      var p = parse(raw.slice(from, to), { villains: 1 });
+      var cards = [];
+      p.entries.forEach(function (en) { if (cards.length < 2) cards.push(en.card); });
+      if (cards.length === 2) out.push({ pos: marks[i].pos, cards: cards });
+    }
+    return out;
   }
 
   var STREET_SEG = [
@@ -340,9 +428,14 @@
     });
     PAIR_RE.lastIndex = 0;
     while ((m = PAIR_RE.exec(rest))) {
-      // latin 邊界：像 TAKE/STACK 這種字裡的 TA 不能當 range
-      if (/[A-Za-z0-9]/.test(rest.charAt(m.index - 1)) ||
-          /[A-Za-z0-9]/.test(rest.charAt(PAIR_RE.lastIndex))) continue;
+      // latin 邊界：像 TAKE/STACK 這種字裡的 TA 不能當 range。
+      // 後邊界看「兩個 rank 之後」那個字元（不含 \s* 吃掉的空白，
+      // 否則「AK lost」會被後面的 L 誤擋）；有講同花/以上等後綴的一定是有意的，免檢。
+      var coreLen = m[1].length +
+        (m[0].length > m[1].length && m[0].charAt(m[1].length) === ' ' ? 1 : 0) + m[2].length;
+      var hasSuf = !!(m[3] || m[4]);
+      if (/[A-Za-z0-9]/.test(rest.charAt(m.index - 1))) continue;
+      if (!hasSuf && /[A-Za-z0-9]/.test(rest.charAt(m.index + coreLen))) continue;
       var a = rangeRank(m[1]), b = rangeRank(m[2]);
       var suf = m[3] || '';
       var plus = m[4] ? '+' : '';
@@ -412,7 +505,9 @@
 
   var VoiceCards = {
     parse: parse, normalize: normalize,
-    parsePosition: parsePosition, parseStreets: parseStreets, parseAmounts: parseAmounts
+    parsePosition: parsePosition, parseStreets: parseStreets, parseAmounts: parseAmounts,
+    parseTable: parseTable, parseResult: parseResult,
+    parseOppStacks: parseOppStacks, parseShowdown: parseShowdown
   };
   if (isNode) { module.exports = VoiceCards; return; }
   global.VoiceCards = VoiceCards;
@@ -430,8 +525,8 @@
 
   function hotwords() {
     return sttLang() === 'zh'
-      ? '黑桃、紅心、方塊、梅花、黑桃10、紅心9、紅心A、老K、對手、公牌、翻牌、轉牌、河牌、底池、需跟、加注、跟注、全下、蓋牌、口袋、以上、同花、CO、BTN、清除'
-      : 'spades, hearts, diamonds, clubs, ace, king, queen, jack, ten, hero, villain, board, flop, turn, river, pot, call, raise, fold, pocket, suited';
+      ? '黑桃、紅心、方塊、梅花、黑桃10、紅心9、紅心A、老K、對手、公牌、翻牌、轉牌、河牌、底池、需跟、加注、跟注、全下、蓋牌、口袋、以上、同花、盲注、有效籌碼、錦標賽、結果、贏、輸、CO、BTN、清除'
+      : 'spades, hearts, diamonds, clubs, ace, king, queen, jack, ten, hero, villain, board, flop, turn, river, pot, call, raise, fold, pocket, suited, blinds, stack, tournament, won, lost';
   }
 
   function pickMime() {
@@ -568,12 +663,7 @@
 
   /* 複盤精靈步驟 4：「翻牌 黑桃10 紅心9 梅花2 底池45 需跟30 我加注，轉牌…」
      → 各街公牌（翻牌 3 張、轉牌 1 張、河牌 1 張）＋底池／需跟／行動 */
-  function handleStreetsText(text, status) {
-    var st = parseStreets(text);
-    var parsed = parse(st.cleaned, { villains: 1 });
-    for (var i = 0; i < parsed.errors.length; i++) {
-      if (parsed.errors[i].code === 'dup') { status(t('聽到：') + text + ' → ' + t('沒聽到可用的牌，再試一次')); return; }
-    }
+  function collectBoards(parsed) {
     var boards = { flop: [], turn: [], river: [] };
     parsed.entries.forEach(function (en) {
       var m = /^board(\d)$/.exec(en.slot);
@@ -581,15 +671,14 @@
       var b = +m[1];
       boards[b < 3 ? 'flop' : b === 3 ? 'turn' : 'river'].push({ b: b, card: en.card });
     });
-    var anySeg = false, k;
-    for (k in st.segs) { anySeg = true; break; }
-    if (!boards.flop.length && !boards.turn.length && !boards.river.length && !anySeg) {
-      status(t('聽到：') + text + ' → ' + t('先說「翻牌／轉牌／河牌」再接牌'));
-      return;
-    }
+    return boards;
+  }
+
+  /* 把 parseStreets 的結果灌進逐街欄位；回傳 {updated: [street…], err} */
+  function applyStreets(st, parsed) {
+    var boards = collectBoards(parsed);
     if ((boards.flop.length && boards.flop.length !== 3) || boards.turn.length > 1 || boards.river.length > 1) {
-      status(t('聽到：') + text + ' → ' + t('公牌張數不對（翻牌 3 張、轉牌 1 張、河牌 1 張）'));
-      return;
+      return { updated: [], err: t('公牌張數不對（翻牌 3 張、轉牌 1 張、河牌 1 張）') };
     }
     var updated = [];
     ['flop', 'turn', 'river'].forEach(function (street) {
@@ -611,9 +700,113 @@
       if (seg.range) setInput(block.querySelector('.hs-range'), seg.range);
       if (updated.indexOf(street) === -1) updated.push(street);
     });
+    return { updated: updated, err: null };
+  }
+
+  function streetNames(list) {
     var names = global.HANDS && global.HANDS.STREET_NAMES;
-    status(t('聽到：') + text + ' → ' + t('已更新：') + updated.map(function (street) {
+    return list.map(function (street) {
       return names && names[street] ? names[street] : street;
+    });
+  }
+
+  function handleStreetsText(text, status) {
+    var st = parseStreets(text);
+    var parsed = parse(st.cleaned, { villains: 1 });
+    for (var i = 0; i < parsed.errors.length; i++) {
+      if (parsed.errors[i].code === 'dup') { status(t('聽到：') + text + ' → ' + t('沒聽到可用的牌，再試一次')); return; }
+    }
+    var boards = collectBoards(parsed);
+    var anySeg = false, k;
+    for (k in st.segs) { anySeg = true; break; }
+    if (!boards.flop.length && !boards.turn.length && !boards.river.length && !anySeg) {
+      status(t('聽到：') + text + ' → ' + t('先說「翻牌／轉牌／河牌」再接牌'));
+      return;
+    }
+    var res = applyStreets(st, parsed);
+    if (res.err) {
+      status(t('聽到：') + text + ' → ' + res.err);
+      return;
+    }
+    status(t('聽到：') + text + ' → ' + t('已更新：') + streetNames(res.updated).join('、'));
+  }
+
+  /* 步驟 1：一句話錄整手（桌況＋位置＋手牌＋逐街＋結果，講到哪填到哪） */
+  function handleHandAll(text, status) {
+    var st = parseStreets(text);
+    var parsed = parse(st.cleaned, { villains: 1 });
+    for (var i = 0; i < parsed.errors.length; i++) {
+      if (parsed.errors[i].code === 'dup') { status(t('聽到：') + text + ' → ' + t('沒聽到可用的牌，再試一次')); return; }
+    }
+    var updated = [];
+    var tbl = parseTable(text);
+    var anyTable = false;
+    if (tbl.blinds !== undefined) { setInput(document.getElementById('hBlinds'), tbl.blinds); anyTable = true; }
+    if (tbl.ante !== undefined) { setInput(document.getElementById('hAnte'), tbl.ante); anyTable = true; }
+    if (tbl.stack !== undefined) { setInput(document.getElementById('hStack'), tbl.stack); anyTable = true; }
+    if (tbl.players !== undefined) { setInput(document.getElementById('hwPlayers'), tbl.players); anyTable = true; }
+    if (tbl.gtype) { setInput(document.getElementById('hwType'), tbl.gtype); anyTable = true; }
+    if (anyTable) updated.push(t('桌況'));
+    var pos = parsePosition(text);
+    var cards = [];
+    parsed.entries.forEach(function (en) {
+      if (en.slot === 'hero0' || en.slot === 'hero1') cards.push(en.card);
+    });
+    if (pos) setInput(document.getElementById('hPos'), pos);
+    if (cards.length >= 2) {
+      setInput(document.getElementById('hHero'),
+        cards.slice(0, 2).map(function (c) { return Evaluator.cardToString(c); }).join(' '));
+    }
+    if (pos || cards.length >= 2) updated.push(t('位置與手牌'));
+    var stRes = applyStreets(st, parsed);
+    updated = updated.concat(streetNames(stRes.updated));
+    var result = parseResult(text);
+    if (result !== null) { setInput(document.getElementById('hResult'), result); updated.push(t('結果')); }
+    var msg = t('聽到：') + text;
+    if (updated.length) msg += ' → ' + t('已更新：') + updated.join('、');
+    else if (!stRes.err) msg += ' → ' + t('沒聽到可以填的內容，再試一次');
+    if (stRes.err) msg += '（' + stRes.err + '）';
+    status(msg);
+  }
+
+  /* 步驟 3：對手位置＋籌碼 → 逐列新增 */
+  function fillPosRow(boxId, addBtnId, pos, val) {
+    var btn = document.getElementById(addBtnId);
+    var box = document.getElementById(boxId);
+    if (!btn || !box) return;
+    btn.click();
+    var rows = box.querySelectorAll('.evt-row');
+    var row = rows[rows.length - 1];
+    if (!row) return;
+    setInput(row.querySelector('select'), pos);
+    setInput(row.querySelector('input'), val);
+  }
+
+  function handleOppsText(text, status) {
+    var opps = parseOppStacks(text);
+    if (!opps.length) {
+      status(t('聽到：') + text + ' → ' + t('沒聽到可以填的內容，再試一次'));
+      return;
+    }
+    opps.forEach(function (o) { fillPosRow('hwOpps', 'btnAddOpp', o.pos, o.stack); });
+    status(t('聽到：') + text + ' → ' + t('已更新：') + opps.map(function (o) {
+      return o.pos + ' ' + o.stack;
+    }).join('、'));
+  }
+
+  /* 步驟 5：攤牌（位置＋兩張牌）→ 逐列新增 */
+  function handleShowsText(text, status) {
+    var shows = parseShowdown(text);
+    if (!shows.length) {
+      status(t('聽到：') + text + ' → ' + t('沒聽到可以填的內容，再試一次'));
+      return;
+    }
+    shows.forEach(function (o) {
+      fillPosRow('hwShows', 'btnAddShow', o.pos,
+        o.cards.map(function (c) { return Evaluator.cardToString(c); }).join(' '));
+    });
+    status(t('聽到：') + text + ' → ' + t('已更新：') + shows.map(function (o) {
+      return o.pos + ' ' + o.cards.map(function (c) { return Evaluator.cardToString(c); }).join(' ');
     }).join('、'));
   }
 
@@ -622,6 +815,15 @@
       { btn: 'btnVoiceEquity', row: 'voiceEquityRow', status: 'voiceEquityStatus',
         example: '語音範例：「我 紅心A 黑桃K，對手 方塊Q 方塊J，公牌 黑桃10 紅心9 梅花2，底池100 需跟30」',
         handler: handleEquityText },
+      { btn: 'btnVoiceHandAll', row: 'voiceHandAllRow', status: 'voiceHandAllStatus',
+        example: '語音範例：「盲注5/10 有效籌碼100 8人 錦標賽，我在CO 紅心A 黑桃K，翻牌 黑桃10 紅心9 梅花2 底池45 需跟30 我加注 對手 口袋七以上 AK，結果輸35」',
+        handler: handleHandAll },
+      { btn: 'btnVoiceOpps', row: 'voiceOppsRow', status: 'voiceOppsStatus',
+        example: '語音範例：「BTN 80，SB 45」',
+        handler: handleOppsText },
+      { btn: 'btnVoiceShows', row: 'voiceShowsRow', status: 'voiceShowsStatus',
+        example: '語音範例：「BTN 方塊9 方塊8」',
+        handler: handleShowsText },
       { btn: 'btnVoiceHandHero', row: 'voiceHandHeroRow', status: 'voiceHandHeroStatus',
         example: '語音範例：「我在CO 紅心A 黑桃K」',
         handler: handleHeroText },
@@ -659,6 +861,9 @@
   VoiceCards.handleEquityText = handleEquityText;
   VoiceCards.handleHeroText = handleHeroText;
   VoiceCards.handleStreetsText = handleStreetsText;
+  VoiceCards.handleHandAll = handleHandAll;
+  VoiceCards.handleOppsText = handleOppsText;
+  VoiceCards.handleShowsText = handleShowsText;
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
