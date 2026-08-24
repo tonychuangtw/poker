@@ -21,13 +21,21 @@
     if (btn.dataset.tab === 'tracker') drawChart(); // canvas 需在可見時重繪
   });
 
-  /* 圖表分頁的子分段：翻前 range / 翻後・速查 */
-  $('#chartSeg').addEventListener('click', function (e) {
-    var btn = e.target.closest('button');
+  /* 策略分頁：目錄（依情境分組）→ 單張圖，返回鍵回目錄（2026-08-24 Tony） */
+  $('#chartMenu').addEventListener('click', function (e) {
+    var btn = e.target.closest('.chart-menu-item');
     if (!btn) return;
-    $$('#chartSeg button').forEach(function (b) { b.classList.toggle('active-role', b === btn); });
-    $('#chartGroupPre').hidden = btn.dataset.group !== 'pre';
-    $('#chartGroupPost').hidden = btn.dataset.group !== 'post';
+    $$('#chartDetail .card').forEach(function (c) {
+      c.hidden = c.dataset.chart !== btn.dataset.chart;
+    });
+    $('#chartMenu').hidden = true;
+    $('#chartDetail').hidden = false;
+    window.scrollTo(0, 0);
+  });
+  $('#btnChartBack').addEventListener('click', function () {
+    $('#chartDetail').hidden = true;
+    $('#chartMenu').hidden = false;
+    window.scrollTo(0, 0);
   });
 
   /* ================= Tab 1: 記帳 ================= */

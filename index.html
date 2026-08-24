@@ -12,8 +12,8 @@ try {
   if (fs >= 0.9 && fs <= 2) document.documentElement.style.fontSize = (16 * fs) + 'px';
 } catch (e) {}</script>
 <title>撲克工具箱 — 記帳 / EV / ICM</title>
-<link rel="stylesheet" href="css/style.css?v=63">
-<link rel="manifest" href="manifest.json?v=63">
+<link rel="stylesheet" href="css/style.css?v=64">
+<link rel="manifest" href="manifest.json?v=64">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
@@ -36,7 +36,7 @@ try {
   </button>
   <button class="tab-btn" data-tab="nash">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
-    <span>圖表</span>
+    <span>策略</span>
   </button>
   <button class="tab-btn" data-tab="train">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/></svg>
@@ -456,15 +456,69 @@ try {
   </div>
 </section>
 
-<!-- ============ Tab 4: Push/Fold Nash ============ -->
+<!-- ============ Tab 4: 策略（目錄 → 單張圖，2026-08-24 Tony「1.2.3全做」） ============ -->
 <section id="tab-nash" class="tab-panel">
-  <div class="btn-row seg-row" id="chartSeg">
-    <button class="btn active-role" data-group="pre">翻前 range</button>
-    <button class="btn" data-group="post">翻後・速查</button>
+  <div id="chartMenu">
+    <h3 class="chart-group-title">🟢 還沒人加注</h3>
+    <button type="button" class="chart-menu-item" data-chart="nash">
+      <span class="cmi-txt"><b>Push/Fold（單挑淺碼）</b><small>單挑淺籌碼只能全下或蓋牌時的 Nash 均衡</small></span>
+      <span class="cmi-arrow">›</span>
+    </button>
+    <button type="button" class="chart-menu-item" data-chart="rfi">
+      <span class="cmi-txt"><b>開牌 RFI</b><small>無人入池時，各位置該用哪些牌開牌</small></span>
+      <span class="cmi-arrow">›</span>
+    </button>
+    <button type="button" class="chart-menu-item" data-chart="iso">
+      <span class="cmi-txt"><b>面對 limp</b><small>前面有人 limp，iso-raise 還是跟 limp</small></span>
+      <span class="cmi-arrow">›</span>
+    </button>
+
+    <h3 class="chart-group-title">🟡 有人加注了</h3>
+    <button type="button" class="chart-menu-item" data-chart="def">
+      <span class="cmi-txt"><b>面對開牌</b><small>有人開牌，3-bet、跟注還是蓋牌</small></span>
+      <span class="cmi-arrow">›</span>
+    </button>
+    <button type="button" class="chart-menu-item" data-chart="sqz">
+      <span class="cmi-txt"><b>Squeeze</b><small>開牌＋有人平跟，擠壓的時機與範圍</small></span>
+      <span class="cmi-arrow">›</span>
+    </button>
+    <button type="button" class="chart-menu-item" data-chart="cold">
+      <span class="cmi-txt"><b>冷 4-bet / 冷跟</b><small>開牌＋有人 3-bet，你還沒行動時的應對</small></span>
+      <span class="cmi-arrow">›</span>
+    </button>
+
+    <h3 class="chart-group-title">🔴 你進池後被反擊</h3>
+    <button type="button" class="chart-menu-item" data-chart="v3b">
+      <span class="cmi-txt"><b>被 3-bet</b><small>你開牌被 3-bet，4-bet、跟注還是蓋牌</small></span>
+      <span class="cmi-arrow">›</span>
+    </button>
+    <button type="button" class="chart-menu-item" data-chart="vs4b">
+      <span class="cmi-txt"><b>面對 4-bet</b><small>你 3-bet 後被 4-bet，翻前最後一關</small></span>
+      <span class="cmi-arrow">›</span>
+    </button>
+    <button type="button" class="chart-menu-item" data-chart="vsq">
+      <span class="cmi-txt"><b>面對 squeeze</b><small>你開牌、有人跟注後被 squeeze 的應對</small></span>
+      <span class="cmi-arrow">›</span>
+    </button>
+
+    <h3 class="chart-group-title">📋 翻後・速查</h3>
+    <button type="button" class="chart-menu-item" data-chart="cbet">
+      <span class="cmi-txt"><b>翻後 c-bet</b><small>輸入翻牌，看建議下注頻率、尺度與打法</small></span>
+      <span class="cmi-arrow">›</span>
+    </button>
+    <button type="button" class="chart-menu-item" data-chart="mdf">
+      <span class="cmi-txt"><b>MDF / 詐唬比</b><small>面對下注的最低防守頻率與詐唬比速查</small></span>
+      <span class="cmi-arrow">›</span>
+    </button>
+    <button type="button" class="chart-menu-item" data-chart="outs">
+      <span class="cmi-txt"><b>Outs / 賠率</b><small>聽牌 outs 對應成牌機率的精確對照表</small></span>
+      <span class="cmi-arrow">›</span>
+    </button>
   </div>
 
-  <div id="chartGroupPre">
-  <div class="card">
+  <div id="chartDetail" hidden>
+  <button type="button" class="chart-back" id="btnChartBack">‹ 返回目錄</button>
+  <div class="card" data-chart="nash">
     <h2>Nash 均衡圖表（HU push/fold）</h2>
     <p class="hint">單挑（SB 只能全下或蓋牌、BB 只能跟注或蓋牌）的 chip-EV Nash 均衡，
       以 fictitious play 即時求解。綠色 = 全下 / 跟注，灰色 = 蓋牌。</p>
@@ -480,7 +534,7 @@ try {
     <div class="nash-grid-wrap"><div id="nashGrid" class="nash-grid"></div></div>
   </div>
 
-  <div class="card">
+  <div class="card" data-chart="rfi">
     <h2>開牌 range（RFI）</h2>
     <p class="hint">100bb 現金局／深籌碼 MTT 的標準 raise-first-in 建議 range（無人入池時的開牌手牌）。
       拉「%」滑桿直接選「最強 X% 手牌」，或按「✏️ 編輯」點格子微調。
@@ -509,7 +563,7 @@ try {
     <div class="nash-grid-wrap"><div id="rfiGrid" class="nash-grid"></div></div>
   </div>
 
-  <div class="card" data-pro="def">
+  <div class="card" data-pro="def" data-chart="def">
     <h2>面對開牌（3-bet / 防守）</h2>
     <p class="hint">前面有人開牌時的應對 range（預設 100bb，可拉滑桿試算 10–300bb；簡化 GTO 近似）。
       6-max 15 個情境為完整覆蓋；9-max Full Ring 36 個情境為<b>現場取向</b>——
@@ -542,7 +596,7 @@ try {
     <div class="nash-grid-wrap"><div id="defGrid" class="nash-grid"></div></div>
   </div>
 
-  <div class="card" data-pro="v3b">
+  <div class="card" data-pro="v3b" data-chart="v3b">
     <h2>被 3-bet（4-bet / 跟注 / 棄牌）</h2>
     <p class="hint">自己在翻前開牌後被 3-bet 的應對 range（預設 100bb，可拉滑桿試算 10–300bb）。
       9-max 那組是現場取向：那邊的 3-bet range 很緊很偏價值，所以續玩要比 6-max 收得多。
@@ -569,7 +623,7 @@ try {
     <div class="nash-grid-wrap"><div id="v3bGrid" class="nash-grid"></div></div>
   </div>
 
-  <div class="card" data-pro="vs4b">
+  <div class="card" data-pro="vs4b" data-chart="vs4b">
     <h2>面對 4-bet（你 3-bet 後被 4-bet 回來）</h2>
     <p class="hint">翻前樹的最後一個節點：你照防守圖 3-bet，開牌者 4-bet 回來 ——
       <span class="legend-tb">紅</span> = 5-bet（淺籌碼＝全下）、<span class="legend-call">綠</span> = 跟注、灰 = 蓋牌。
@@ -601,7 +655,7 @@ try {
     <div class="nash-grid-wrap"><div id="vs4bGrid" class="nash-grid"></div></div>
   </div>
 
-  <div class="card" data-pro="cold">
+  <div class="card" data-pro="cold" data-chart="cold">
     <h2>冷 4-bet / 冷跟（前面開牌 + 有人 3-bet）</h2>
     <p class="hint">第四種翻前局面：<b>別人開牌、第三家 3-bet，而你還沒行動</b>。
       <span class="legend-tb">紅</span> = 冷 4-bet、<span class="legend-call">綠</span> = 冷跟、灰 = 蓋牌。</p>
@@ -635,7 +689,7 @@ try {
     <div class="nash-grid-wrap"><div id="coldGrid" class="nash-grid"></div></div>
   </div>
 
-  <div class="card" data-pro="sqz">
+  <div class="card" data-pro="sqz" data-chart="sqz">
     <h2>Squeeze / 過牌跟（前面開牌 + 有人平跟）</h2>
     <p class="hint">現場最常見的多人局面：<b>開牌者加至少一個跟注者在你前面</b>。
       <span class="legend-tb">紅</span> = squeeze、<span class="legend-call">綠</span> = 跟注、灰 = 蓋牌。
@@ -667,7 +721,7 @@ try {
     <div class="nash-grid-wrap"><div id="sqGrid" class="nash-grid"></div></div>
   </div>
 
-  <div class="card" data-pro="vsq">
+  <div class="card" data-pro="vsq" data-chart="vsq">
     <h2>面對 squeeze（你開牌、有人跟注後被 squeeze）</h2>
     <p class="hint">Squeeze 圖的鏡射：<b>你開牌、有人平跟，第三家 squeeze 回來</b> ——
       <span class="legend-tb">紅</span> = 4-bet（淺籌碼＝全下）、<span class="legend-call">綠</span> = 跟注、灰 = 蓋牌。
@@ -700,7 +754,7 @@ try {
     <div class="nash-grid-wrap"><div id="vsqGrid" class="nash-grid"></div></div>
   </div>
 
-  <div class="card" data-pro="iso">
+  <div class="card" data-pro="iso" data-chart="iso">
     <h2>面對 limp（iso-raise / 跟 limp）</h2>
     <p class="hint">現場滿桌 limper，但市面上幾乎沒有這種圖。前面 1–2 家 limp，你要
       <span class="legend-tb">紅</span> = iso-raise、<span class="legend-call">綠</span> = 跟 limp（BB＝過牌）還是灰 = 蓋牌。
@@ -731,10 +785,8 @@ try {
     <p class="hint" id="isoNote"></p>
     <div class="nash-grid-wrap"><div id="isoGrid" class="nash-grid"></div></div>
   </div>
-  </div>
 
-  <div id="chartGroupPost" hidden>
-  <div class="card" data-pro="cbet">
+  <div class="card" data-pro="cbet" data-chart="cbet">
     <h2>翻後 c-bet 速查</h2>
     <p class="hint">輸入翻牌，看牌面質地、建議的持續下注頻率與尺度，以及你手上這手牌該怎麼打。
       濕度 = 同花成分與順子成分各半（0 = 全乾、1 = 全濕）。建議為公認啟發式，非 solver 輸出。</p>
@@ -769,7 +821,7 @@ try {
     </div>
   </div>
 
-  <div class="card" data-pro="mdf">
+  <div class="card" data-pro="mdf" data-chart="mdf">
     <h2>MDF / 詐唬比速查</h2>
     <p class="hint">MDF（最低防守頻率）= 底池 ÷（底池＋下注）：棄牌多過這個數，對手隨便詐唬都賺。
       跟注賠率 = 下注 ÷（底池＋2×下注），同時也是「對手下注 range 裡 bluff 該占的比例」——
@@ -779,7 +831,7 @@ try {
     </div>
   </div>
 
-  <div class="card" data-pro="outs">
+  <div class="card" data-pro="outs" data-chart="outs">
     <h2>Outs / 賠率速查</h2>
     <p class="hint">「4-2 法則」：翻牌後兩張約 outs×4%，只剩一張約 outs×2%。下表為精確值。</p>
     <div class="stats-table-wrap">
@@ -1053,29 +1105,29 @@ try {
 <footer class="app-footer">純前端計算，資料存在此裝置的瀏覽器；右上角 Google 登入可跨裝置同步。<br>
 <a href="privacy.html">隱私政策</a> ｜ <a href="support.html">支援</a></footer>
 
-<script src="js/i18n-dict.js?v=63"></script>
-<script src="js/chip.js?v=63"></script>
-<script src="js/i18n.js?v=63"></script>
-<script src="js/ui-dialog.js?v=63"></script>
-<script src="js/theme.js?v=63"></script>
-<script src="js/fontsize.js?v=63"></script>
-<script src="js/pro.js?v=63"></script>
-<script src="js/schedule.js?v=63"></script>
-<script src="js/evaluator.js?v=63"></script>
-<script src="js/equity.js?v=63"></script>
-<script src="js/icm.js?v=63"></script>
-<script src="js/tracker-stats.js?v=63"></script>
-<script src="js/preflop-table.js?v=63"></script>
-<script src="js/pushfold.js?v=63"></script>
-<script src="js/ranges.js?v=63"></script>
-<script src="js/postflop.js?v=63"></script>
-<script src="js/hands.js?v=63"></script>
-<script src="js/nash.js?v=63"></script>
-<script src="js/app.js?v=63"></script>
-<script src="js/voice.js?v=63"></script>
-<script src="js/training.js?v=63"></script>
-<script src="js/sync.js?v=63"></script>
-<script src="js/native.js?v=63"></script>
-<script src="js/tour.js?v=63"></script>
+<script src="js/i18n-dict.js?v=64"></script>
+<script src="js/chip.js?v=64"></script>
+<script src="js/i18n.js?v=64"></script>
+<script src="js/ui-dialog.js?v=64"></script>
+<script src="js/theme.js?v=64"></script>
+<script src="js/fontsize.js?v=64"></script>
+<script src="js/pro.js?v=64"></script>
+<script src="js/schedule.js?v=64"></script>
+<script src="js/evaluator.js?v=64"></script>
+<script src="js/equity.js?v=64"></script>
+<script src="js/icm.js?v=64"></script>
+<script src="js/tracker-stats.js?v=64"></script>
+<script src="js/preflop-table.js?v=64"></script>
+<script src="js/pushfold.js?v=64"></script>
+<script src="js/ranges.js?v=64"></script>
+<script src="js/postflop.js?v=64"></script>
+<script src="js/hands.js?v=64"></script>
+<script src="js/nash.js?v=64"></script>
+<script src="js/app.js?v=64"></script>
+<script src="js/voice.js?v=64"></script>
+<script src="js/training.js?v=64"></script>
+<script src="js/sync.js?v=64"></script>
+<script src="js/native.js?v=64"></script>
+<script src="js/tour.js?v=64"></script>
 </body>
 </html>
