@@ -12,7 +12,18 @@
      鍵名刻意不用 poker. 前綴 —— gatherKeys 會把 poker.* 全部上傳雲端，token 不能跟著同步 */
   var SESS_KEY = "sync.sess";
   var PUSH_INTERVAL_MS = 60000;
+  /* 2026-08-25 資料遺失事故（Tony 8/23–24 記帳被洗掉）後的重寫：
+     - pull 不再整包覆蓋：清單鍵（sessions/hands/notes）按 id 逐筆合併，刪除靠墓碑（poker.deleted）
+     - 存檔即推（debounce 2 秒），不再只靠 60 秒輪詢；關頁改 fetch keepalive，iOS 收 App 不會砍掉
+     - lastPushedHash 落地（sync.lastHash）：冷啟動時資料沒變就不重推，不會把舊資料重新蓋章成「最新」
+     事故鏈：凌晨輸入→關 App 推送被砍→早上另一個瀏覽器分身冷啟動重推舊資料→PWA pull 見時間戳較新整包蓋掉 */
+  var LIST_KEYS = ["poker.sessions", "poker.hands", "poker.notes"];
+  var TOMB_KEY = "poker.deleted";   // [{id,ts}]，隨 blob 同步，合併時濾掉已刪紀錄
+  var TOMB_CAP = 400;
+  var DIRTY_KEY = "sync.dirty";     // 本機有未同步變更（非 poker. 前綴 → 不會被上傳）
+  var HASH_KEY = "sync.lastHash";   // 最後一次與雲端一致時的 blob hash
   var lastPushedHash = null;
+  try { lastPushedHash = localStorage.getItem(HASH_KEY) || null; } catch (e) {}
 
   function token() {
     try { return localStorage.getItem(SESS_KEY) || sessionStorage.getItem(TOKEN_KEY) || ""; }
@@ -58,6 +69,86 @@
 
   function currentLevel() { return "main"; }
 
+  /* ---------- 本機變更偵測（不動 app.js：攔 localStorage.setItem） ---------- */
+  var applying = false;      // pull 套用雲端資料時不算「本機變更」
+  var pushTimer = null;
+
+  function rawSet(k, v) {
+    applying = true;
+    try { localStorage.setItem(k, v); } catch (e) {}
+    applying = false;
+  }
+  function markDirty() { try { localStorage.setItem(DIRTY_KEY, "1"); } catch (e) {} }
+  function clearDirty() { try { localStorage.removeItem(DIRTY_KEY); } catch (e) {} }
+  function isDirty() { try { return !!localStorage.getItem(DIRTY_KEY); } catch (e) { return false; } }
+
+  function parseList(raw) {
+    try { var a = JSON.parse(raw); return Array.isArray(a) ? a : null; } catch (e) { return null; }
+  }
+  function loadTombs() { return parseList(localStorage.getItem(TOMB_KEY)) || []; }
+  function saveTombs(list) {
+    list.sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+    rawSet(TOMB_KEY, JSON.stringify(list.slice(0, TOMB_CAP)));
+  }
+
+  /* 清單鍵被覆寫時，diff 出消失的 id 記成墓碑，合併時才分得出「這筆被刪了」和「對方多一筆」 */
+  function recordRemovedIds(key, oldRaw, newRaw) {
+    var oldArr = parseList(oldRaw), newArr = parseList(newRaw);
+    if (!oldArr || !oldArr.length) return;
+    var kept = {};
+    (newArr || []).forEach(function (r) { if (r && r.id) kept[r.id] = 1; });
+    var tombs = null;
+    oldArr.forEach(function (r) {
+      if (r && r.id && !kept[r.id]) {
+        if (!tombs) tombs = loadTombs();
+        tombs.push({ id: r.id, ts: Date.now() });
+      }
+    });
+    if (tombs) saveTombs(tombs);
+  }
+
+  try {
+    var origSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) {
+      var isData = this === localStorage && !applying && typeof k === "string" &&
+        k.indexOf("poker.") === 0 && k !== "poker.sync_ts" && k !== TOMB_KEY;
+      var oldVal = null;
+      if (isData && LIST_KEYS.indexOf(k) >= 0) {
+        try { oldVal = localStorage.getItem(k); } catch (e) {}
+      }
+      origSetItem.call(this, k, v);
+      if (!isData) return;
+      if (oldVal !== null && oldVal !== v) recordRemovedIds(k, oldVal, v);
+      markDirty();
+      schedulePush();
+    };
+  } catch (e) {}
+
+  function schedulePush() {
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(function () {
+      if (signedIn()) push(currentLevel());
+    }, 2000);
+  }
+
+  /* ---------- 逐筆合併 ---------- */
+  function mergeList(localRaw, remoteRaw, tombSet, preferLocal) {
+    var loc = parseList(localRaw) || [];
+    var rem = parseList(remoteRaw) || [];
+    var byId = {}, order = [], noId = [];
+    function add(r, isLocal) {
+      if (!r) return;
+      if (!r.id) { if (isLocal) noId.push(r); return; }   // 無 id 只保本機側，避免重複增生
+      if (tombSet[r.id]) return;
+      if (byId[r.id] === undefined) order.push(r.id);
+      // 同 id 兩邊都有：本機沒動過（!preferLocal）以雲端為準，動過則本機優先
+      if (byId[r.id] === undefined || (!isLocal && !preferLocal)) byId[r.id] = r;
+    }
+    loc.forEach(function (r) { add(r, true); });
+    rem.forEach(function (r) { add(r, false); });
+    return JSON.stringify(order.map(function (id) { return byId[id]; }).concat(noId));
+  }
+
   function gatherKeys(level) {
     var out = {};
     try {
@@ -76,11 +167,26 @@
     return h + ":" + s.length;
   }
 
-  function api(method, level, body, cb) {
+  function api(method, level, body, cb, opts) {
+    var url = API_BASE + "/api/progress?level=" + encodeURIComponent(level) + "&app=poker";
+    var payload = body ? JSON.stringify(body) : null;
+    /* 關頁/收 App 時的推送用 keepalive fetch：XHR 會被 iOS 直接砍掉（8/25 資料遺失主因之一）。
+       keepalive body 上限 64KB，超過退回 XHR（至少開著頁時 60 秒輪詢推得上去） */
+    if (opts && opts.keepalive && window.fetch && (!payload || payload.length < 60000)) {
+      var headers = { "Authorization": "Bearer " + token() };
+      if (payload) headers["Content-Type"] = "application/json";
+      fetch(url, { method: method, headers: headers, body: payload || undefined, keepalive: true })
+        .then(function (r) {
+          if (r.status === 401) { clearToken(); renderUi(); cb("auth"); return null; }
+          if (!r.ok) { cb("http " + r.status); return null; }
+          return r.json().catch(function () { return null; }).then(function (d) { cb(null, d); });
+        }, function () { cb("network"); });
+      return;
+    }
     var xhr = new XMLHttpRequest();
-    xhr.open(method, API_BASE + "/api/progress?level=" + encodeURIComponent(level) + "&app=poker");
+    xhr.open(method, url);
     xhr.setRequestHeader("Authorization", "Bearer " + token());
-    if (body) xhr.setRequestHeader("Content-Type", "application/json");
+    if (payload) xhr.setRequestHeader("Content-Type", "application/json");
     xhr.onload = function () {
       if (xhr.status === 401) { clearToken(); renderUi(); cb("auth"); return; }
       if (xhr.status < 200 || xhr.status >= 300) { cb("http " + xhr.status); return; }
@@ -89,7 +195,7 @@
       cb(null, data);
     };
     xhr.onerror = function () { cb("network"); };
-    xhr.send(body ? JSON.stringify(body) : null);
+    xhr.send(payload);
   }
 
   function syncTs(level) {
@@ -99,35 +205,88 @@
     try { localStorage.setItem("poker.sync_ts", String(ts)); } catch (e) {}
   }
 
+  function mergeTombs(localRaw, remoteRaw) {
+    var byId = {};
+    [localRaw, remoteRaw].forEach(function (raw) {
+      (parseList(raw) || []).forEach(function (tb) {
+        if (tb && tb.id && (!byId[tb.id] || (tb.ts || 0) > (byId[tb.id].ts || 0))) byId[tb.id] = tb;
+      });
+    });
+    var list = Object.keys(byId).map(function (id) { return byId[id]; });
+    list.sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+    return list.length ? JSON.stringify(list.slice(0, TOMB_CAP)) : null;
+  }
+
+  /* pull = 下載雲端後「合併」，不是覆蓋。合併結果和雲端不同就立刻推回去，兩邊收斂成聯集。 */
   function pull(level, done) {
     api("GET", level, null, function (err, res) {
-      if (err || !res || !res.blob) { if (done) done(err); return; }
+      if (err) { if (done) done(err); return; }
+      if (!res || !res.blob) { push(level, function () { if (done) done(null, false); }); return; }
+      var remote = res.blob;
       var serverTs = res.updatedAt || 0;
-      if (serverTs > syncTs(level)) {
-        try {
-          Object.keys(res.blob).forEach(function (k) {
-            if (k.indexOf("poker.") === 0) localStorage.setItem(k, res.blob[k]);
-          });
-        } catch (e) {}
-        setSyncTs(level, serverTs);
-        if (done) done(null, true);   // applied → caller should reload
-        return;
+      var local = gatherKeys(level);
+      var dirty = isDirty();
+      var remoteNewer = serverTs > syncTs(level);
+
+      var tombJson = mergeTombs(local[TOMB_KEY], remote[TOMB_KEY]);
+      var tombSet = {};
+      (parseList(tombJson) || []).forEach(function (tb) { tombSet[tb.id] = 1; });
+
+      var keys = {};
+      Object.keys(local).forEach(function (k) { keys[k] = 1; });
+      Object.keys(remote).forEach(function (k) { if (k.indexOf("poker.") === 0) keys[k] = 1; });
+      delete keys[TOMB_KEY];
+
+      var merged = {};
+      Object.keys(keys).forEach(function (k) {
+        if (LIST_KEYS.indexOf(k) >= 0) {
+          merged[k] = mergeList(local[k], remote[k], tombSet, dirty || !remoteNewer);
+        } else if (local[k] === undefined) {
+          merged[k] = remote[k];
+        } else if (remote[k] === undefined) {
+          merged[k] = local[k];
+        } else {
+          merged[k] = (remoteNewer && !dirty) ? remote[k] : local[k];
+        }
+      });
+      if (tombJson !== null) merged[TOMB_KEY] = tombJson;
+
+      var changedLocal = false, changedRemote = false;
+      Object.keys(merged).forEach(function (k) {
+        if (merged[k] !== local[k]) changedLocal = true;
+        if (merged[k] !== remote[k]) changedRemote = true;
+      });
+
+      if (changedLocal) {
+        Object.keys(merged).forEach(function (k) {
+          if (merged[k] !== local[k]) rawSet(k, merged[k]);
+        });
       }
-      if (done) done(null, false);
+      setSyncTs(level, serverTs);
+      if (changedRemote) {
+        push(level, function () { if (done) done(null, changedLocal); });
+      } else {
+        lastPushedHash = blobHash(gatherKeys(level));
+        try { localStorage.setItem(HASH_KEY, lastPushedHash); } catch (e) {}
+        clearDirty();
+        if (done) done(null, changedLocal);   // changedLocal → caller reloads
+      }
     });
   }
 
-  function push(level, done) {
+  function push(level, done, opts) {
     var data = gatherKeys(level);
     var h = blobHash(data);
-    if (h === lastPushedHash) { if (done) done(null, false); return; }
+    if (h === lastPushedHash && !isDirty()) { if (done) done(null, false); return; }
     api("PUT", level, data, function (err, res) {
       if (err) { if (done) done(err); return; }
       lastPushedHash = h;
+      try { localStorage.setItem(HASH_KEY, h); } catch (e) {}
+      clearDirty();
       if (res && res.updatedAt) setSyncTs(level, res.updatedAt);
       setStatus("✓ synced");
       if (done) done(null, true);
-    });
+    }, opts);
   }
 
   /* ---------------- UI ---------------- */
@@ -283,9 +442,14 @@
     }
 
     setInterval(function () { if (signedIn()) push(currentLevel()); }, PUSH_INTERVAL_MS);
+    function flushOnHide() {
+      clearTimeout(pushTimer);
+      if (signedIn()) push(currentLevel(), null, { keepalive: true });
+    }
     document.addEventListener("visibilitychange", function () {
-      if (document.visibilityState === "hidden" && signedIn()) push(currentLevel());
+      if (document.visibilityState === "hidden") flushOnHide();
     });
+    window.addEventListener("pagehide", flushOnHide);   // iOS 收 App 不一定發 visibilitychange
   }
 
   if (document.readyState === "loading") {
