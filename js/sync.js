@@ -331,6 +331,7 @@
          （LINE/Telegram 內建瀏覽器常擋 accounts.google.com，2026-08-15 全線檢修；
          2026-08-23 Tony 在真 Safari/Chrome 也看到「內建瀏覽器」誤判 —— 訊息分兩種、可重試） */
       pill.addEventListener("click", function () {
+        if (inAppBrowser()) { webviewLogin(); return; }
         if (gisLoaded) return;
         if (gisFailed) {
           if (inWebview()) {
@@ -353,10 +354,45 @@
       wrap.appendChild(pill);
       wrap.appendChild(slot);
       ui.appendChild(wrap);
-      if (window.google && google.accounts && google.accounts.id) {
+      /* 2026-08-27 Tony：「用 LINE 打開網頁的 Google 登入是空白的」—— LINE 內建瀏覽器載得到
+         gsi/client，官方透明鈕會蓋住 pill 接走點擊，但 Google 拒絕在 App 內嵌視窗完成 OAuth
+         （disallowed_useragent → 空白頁）。所以內建瀏覽器一律不掛官方鈕，點登入改跳外部瀏覽器 */
+      if (!inAppBrowser() && window.google && google.accounts && google.accounts.id) {
         google.accounts.id.renderButton(slot, { type: "icon", shape: "circle", size: "large" });
       }
     }
+  }
+
+  /* 內建瀏覽器的登入入口：LINE 認 openExternalBrowser=1（會改用系統瀏覽器開同一頁）；
+     其他 App（FB/IG/Telegram/微信）沒有這種 URL 開關，只能教使用者手動切換＋複製網址 */
+  var EXT_PARAM = "openExternalBrowser";
+  function cleanUrl() {
+    var u = new URL(location.href);
+    u.searchParams.delete(EXT_PARAM);
+    return u.toString();
+  }
+  function webviewLogin() {
+    var ua = navigator.userAgent || "";
+    var triedExt = new URL(location.href).searchParams.get(EXT_PARAM) === "1";
+    if (/\bLine\//i.test(ua) && !triedExt) {
+      var u = new URL(location.href);
+      u.searchParams.set(EXT_PARAM, "1");
+      UI.toast(t("正在改用外部瀏覽器開啟…"));
+      location.href = u.toString();
+      return;
+    }
+    var url = cleanUrl();
+    UI.confirm(
+      t("這個 App 的內建瀏覽器無法完成 Google 登入（Google 不允許在 App 內嵌視窗登入）。請點右上角「⋯」選單，選「以其他瀏覽器開啟」，或複製網址貼到 Safari / Chrome 再登入。"),
+      { okLabel: t("複製網址") }
+    ).then(function (ok) {
+      if (!ok) return;
+      function done() { UI.toast(t("網址已複製，請貼到 Safari / Chrome 開啟。")); }
+      function fallback() { UI.prompt(t("請長按複製這個網址："), { value: url }); }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(done, fallback);
+      } else fallback();
+    });
   }
 
   function onCredential(resp) {
@@ -377,9 +413,12 @@
 
   /* 真 webview（LINE/FB/IG/Telegram 內建瀏覽器、原生殼）才顯示「換外部瀏覽器」指引；
      一般瀏覽器載不到 gsi 多半是網路/過濾器問題，給重試而不是叫人換瀏覽器 */
-  function inWebview() {
+  function inAppBrowser() {
     var ua = navigator.userAgent || "";
-    if (/\bLine\/|FBAV|FBAN|Instagram|MicroMessenger|TelegramWeb|; wv\)/i.test(ua)) return true;
+    return /\bLine\/|FBAV|FBAN|Instagram|MicroMessenger|TelegramWeb|; wv\)/i.test(ua);
+  }
+  function inWebview() {
+    if (inAppBrowser()) return true;
     if (window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) return true;
     return false;
   }
@@ -430,6 +469,15 @@
     header.appendChild(ui);
     /* 先畫登入鈕，不等 GIS：webview 擋 accounts.google.com 時入口不能消失 */
     renderUi();
+
+    /* 從 LINE 跳到外部瀏覽器成功：把 openExternalBrowser=1 從網址拿掉（書籤/分享才乾淨）；
+       還在內建瀏覽器裡就代表 LINE 沒吃這個開關，直接給手動指引 */
+    try {
+      if (new URL(location.href).searchParams.get(EXT_PARAM) === "1") {
+        if (inAppBrowser()) webviewLogin();
+        else history.replaceState(null, "", cleanUrl());
+      }
+    } catch (e) {}
 
     loadGis();
 

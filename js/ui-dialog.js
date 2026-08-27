@@ -88,6 +88,7 @@
       input.type = opts.type || 'text';
       input.className = 'dlg-input';
       if (opts.placeholder) input.placeholder = opts.placeholder;
+      if (opts.value) input.value = opts.value;
       var row = document.createElement('div');
       row.className = 'dlg-btns';
       var btnNo = document.createElement('button');

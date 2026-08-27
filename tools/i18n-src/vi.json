@@ -1225,5 +1225,10 @@
  "語音範例：「BTN 80，SB 45」": "Ví dụ: «BTN 80, SB 45»",
  "語音範例：「BTN 方塊9 方塊8」": "Ví dụ: «BTN 9 rô 8 rô»",
  "語音範例：「盲注5/10 有效籌碼100 8人 錦標賽，我在CO 紅心A 黑桃K，翻牌 黑桃10 紅心9 梅花2 底池45 需跟30 我加注 對手 口袋七以上 AK，結果輸35」": "Ví dụ: «blinds 5/10 stack 100 8 players tournament, CO, át cơ già bích, flop 10 bích 9 cơ 2 chuồn pot 45 call 30 raise pocket 7 plus AK, lost 35»",
- "🎤 一句話錄整手": "🎤 Đọc cả ván một lần"
+ "🎤 一句話錄整手": "🎤 Đọc cả ván một lần",
+ "正在改用外部瀏覽器開啟…": "Đang mở bằng trình duyệt ngoài…",
+ "網址已複製，請貼到 Safari / Chrome 開啟。": "Đã sao chép URL, hãy dán vào Safari / Chrome để mở.",
+ "複製網址": "Sao chép URL",
+ "請長按複製這個網址：": "Nhấn giữ để sao chép URL này:",
+ "這個 App 的內建瀏覽器無法完成 Google 登入（Google 不允許在 App 內嵌視窗登入）。請點右上角「⋯」選單，選「以其他瀏覽器開啟」，或複製網址貼到 Safari / Chrome 再登入。": "Trình duyệt tích hợp của ứng dụng này không thể hoàn tất đăng nhập Google (Google không cho phép đăng nhập trong cửa sổ nhúng của ứng dụng). Hãy nhấn menu “⋯” ở góc trên bên phải và chọn “Mở bằng trình duyệt khác”, hoặc sao chép URL rồi dán vào Safari / Chrome để đăng nhập."
 }

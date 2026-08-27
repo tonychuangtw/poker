@@ -1225,5 +1225,10 @@
  "語音範例：「BTN 80，SB 45」": "Voice example: \"BTN 80, SB 45\"",
  "語音範例：「BTN 方塊9 方塊8」": "Voice example: \"BTN nine of diamonds eight of diamonds\"",
  "語音範例：「盲注5/10 有效籌碼100 8人 錦標賽，我在CO 紅心A 黑桃K，翻牌 黑桃10 紅心9 梅花2 底池45 需跟30 我加注 對手 口袋七以上 AK，結果輸35」": "Voice example: \"blinds 5/10 stack 100 8 players tournament, CO ace of hearts king of spades, flop ten of spades nine of hearts two of clubs pot 45 call 30 raise pocket sevens plus AK, lost 35\"",
- "🎤 一句話錄整手": "🎤 Dictate whole hand"
+ "🎤 一句話錄整手": "🎤 Dictate whole hand",
+ "正在改用外部瀏覽器開啟…": "Opening in an external browser…",
+ "網址已複製，請貼到 Safari / Chrome 開啟。": "URL copied — paste it into Safari / Chrome to open.",
+ "複製網址": "Copy URL",
+ "請長按複製這個網址：": "Long-press to copy this URL:",
+ "這個 App 的內建瀏覽器無法完成 Google 登入（Google 不允許在 App 內嵌視窗登入）。請點右上角「⋯」選單，選「以其他瀏覽器開啟」，或複製網址貼到 Safari / Chrome 再登入。": "This app's in-app browser can't complete Google Sign-In (Google doesn't allow signing in inside embedded app views). Tap the “⋯” menu at the top right and choose “Open in browser”, or copy the URL and paste it into Safari / Chrome to sign in."
 }
