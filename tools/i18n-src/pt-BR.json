@@ -1237,5 +1237,12 @@
  "AI 萃取失敗：": "Falha na extração de IA: ",
  "AI 分析中…": "IA analisando…",
  "🎤 AI 語音分析": "🎤 Análise de voz IA",
- "按一下錄音再按一下結束：講牌局問勝率自動填牌計算，講戰績自動帶入記帳": "Toque para gravar e de novo para terminar: descreva uma mão para preencher cartas e calcular equity, ou diga seus resultados para registrar"
+ "按一下錄音再按一下結束：講牌局問勝率自動填牌計算，講戰績自動帶入記帳": "Toque para gravar e de novo para terminar: descreva uma mão para preencher cartas e calcular equity, ou diga seus resultados para registrar",
+ "查看詳情": "Ver detalhes",
+ "編輯": "Editar",
+ "復原": "Desfazer",
+ "已記一筆：": "Registrado: ",
+ "已復原": "Desfeito",
+ "（對手未指定，對上隨機手牌）": " (sem vilão — contra mão aleatória)",
+ "按一下錄音再按一下結束：講牌局直接報勝率，講戰績直接入帳": "Toque para gravar e de novo para terminar: descreva uma mão e receba o equity na hora, ou diga seus resultados e registre na hora"
 }

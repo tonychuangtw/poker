@@ -1403,6 +1403,42 @@
     return { ok: true, n: parsed.entries.length, analyzed: analyzed };
   };
 
+  /* 首頁 AI 語音分析（voice-ai.js）用：整段講完直接入帳，不經表單。
+     add 吃 sanitize 過的欄位（缺的補預設），回 {ok, id, rec}；remove/edit 給「復原」「編輯」按鈕 */
+  window.SessionApi = {
+    add: function (rec) {
+      if (sessions.length >= Pro.limit('records')) {
+        Pro.hitLimit(t('免費版最多記 10 筆，升級 Pro 可無限記錄。'));
+        return { ok: false };
+      }
+      var r = {
+        id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+        date: rec.date || new Date().toISOString().slice(0, 10),
+        type: rec.type || 'cash',
+        venue: rec.venue || '',
+        tag: rec.tag || '',
+        buyin: rec.buyin || 0,
+        cashout: rec.cashout || 0,
+        hours: rec.hours || 0,
+        bb: rec.bb || 0,
+        cur: rec.cur || localStorage.getItem('poker.lastCur') || 'TWD',
+        arena: rec.arena || localStorage.getItem('poker.lastArena') || 'live',
+        note: rec.note || ''
+      };
+      if (rec.mood && rec.mood.length) r.mood = rec.mood;
+      sessions.push(r);
+      saveSessions(sessions);
+      renderTracker();
+      return { ok: true, id: r.id, rec: r };
+    },
+    remove: function (id) {
+      sessions = sessions.filter(function (x) { return x.id !== id; });
+      saveSessions(sessions);
+      renderTracker();
+    },
+    edit: function (id) { openEditSession(id); }
+  };
+
   function voiceCardTxt(c) {
     var s = Evaluator.cardToString(c);
     return s[0] + Evaluator.SUIT_SYMBOLS[s[1]];
