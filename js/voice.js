@@ -537,7 +537,9 @@
     return '';
   }
 
-  function setupMic(btn, statusEl, example, onText) {
+  /* hw（選用）：覆蓋預設熱詞的函式 —— 其他模組（如 voice-tracker.js）
+     重用錄音流程時，給自己領域的詞彙表提升辨識率 */
+  function setupMic(btn, statusEl, example, onText, hw) {
     var rec = null, chunks = [], stream = null, timer = null, busy = false;
     var idleLabel = btn.textContent;
 
@@ -589,7 +591,7 @@
       var fd = new FormData();
       fd.append('file', blob, 'voice.' + ext);
       fd.append('language', sttLang());
-      fd.append('hotwords', hotwords());
+      fd.append('hotwords', (hw || hotwords)());
       fetch(BASE + '/stt', { method: 'POST', body: fd })
         .then(function (resp) {
           return resp.json().then(function (d) { return { http: resp.status, d: d }; });
@@ -856,6 +858,10 @@
       })
       .catch(function () {});
   }
+
+  // 供其他語音模組重用錄音＋STT 流程（voice-tracker.js 的語音記帳）
+  VoiceCards.setupMic = setupMic;
+  VoiceCards.sttBase = BASE;
 
   // 供 console 除錯／測試直接餵文字（跳過錄音）
   VoiceCards.handleEquityText = handleEquityText;

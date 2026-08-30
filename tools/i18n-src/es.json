@@ -1230,5 +1230,10 @@
  "網址已複製，請貼到 Safari / Chrome 開啟。": "URL copiada; pégala en Safari / Chrome para abrirla.",
  "複製網址": "Copiar URL",
  "請長按複製這個網址：": "Mantén pulsado para copiar esta URL:",
- "這個 App 的內建瀏覽器無法完成 Google 登入（Google 不允許在 App 內嵌視窗登入）。請點右上角「⋯」選單，選「以其他瀏覽器開啟」，或複製網址貼到 Safari / Chrome 再登入。": "El navegador integrado de esta app no puede completar el inicio de sesión de Google (Google no permite iniciar sesión dentro de vistas integradas). Toca el menú «⋯» arriba a la derecha y elige «Abrir en el navegador», o copia la URL y pégala en Safari / Chrome para iniciar sesión."
+ "這個 App 的內建瀏覽器無法完成 Google 登入（Google 不允許在 App 內嵌視窗登入）。請點右上角「⋯」選單，選「以其他瀏覽器開啟」，或複製網址貼到 Safari / Chrome 再登入。": "El navegador integrado de esta app no puede completar el inicio de sesión de Google (Google no permite iniciar sesión dentro de vistas integradas). Toca el menú «⋯» arriba a la derecha y elige «Abrir en el navegador», o copia la URL y pégala en Safari / Chrome para iniciar sesión.",
+ "🎤 用講的記一筆": "🎤 Registrar por voz",
+ "語音範例：「昨天在CTP打現金局，買入5000兌現8000，打了6小時，大盲100，有點上頭」": "Ejemplo de voz: «Ayer cash game en CTP, entré con 5000, salí con 8000, jugué 6 horas, ciega grande 100, un poco en tilt»",
+ " 個欄位，請確認後儲存": " campos — revisa y guarda",
+ "AI 萃取失敗：": "Fallo de extracción de IA: ",
+ "AI 分析中…": "IA analizando…"
 }

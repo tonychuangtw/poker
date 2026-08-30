@@ -1230,5 +1230,10 @@
  "網址已複製，請貼到 Safari / Chrome 開啟。": "URL kopiert – in Safari / Chrome einfügen, um sie zu öffnen.",
  "複製網址": "URL kopieren",
  "請長按複製這個網址：": "Lange drücken, um diese URL zu kopieren:",
- "這個 App 的內建瀏覽器無法完成 Google 登入（Google 不允許在 App 內嵌視窗登入）。請點右上角「⋯」選單，選「以其他瀏覽器開啟」，或複製網址貼到 Safari / Chrome 再登入。": "Der integrierte Browser dieser App kann die Google-Anmeldung nicht abschließen (Google erlaubt keine Anmeldung in eingebetteten App-Ansichten). Tippe oben rechts auf das Menü „⋯“ und wähle „Im Browser öffnen“, oder kopiere die URL und füge sie in Safari / Chrome ein, um dich anzumelden."
+ "這個 App 的內建瀏覽器無法完成 Google 登入（Google 不允許在 App 內嵌視窗登入）。請點右上角「⋯」選單，選「以其他瀏覽器開啟」，或複製網址貼到 Safari / Chrome 再登入。": "Der integrierte Browser dieser App kann die Google-Anmeldung nicht abschließen (Google erlaubt keine Anmeldung in eingebetteten App-Ansichten). Tippe oben rechts auf das Menü „⋯“ und wähle „Im Browser öffnen“, oder kopiere die URL und füge sie in Safari / Chrome ein, um dich anzumelden.",
+ "🎤 用講的記一筆": "🎤 Per Sprache erfassen",
+ "語音範例：「昨天在CTP打現金局，買入5000兌現8000，打了6小時，大盲100，有點上頭」": "Sprachbeispiel: „Gestern Cash Game im CTP, Buy-in 5000, Cashout 8000, 6 Stunden gespielt, Big Blind 100, etwas getiltet“",
+ " 個欄位，請確認後儲存": " Felder — prüfen und speichern",
+ "AI 萃取失敗：": "KI-Extraktion fehlgeschlagen: ",
+ "AI 分析中…": "KI analysiert…"
 }

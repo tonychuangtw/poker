@@ -1230,5 +1230,10 @@
  "網址已複製，請貼到 Safari / Chrome 開啟。": "Đã sao chép URL, hãy dán vào Safari / Chrome để mở.",
  "複製網址": "Sao chép URL",
  "請長按複製這個網址：": "Nhấn giữ để sao chép URL này:",
- "這個 App 的內建瀏覽器無法完成 Google 登入（Google 不允許在 App 內嵌視窗登入）。請點右上角「⋯」選單，選「以其他瀏覽器開啟」，或複製網址貼到 Safari / Chrome 再登入。": "Trình duyệt tích hợp của ứng dụng này không thể hoàn tất đăng nhập Google (Google không cho phép đăng nhập trong cửa sổ nhúng của ứng dụng). Hãy nhấn menu “⋯” ở góc trên bên phải và chọn “Mở bằng trình duyệt khác”, hoặc sao chép URL rồi dán vào Safari / Chrome để đăng nhập."
+ "這個 App 的內建瀏覽器無法完成 Google 登入（Google 不允許在 App 內嵌視窗登入）。請點右上角「⋯」選單，選「以其他瀏覽器開啟」，或複製網址貼到 Safari / Chrome 再登入。": "Trình duyệt tích hợp của ứng dụng này không thể hoàn tất đăng nhập Google (Google không cho phép đăng nhập trong cửa sổ nhúng của ứng dụng). Hãy nhấn menu “⋯” ở góc trên bên phải và chọn “Mở bằng trình duyệt khác”, hoặc sao chép URL rồi dán vào Safari / Chrome để đăng nhập.",
+ "🎤 用講的記一筆": "🎤 Ghi bằng giọng nói",
+ "語音範例：「昨天在CTP打現金局，買入5000兌現8000，打了6小時，大盲100，有點上頭」": "Ví dụ: \"Hôm qua chơi cash game ở CTP, buy-in 5000, rút ra 8000, chơi 6 tiếng, big blind 100, hơi tilt\"",
+ " 個欄位，請確認後儲存": " trường — kiểm tra rồi lưu",
+ "AI 萃取失敗：": "Trích xuất AI thất bại: ",
+ "AI 分析中…": "AI đang phân tích…"
 }

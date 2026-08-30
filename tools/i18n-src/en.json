@@ -1230,5 +1230,10 @@
  "網址已複製，請貼到 Safari / Chrome 開啟。": "URL copied — paste it into Safari / Chrome to open.",
  "複製網址": "Copy URL",
  "請長按複製這個網址：": "Long-press to copy this URL:",
- "這個 App 的內建瀏覽器無法完成 Google 登入（Google 不允許在 App 內嵌視窗登入）。請點右上角「⋯」選單，選「以其他瀏覽器開啟」，或複製網址貼到 Safari / Chrome 再登入。": "This app's in-app browser can't complete Google Sign-In (Google doesn't allow signing in inside embedded app views). Tap the “⋯” menu at the top right and choose “Open in browser”, or copy the URL and paste it into Safari / Chrome to sign in."
+ "這個 App 的內建瀏覽器無法完成 Google 登入（Google 不允許在 App 內嵌視窗登入）。請點右上角「⋯」選單，選「以其他瀏覽器開啟」，或複製網址貼到 Safari / Chrome 再登入。": "This app's in-app browser can't complete Google Sign-In (Google doesn't allow signing in inside embedded app views). Tap the “⋯” menu at the top right and choose “Open in browser”, or copy the URL and paste it into Safari / Chrome to sign in.",
+ "🎤 用講的記一筆": "🎤 Log by voice",
+ "語音範例：「昨天在CTP打現金局，買入5000兌現8000，打了6小時，大盲100，有點上頭」": "Voice example: \"Cash game at CTP yesterday, bought in 5000, cashed out 8000, played 6 hours, big blind 100, tilted a bit\"",
+ " 個欄位，請確認後儲存": " field(s) — review, then save",
+ "AI 萃取失敗：": "AI extraction failed: ",
+ "AI 分析中…": "AI parsing…"
 }

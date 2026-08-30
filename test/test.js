@@ -2450,6 +2450,36 @@ var showExOk = Object.keys(langTables).every(function (lang) {
 });
 assert(showExOk, 'voice: 12 語系「攤牌」範例全數可解析');
 
+// ---------- 9. 語音記帳 sanitize（LLM 輸出白名單驗證） ----------
+console.log('--- VoiceTracker ---');
+var VT = require('../js/voice-tracker.js');
+
+var sr = VT.sanitize({
+  date: '2026-08-29', type: 'cash', arena: 'live', venue: 'CTP',
+  buyin: 5000, cashout: 8000, hours: 6, bb: 100, cur: 'TWD',
+  mood: ['上頭', '疲勞']
+});
+assert(sr.date === '2026-08-29' && sr.type === 'cash' && sr.venue === 'CTP' &&
+  sr.buyin === 5000 && sr.cashout === 8000 && sr.hours === 6 && sr.bb === 100 &&
+  sr.cur === 'TWD' && sr.mood.length === 2,
+  'vtrack: 完整合法紀錄全數保留');
+
+sr = VT.sanitize({
+  date: '昨天', type: 'plo', arena: 'casino', buyin: -5, cashout: 'abc',
+  hours: 999, cur: 'BTC', mood: ['上頭', '上頭', '爽', 123], venue: '  '
+});
+assert(sr.date === undefined && sr.type === undefined && sr.arena === undefined &&
+  sr.buyin === undefined && sr.cashout === undefined && sr.hours === undefined &&
+  sr.cur === undefined && sr.venue === undefined &&
+  sr.mood.length === 1 && sr.mood[0] === '上頭',
+  'vtrack: 非法值全擋（mood 去重＋白名單）');
+
+sr = VT.sanitize(null);
+assert(Object.keys(sr).length === 0, 'vtrack: null → 空物件');
+
+sr = VT.sanitize({ note: '  a'.repeat(300), tag: 'WSOP' });
+assert(sr.note.length <= 200 && sr.tag === 'WSOP', 'vtrack: 字串裁長度');
+
 // ---------- summary ----------
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 if (failed > 0) process.exit(1);
