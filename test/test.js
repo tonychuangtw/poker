@@ -2501,6 +2501,14 @@ assert(va.errors.length === 1 && va.errors[0].code === 'dup', 'vai: 重複牌回
 va = VA.cardsToEntries({});
 assert(va.entries.length === 0 && va.errors.length === 0, 'vai: 空輸入 → 空 entries');
 
+assert(VA.fmtCard(Evaluator.cardFromString('As')) === 'A♠' &&
+  VA.fmtCard(Evaluator.cardFromString('Th')) === '10♥' &&
+  VA.fmtCard(Evaluator.cardFromString('2c')) === '2♣',
+  'vai: fmtCard A♠ / 10♥ / 2♣');
+
+var vsr = VA.vsRandom([Evaluator.cardFromString('As'), Evaluator.cardFromString('Ah')], [], 5000);
+assert(vsr > 0.8 && vsr < 0.9, 'vai: AA vs 隨機手牌 翻前約 85%（MC 5000 手，got ' + vsr.toFixed(3) + '）');
+
 // ---------- summary ----------
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 if (failed > 0) process.exit(1);

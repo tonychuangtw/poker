@@ -1237,5 +1237,12 @@
  "AI 萃取失敗：": "AI extraction failed: ",
  "AI 分析中…": "AI parsing…",
  "🎤 AI 語音分析": "🎤 AI voice analysis",
- "按一下錄音再按一下結束：講牌局問勝率自動填牌計算，講戰績自動帶入記帳": "Tap to record, tap again to finish: describe a hand to auto-fill cards and calc equity, or tell your results to auto-fill the log"
+ "按一下錄音再按一下結束：講牌局問勝率自動填牌計算，講戰績自動帶入記帳": "Tap to record, tap again to finish: describe a hand to auto-fill cards and calc equity, or tell your results to auto-fill the log",
+ "查看詳情": "View details",
+ "編輯": "Edit",
+ "復原": "Undo",
+ "已記一筆：": "Logged: ",
+ "已復原": "Undone",
+ "（對手未指定，對上隨機手牌）": " (no villain given — vs random hand)",
+ "按一下錄音再按一下結束：講牌局直接報勝率，講戰績直接入帳": "Tap to record, tap again to finish: describe a hand to get the equity instantly, or tell your results to log them instantly"
 }

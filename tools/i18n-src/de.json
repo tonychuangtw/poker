@@ -1237,5 +1237,12 @@
  "AI 萃取失敗：": "KI-Extraktion fehlgeschlagen: ",
  "AI 分析中…": "KI analysiert…",
  "🎤 AI 語音分析": "🎤 KI-Sprachanalyse",
- "按一下錄音再按一下結束：講牌局問勝率自動填牌計算，講戰績自動帶入記帳": "Tippen zum Aufnehmen, erneut tippen zum Beenden: Hand beschreiben für Karten + Equity, oder Ergebnis diktieren fürs Protokoll"
+ "按一下錄音再按一下結束：講牌局問勝率自動填牌計算，講戰績自動帶入記帳": "Tippen zum Aufnehmen, erneut tippen zum Beenden: Hand beschreiben für Karten + Equity, oder Ergebnis diktieren fürs Protokoll",
+ "查看詳情": "Details anzeigen",
+ "編輯": "Bearbeiten",
+ "復原": "Rückgängig",
+ "已記一筆：": "Erfasst: ",
+ "已復原": "Rückgängig gemacht",
+ "（對手未指定，對上隨機手牌）": " (kein Gegner angegeben — gegen zufällige Hand)",
+ "按一下錄音再按一下結束：講牌局直接報勝率，講戰績直接入帳": "Tippen zum Aufnehmen, erneut tippen zum Beenden: Hand beschreiben für sofortige Equity, Ergebnis diktieren für sofortige Erfassung"
 }

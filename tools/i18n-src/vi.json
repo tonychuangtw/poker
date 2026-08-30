@@ -1237,5 +1237,12 @@
  "AI 萃取失敗：": "Trích xuất AI thất bại: ",
  "AI 分析中…": "AI đang phân tích…",
  "🎤 AI 語音分析": "🎤 Phân tích giọng nói AI",
- "按一下錄音再按一下結束：講牌局問勝率自動填牌計算，講戰績自動帶入記帳": "Nhấn để ghi âm, nhấn lần nữa để kết thúc: kể ván bài để tự điền bài và tính equity, hoặc kể kết quả để tự ghi sổ"
+ "按一下錄音再按一下結束：講牌局問勝率自動填牌計算，講戰績自動帶入記帳": "Nhấn để ghi âm, nhấn lần nữa để kết thúc: kể ván bài để tự điền bài và tính equity, hoặc kể kết quả để tự ghi sổ",
+ "查看詳情": "Xem chi tiết",
+ "編輯": "Sửa",
+ "復原": "Hoàn tác",
+ "已記一筆：": "Đã ghi: ",
+ "已復原": "Đã hoàn tác",
+ "（對手未指定，對上隨機手牌）": " (chưa nêu đối thủ — so với bài ngẫu nhiên)",
+ "按一下錄音再按一下結束：講牌局直接報勝率，講戰績直接入帳": "Nhấn để ghi âm, nhấn lần nữa để kết thúc: kể ván bài để biết equity ngay, kể kết quả để ghi sổ ngay"
 }
