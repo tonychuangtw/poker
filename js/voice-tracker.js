@@ -132,6 +132,7 @@
       });
   }
   VoiceTracker.handleText = handleText; // console 除錯／測試直接餵文字（跳過錄音）
+  VoiceTracker.apply = apply;           // 供 voice-ai.js（首頁 AI 語音分析）重用預填流程
 
   function health(url) {
     var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
@@ -154,7 +155,7 @@
         row.hidden = false;
         statusEl.hidden = false;
         statusEl.textContent = example;
-        VC.setupMic(btn, statusEl, example, handleText, hotwords);
+        VC.setupMic(btn, statusEl, example, handleText, { hotwords: hotwords });
       });
   }
 

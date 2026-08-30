@@ -1235,5 +1235,7 @@
  "語音範例：「昨天在CTP打現金局，買入5000兌現8000，打了6小時，大盲100，有點上頭」": "Sprachbeispiel: „Gestern Cash Game im CTP, Buy-in 5000, Cashout 8000, 6 Stunden gespielt, Big Blind 100, etwas getiltet“",
  " 個欄位，請確認後儲存": " Felder — prüfen und speichern",
  "AI 萃取失敗：": "KI-Extraktion fehlgeschlagen: ",
- "AI 分析中…": "KI analysiert…"
+ "AI 分析中…": "KI analysiert…",
+ "🎤 AI 語音分析": "🎤 KI-Sprachanalyse",
+ "按一下錄音再按一下結束：講牌局問勝率自動填牌計算，講戰績自動帶入記帳": "Tippen zum Aufnehmen, erneut tippen zum Beenden: Hand beschreiben für Karten + Equity, oder Ergebnis diktieren fürs Protokoll"
 }
