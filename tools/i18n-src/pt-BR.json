@@ -1235,5 +1235,7 @@
  "語音範例：「昨天在CTP打現金局，買入5000兌現8000，打了6小時，大盲100，有點上頭」": "Exemplo de voz: \"Ontem cash game no CTP, buy-in 5000, saí com 8000, joguei 6 horas, big blind 100, um pouco de tilt\"",
  " 個欄位，請確認後儲存": " campos — revise e salve",
  "AI 萃取失敗：": "Falha na extração de IA: ",
- "AI 分析中…": "IA analisando…"
+ "AI 分析中…": "IA analisando…",
+ "🎤 AI 語音分析": "🎤 Análise de voz IA",
+ "按一下錄音再按一下結束：講牌局問勝率自動填牌計算，講戰績自動帶入記帳": "Toque para gravar e de novo para terminar: descreva uma mão para preencher cartas e calcular equity, ou diga seus resultados para registrar"
 }

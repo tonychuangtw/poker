@@ -1235,5 +1235,7 @@
  "語音範例：「昨天在CTP打現金局，買入5000兌現8000，打了6小時，大盲100，有點上頭」": "Voice example: \"Cash game at CTP yesterday, bought in 5000, cashed out 8000, played 6 hours, big blind 100, tilted a bit\"",
  " 個欄位，請確認後儲存": " field(s) — review, then save",
  "AI 萃取失敗：": "AI extraction failed: ",
- "AI 分析中…": "AI parsing…"
+ "AI 分析中…": "AI parsing…",
+ "🎤 AI 語音分析": "🎤 AI voice analysis",
+ "按一下錄音再按一下結束：講牌局問勝率自動填牌計算，講戰績自動帶入記帳": "Tap to record, tap again to finish: describe a hand to auto-fill cards and calc equity, or tell your results to auto-fill the log"
 }

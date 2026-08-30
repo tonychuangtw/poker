@@ -537,9 +537,12 @@
     return '';
   }
 
-  /* hw（選用）：覆蓋預設熱詞的函式 —— 其他模組（如 voice-tracker.js）
-     重用錄音流程時，給自己領域的詞彙表提升辨識率 */
-  function setupMic(btn, statusEl, example, onText, hw) {
+  /* opts（選用）：其他模組（voice-tracker.js / voice-ai.js）重用錄音流程時的覆蓋項——
+     hotwords: fn 自訂 STT 熱詞；url: 覆蓋上傳端點；raw: true 把整包 JSON 交給 onText
+     （預設只給 d.text）；blobBody: true 直接 POST 音檔 body（給 /aiapi/analyze，
+     不走 FormData）；maxSec: 錄音秒數上限（預設 30） */
+  function setupMic(btn, statusEl, example, onText, opts) {
+    opts = opts || {};
     var rec = null, chunks = [], stream = null, timer = null, busy = false;
     var idleLabel = btn.textContent;
 
@@ -566,7 +569,7 @@
         btn.classList.add('voice-rec');
         btn.textContent = '⏹';
         status(t('錄音中…再按一下完成'));
-        timer = setTimeout(stop, MAX_SEC * 1000);
+        timer = setTimeout(stop, (opts.maxSec || MAX_SEC) * 1000);
       }, function () {
         status(t('麥克風權限被拒絕'));
       });
@@ -588,19 +591,26 @@
       var blob = new Blob(chunks, { type: type });
       rec = null;
       if (blob.size < 1000) { reset(); status(example); return; } // 太短，當誤觸
-      var fd = new FormData();
-      fd.append('file', blob, 'voice.' + ext);
-      fd.append('language', sttLang());
-      fd.append('hotwords', (hw || hotwords)());
-      fetch(BASE + '/stt', { method: 'POST', body: fd })
+      var target = opts.url || (BASE + '/stt');
+      var reqP;
+      if (opts.blobBody) {
+        reqP = fetch(target, { method: 'POST', headers: { 'Content-Type': type }, body: blob });
+      } else {
+        var fd = new FormData();
+        fd.append('file', blob, 'voice.' + ext);
+        fd.append('language', sttLang());
+        fd.append('hotwords', (opts.hotwords || hotwords)());
+        reqP = fetch(target, { method: 'POST', body: fd });
+      }
+      reqP
         .then(function (resp) {
           return resp.json().then(function (d) { return { http: resp.status, d: d }; });
         })
         .then(function (res) {
           reset();
           var d = res.d;
-          if (!d || !d.ok || !d.text) throw new Error((d && d.error) || ('HTTP ' + res.http));
-          onText(d.text, status);
+          if (!d || !d.ok || (!opts.raw && !d.text)) throw new Error((d && d.error) || ('HTTP ' + res.http));
+          onText(opts.raw ? d : d.text, status);
         })
         .catch(function (err) {
           reset();

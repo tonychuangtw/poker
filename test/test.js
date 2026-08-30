@@ -2480,6 +2480,27 @@ assert(Object.keys(sr).length === 0, 'vtrack: null → 空物件');
 sr = VT.sanitize({ note: '  a'.repeat(300), tag: 'WSOP' });
 assert(sr.note.length <= 200 && sr.tag === 'WSOP', 'vtrack: 字串裁長度');
 
+// ---------- 10. AI 語音分析 cardsToEntries（LLM 牌字串 → VoiceCardsApply 形狀） ----------
+console.log('--- VoiceAi ---');
+var VA = require('../js/voice-ai.js');
+
+var va = VA.cardsToEntries({ hero: ['As', 'Ks'], villain: ['Qd', 'Td'], board: ['Kh', 'Ts', '8c', '9h', '4d'] });
+assert(va.entries.length === 9 && va.errors.length === 0 && va.maxVillain === 0 &&
+  va.entries[0].slot === 'hero0' && Evaluator.cardToString(va.entries[0].card) === 'As' &&
+  va.entries[8].slot === 'board4' && Evaluator.cardToString(va.entries[8].card) === '4d',
+  'vai: hero+villain+board 全落位');
+
+va = VA.cardsToEntries({ hero: ['As', 'XX', '??'], board: ['Kh', 'banana'] });
+assert(va.entries.length === 2 && va.maxVillain === -1 &&
+  va.entries[1].slot === 'board0',
+  'vai: 無效牌字串略過、無對手 maxVillain=-1');
+
+va = VA.cardsToEntries({ hero: ['As', 'As'] });
+assert(va.errors.length === 1 && va.errors[0].code === 'dup', 'vai: 重複牌回報 dup');
+
+va = VA.cardsToEntries({});
+assert(va.entries.length === 0 && va.errors.length === 0, 'vai: 空輸入 → 空 entries');
+
 // ---------- summary ----------
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 if (failed > 0) process.exit(1);

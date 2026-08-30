@@ -1235,5 +1235,7 @@
  "語音範例：「昨天在CTP打現金局，買入5000兌現8000，打了6小時，大盲100，有點上頭」": "Ví dụ: \"Hôm qua chơi cash game ở CTP, buy-in 5000, rút ra 8000, chơi 6 tiếng, big blind 100, hơi tilt\"",
  " 個欄位，請確認後儲存": " trường — kiểm tra rồi lưu",
  "AI 萃取失敗：": "Trích xuất AI thất bại: ",
- "AI 分析中…": "AI đang phân tích…"
+ "AI 分析中…": "AI đang phân tích…",
+ "🎤 AI 語音分析": "🎤 Phân tích giọng nói AI",
+ "按一下錄音再按一下結束：講牌局問勝率自動填牌計算，講戰績自動帶入記帳": "Nhấn để ghi âm, nhấn lần nữa để kết thúc: kể ván bài để tự điền bài và tính equity, hoặc kể kết quả để tự ghi sổ"
 }
