@@ -1244,5 +1244,6 @@
  "已記一筆：": "Enregistré : ",
  "已復原": "Annulé",
  "（對手未指定，對上隨機手牌）": " (adversaire non précisé — contre main aléatoire)",
- "按一下錄音再按一下結束：講牌局直接報勝率，講戰績直接入帳": "Touchez pour enregistrer, retouchez pour terminer : décrivez une main pour l’équité instantanée, ou dictez vos résultats pour les consigner aussitôt"
+ "按一下錄音再按一下結束：講牌局直接報勝率，講戰績直接入帳": "Touchez pour enregistrer, retouchez pour terminer : décrivez une main pour l’équité instantanée, ou dictez vos résultats pour les consigner aussitôt",
+ "沒聽到聲音，請再試一次": "Aucune voix détectée — réessayez"
 }

@@ -1244,5 +1244,6 @@
  "已記一筆：": "Registrado: ",
  "已復原": "Desfeito",
  "（對手未指定，對上隨機手牌）": " (sem vilão — contra mão aleatória)",
- "按一下錄音再按一下結束：講牌局直接報勝率，講戰績直接入帳": "Toque para gravar e de novo para terminar: descreva uma mão e receba o equity na hora, ou diga seus resultados e registre na hora"
+ "按一下錄音再按一下結束：講牌局直接報勝率，講戰績直接入帳": "Toque para gravar e de novo para terminar: descreva uma mão e receba o equity na hora, ou diga seus resultados e registre na hora",
+ "沒聽到聲音，請再試一次": "Nenhuma fala detectada — tente novamente"
 }

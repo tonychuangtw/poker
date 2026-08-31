@@ -1244,5 +1244,6 @@
  "已記一筆：": "Registrado: ",
  "已復原": "Deshecho",
  "（對手未指定，對上隨機手牌）": " (sin rival — contra mano aleatoria)",
- "按一下錄音再按一下結束：講牌局直接報勝率，講戰績直接入帳": "Toca para grabar y de nuevo para terminar: describe una mano y te da el equity al instante, o di tus resultados y los registra al instante"
+ "按一下錄音再按一下結束：講牌局直接報勝率，講戰績直接入帳": "Toca para grabar y de nuevo para terminar: describe una mano y te da el equity al instante, o di tus resultados y los registra al instante",
+ "沒聽到聲音，請再試一次": "No se detectó voz — inténtalo de nuevo"
 }
