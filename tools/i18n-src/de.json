@@ -1244,5 +1244,6 @@
  "已記一筆：": "Erfasst: ",
  "已復原": "Rückgängig gemacht",
  "（對手未指定，對上隨機手牌）": " (kein Gegner angegeben — gegen zufällige Hand)",
- "按一下錄音再按一下結束：講牌局直接報勝率，講戰績直接入帳": "Tippen zum Aufnehmen, erneut tippen zum Beenden: Hand beschreiben für sofortige Equity, Ergebnis diktieren für sofortige Erfassung"
+ "按一下錄音再按一下結束：講牌局直接報勝率，講戰績直接入帳": "Tippen zum Aufnehmen, erneut tippen zum Beenden: Hand beschreiben für sofortige Equity, Ergebnis diktieren für sofortige Erfassung",
+ "沒聽到聲音，請再試一次": "Keine Sprache erkannt — bitte erneut versuchen"
 }

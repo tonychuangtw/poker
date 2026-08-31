@@ -187,6 +187,11 @@
 
   function handleResult(d, status) {
     hideAnswer();
+    // 靜音防呆：沒有轉錄內容（靜音被 server 擋下、或 AI 聽不到東西）一律不入帳不填欄
+    if (!String(d.transcript || '').trim()) {
+      status(t('沒聽到聲音，請再試一次'));
+      return;
+    }
     var msg = t('聽到：') + (d.transcript || '');
     if (d.kind === 'equity') return handleEquity(d, msg, status);
     if (d.kind === 'session' && d.session) return handleSession(d, msg, status);
