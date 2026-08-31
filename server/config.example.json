@@ -1,0 +1,10 @@
+{
+  "port": 8787,
+  "db_path": "./syncdata.db",
+  "google_client_ids": ["481860179039-gb37qsdogd4vgnn2g5umh73jen02avj4.apps.googleusercontent.com"],
+  "hmac_secret": "自己生一把長隨機字串（session 票用，每站各自一把，不用跟對方相同）",
+  "replica_secret": "兩站共用的複寫密鑰（面交取得，勿 commit）",
+  "replica_peer": "https://ksdiseo.com/api/replica/sync",
+  "replica_interval_ms": 300000,
+  "cors_origins": ["https://tonychuangtw.github.io"]
+}

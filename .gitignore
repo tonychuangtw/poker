@@ -8,3 +8,9 @@ ios/App/output/
 *.ipa
 .DS_Store
 PROGRESS.md
+
+# 自架同步伺服器的本地設定與資料（含密鑰，勿 commit）
+server/config.json
+server/*.db
+server/*.db-shm
+server/*.db-wal

@@ -2509,6 +2509,37 @@ assert(VA.fmtCard(Evaluator.cardFromString('As')) === 'A♠' &&
 var vsr = VA.vsRandom([Evaluator.cardFromString('As'), Evaluator.cardFromString('Ah')], [], 5000);
 assert(vsr > 0.8 && vsr < 0.9, 'vai: AA vs 隨機手牌 翻前約 85%（MC 5000 手，got ' + vsr.toFixed(3) + '）');
 
+// ---------- 11. 自架同步伺服器（server/sync-server.js 純函式，不需 better-sqlite3） ----------
+console.log('--- sync-server ---');
+var SyncSrv = require('../server/sync-server.js');
+
+var ssTok = SyncSrv.mintSess('unit-secret', '12345678901234567890', 'a@b.c');
+var ssP = SyncSrv.verifySess('unit-secret', ssTok);
+assert(!!ssP && ssP.s === '12345678901234567890' && ssP.e === 'a@b.c' && ssP.x > Date.now(),
+  'sync-server: 票鑄造/驗證 roundtrip');
+assert(SyncSrv.verifySess('wrong-secret', ssTok) === null, 'sync-server: 錯密鑰驗不過');
+var ssParts = ssTok.split('.');
+var ssTampered = 'sess.' + SyncSrv.b64url(JSON.stringify({ s: '99999999999999999999', e: 'evil@x', x: Date.now() + 86400000 })) + '.' + ssParts[2];
+assert(SyncSrv.verifySess('unit-secret', ssTampered) === null, 'sync-server: 竄改 payload 驗不過');
+var ssExpired = (function () {
+  var crypto = require('crypto');
+  var payload = SyncSrv.b64url(JSON.stringify({ s: '12345678901234567890', e: 'a@b.c', x: Date.now() - 1000 }));
+  var sig = SyncSrv.b64url(crypto.createHmac('sha256', 'unit-secret').update(payload).digest());
+  return 'sess.' + payload + '.' + sig;
+})();
+assert(SyncSrv.verifySess('unit-secret', ssExpired) === null, 'sync-server: 過期票驗不過');
+
+var ssRow = SyncSrv.validReplicaRow({ sub: '12345678901234567890', email: 'a@b.c', app: 'poker', level: 'main', blob: '{}', updated_at: 1788000000000.7 });
+assert(!!ssRow && ssRow.updated_at === 1788000000000 && ssRow.app === 'poker', 'sync-server: 合法複寫列（updated_at 取整）');
+assert(SyncSrv.validReplicaRow({ sub: 'abc', app: 'poker', level: 'main', blob: '{}', updated_at: 1 }) === null,
+  'sync-server: sub 非數字拒收');
+assert(SyncSrv.validReplicaRow({ sub: '12345678901234567890', app: 'po ker', level: 'main', blob: '{}', updated_at: 1 }) === null,
+  'sync-server: app 帶空白拒收');
+assert(SyncSrv.validReplicaRow({ sub: '12345678901234567890', app: 'poker', level: 'main', blob: {}, updated_at: 1 }) === null,
+  'sync-server: blob 非字串拒收');
+assert(SyncSrv.validReplicaRow({ sub: '12345678901234567890', app: 'poker', level: 'main', blob: '{}', updated_at: 0 }) === null,
+  'sync-server: updated_at<=0 拒收');
+
 // ---------- summary ----------
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 if (failed > 0) process.exit(1);
