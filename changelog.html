@@ -118,6 +118,13 @@
   <h2>版本沿革</h2>
   <ul class="timeline">
     <li>
+      <div class="d">2026-08-31</div>
+      <div class="t"><b>自架同步伺服器上線＋兩站雙向複寫</b>：雲端同步後端改為 repo 內
+        <code>server/sync-server.js</code>（獨立 SQLite），與協作站 ksdiseo.com 每 5 分鐘
+        <code>/api/replica/sync</code> 自動互補收斂（帳號以 Google sub 對齊、列級 LWW、刪除靠墓碑）。
+        既有登入沿用不需重登。<small>v69</small></div>
+    </li>
+    <li>
       <div class="d">2026-08-25</div>
       <div class="t"><b>雲端同步重寫：不再整包覆蓋</b>（Tony 8/23–24 兩天記帳被舊資料洗掉的事故修復）：
         記帳／複盤／筆記改成<b>逐筆合併</b>（兩邊有的都保留，刪除靠墓碑跨裝置生效）；

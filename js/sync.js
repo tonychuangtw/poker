@@ -2,7 +2,7 @@
  * Disabled (site behaves exactly like offline version) until both values below are set. */
 (function () {
   var CLIENT_ID = "481860179039-gb37qsdogd4vgnn2g5umh73jen02avj4.apps.googleusercontent.com";
-  var API_BASE = "https://claudebot500.tailfcf67f.ts.net";
+  var API_BASE = "https://claudebot500.tailfcf67f.ts.net:8443";
 
   if (!CLIENT_ID || !API_BASE || typeof window === "undefined") return;
 
